@@ -15,7 +15,7 @@ args = parser.parse_args()
 GenomeAssembly = "hg38" if args.species == "human" else "mm10"
 Prefix = "unique" if args.UniqueGO else "complete"
 
-path = "/home/laverre/GOntact"
+path = "/beegfs/data/necsulea/GOntact/"
 Baits = path + "/data/PCHi-C/" + args.species + "/bait_coords_" + GenomeAssembly + ".txt"
 EnsemblAnnotation = path + "/data/ensembl_annotations/" + args.species + "/GeneNames_Ensembl94.txt"
 AnnotatedGenes = path + "/data/GeneOntology/tmp.genes.annotation.txt"
