@@ -2,7 +2,7 @@
 # coding=utf-8
 
 import argparse
-from collections import defaultdict
+import itertools
 
 parser = argparse.ArgumentParser()
 parser.add_argument("species", help="species")
@@ -15,7 +15,7 @@ args = parser.parse_args()
 GenomeAssembly = "hg38" if args.species == "human" else "mm10"
 Prefix = "unique" if args.UniqueGO else "complete"
 
-path = "/home/laverre/GOntact"
+path = "/beegfs/data/necsulea/GOntact/"
 Baits = path + "/data/PCHi-C/" + args.species + "/bait_coords_" + GenomeAssembly + ".txt"
 EnsemblAnnotation = path + "/data/ensembl_annotations/" + args.species + "/GeneNames_Ensembl94.txt"
 AnnotatedGenes = path + "/data/GeneOntology/tmp.genes.annotation.txt"
@@ -33,9 +33,10 @@ with open(EnsemblAnnotation, 'r') as f:
 
         GeneID_dic[GeneID] = GeneName
 
+print("Found", len(GeneID_dic), "Ensembl genes.")
 ######################################################################
 ## GO Annotations of each genes
-GeneGO_dic = defaultdict(list)
+GeneGO_dic = {}
 with open(AnnotatedGenes, 'r') as f:
     for gene in f.readlines()[1:]:
         gene = gene.strip("\n")
@@ -43,10 +44,15 @@ with open(AnnotatedGenes, 'r') as f:
         GeneName = gene[0]
         GOTerm = gene[1]
 
-        GeneGO_dic[GeneName].append(GOTerm)
+        if GeneName in GeneGO_dic.keys():
+            GeneGO_dic[GeneName].append(GOTerm)
+        else:
+            GeneGO_dic[GeneName] = [GOTerm]
 
+print("Found", len(GeneGO_dic), "genes with GO terms.")
 ######################################################################
 ## Annotations of each bait & writing Output
+print("Writing output.")
 Output = open(OutputFile, "w")
 Output.write("BaitID\tGeneID\tGeneName\tGOID\n")
 
@@ -55,18 +61,18 @@ with open(Baits, 'r') as f:
         bait = bait.strip("\n")
         bait = bait.split("\t")
         BaitID = bait[0]
-        BaitGenesID = bait[5].split(",")
+        BaitGenesID = bait[5]
 
-        GenesNames = [GeneID_dic[GeneID] for GeneID in BaitGenesID]
-        GenesGOTerm = [GO for GO in GeneGO_dic[GeneName] for GeneName in GenesNames]
+        if BaitGenesID != "NA":
+            GenesNames = [GeneID_dic[GeneID] for GeneID in BaitGenesID.split(",")]
 
-        if args.unique:
-            GenesGOTerm = list(set(GenesGOTerm))
+            GenesGOTerm = [GeneGO_dic[Gene] for Gene in GenesNames if Gene in GeneGO_dic.keys()]
+            GenesGOTerm = list(itertools.chain(*GenesGOTerm))
 
-        Output.write(BaitID + "\t" + ",".join(BaitGenesID) + "\t" + ",".join(GenesNames) + "\t" + ",".join(GenesGOTerm) + '\n')
+            if args.UniqueGO:
+                GenesGOTerm = list(set(GenesGOTerm))
+
+            Output.write(BaitID + "\t" + str(BaitGenesID) + "\t" + ",".join(GenesNames) + "\t" + ",".join(GenesGOTerm) + '\n')
 
 Output.close()
-
-
-
-
+print("Done!")
