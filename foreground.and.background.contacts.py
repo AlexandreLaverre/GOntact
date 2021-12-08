@@ -9,22 +9,22 @@ import itertools
 parser = argparse.ArgumentParser()
 parser.add_argument("species", help="species")
 parser.add_argument("InputEnhancers", help="Input file of enhancers coordinates in BED format")
-parser.add_argument("--BaitedEnhancers", action="store_true",
-                    help="Keep contacts where Enhancers are in baits (default = False)")
-parser.add_argument("--TransContact", action="store_true",
-                    help="Keep inter-chromosome contacts (default = False)")
+parser.add_argument("--KeepBaitedEnhancers", action="store_true", help="Keep contacts where Enhancers are in baits (default = False)")
+parser.add_argument("--KeepTransContact", action="store_true", help="Keep inter-chromosome contacts (default = False)")
+parser.add_argument("--KeepBaitBait", action="store_true", help="Keep inter-chromosome contacts (default = False)")
 args = parser.parse_args()
 
 ################################################
 
 GenomeAssembly = "hg38" if args.species == "human" else "mm10"
 
-path = "/home/laverre/GOntact"
+path = "/beegfs/data/necsulea/GOntact/"
 Baits = path + "/data/PCHi-C/" + args.species + "/bait_coords_" + GenomeAssembly + ".txt"
 Fragments = path + "/data/PCHi-C/" + args.species + "/frag_coords_" + GenomeAssembly + ".txt"
-Contacts = path + "/data/PCHi-C/" + args.species + "/all_interactions.txt"
-#OutputFile = path + "/results/" + args.species + "/foreground.contacts.txt"
-OutputFile = "/home/laverre/Documents/GOntact/foreground.contacts.txt"
+Contacts = path + "/data/PCHi-C/" + args.species + "/all_interactions_simplified.txt"
+
+ForegroundOutput = path + "/results/" + args.species + "/foreground.contacts.txt"
+BackgroundOutput = path + "/results/" + args.species + "/background.contacts.txt"
 
 ##############################################################################
 ######## Overlap between input enhancers and restriction fragments ########
@@ -51,9 +51,9 @@ def Coord_Dict(Coordinates):
     return dic, N
 
 
-FragmentsDict, NbFragments = Coord_Dict(Fragments)
 EnhancersDict, NbEnhancers = Coord_Dict(args.InputEnhancers)
 print("Found", NbEnhancers, "input enhancers.")
+FragmentsDict, NbFragments = Coord_Dict(Fragments)
 
 print("Attribute input enhancers to restriction fragments...")
 # Overlap Enhancers to Fragments
@@ -93,27 +93,32 @@ print("Found", len(SelectedFragments), "associated restriction fragments.")
 print("Get contacts involving input enhancers...")
 
 # Get all contacts
-AllContacts = pandas.read_csv(Contacts, sep='\t', usecols=[0, 1, 2, 3, 4, 5, 7])
+AllContacts = pandas.read_csv(Contacts, sep='\t')
 
 # Define IDs
-AllContacts['BaitID'] = AllContacts[AllContacts.columns[0:3]].apply(lambda x: ':'.join(x.astype(str)), axis=1)
-AllContacts['FragmentID'] = AllContacts[AllContacts.columns[3:6]].apply(lambda x: ':'.join(x.astype(str)), axis=1)
+# AllContacts['BaitID'] = AllContacts[AllContacts.columns[0:3]].apply(lambda x: ':'.join(x.astype(str)), axis=1)
+# AllContacts['FragmentID'] = AllContacts[AllContacts.columns[3:6]].apply(lambda x: ':'.join(x.astype(str)), axis=1)
+
+# Filters
+if not args.KeepBaitBait:
+    AllContacts = AllContacts.drop(AllContacts[AllContacts.Type == "baited"].index)
+
+if not args.KeepTransContact:
+    AllContacts = AllContacts.drop(AllContacts[(AllContacts.Type == "trans") & (AllContacts.Distance > 2000000)].index)
+
+print("Found", len(AllContacts.index), "background contacts.")
 
 # Get all interactions involving selected fragments
-if args.BaitedEnhancers:
+if args.KeepBaitedEnhancers:
     SelectedContacts = AllContacts.loc[
         AllContacts['FragmentID'].isin(SelectedFragments) | AllContacts['BaitID'].isin(SelectedFragments)]
 else:
     SelectedContacts = AllContacts.loc[AllContacts['FragmentID'].isin(SelectedFragments)]
 
-print("Found", len(SelectedContacts.index), "contacts.")
-
-if not args.TransContact:
-    SelectedContacts = SelectedContacts.loc[SelectedContacts['chr_bait'] == SelectedContacts['chr']
-                                            & SelectedContacts['distance'] < 2000000]
-    print("Found", len(SelectedContacts.index), "intra-chromosome & <2Mb contacts.")
+print("Found", len(SelectedContacts.index), "foreground contacts.")
 
 print("Writing output...")
-SelectedContacts.to_csv(OutputFile, sep="\t", index=False)
+AllContacts.to_csv(BackgroundOutput, sep="\t", index=False)
+SelectedContacts.to_csv(ForegroundOutput, sep="\t", index=False)
 
 print("Done!")
