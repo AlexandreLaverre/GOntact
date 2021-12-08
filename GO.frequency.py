@@ -7,7 +7,6 @@ import itertools
 
 parser = argparse.ArgumentParser()
 parser.add_argument("species", help="species")
-parser.add_argument("ContactType", help="foreground or background")
 parser.add_argument("--UniqueGO", action="store_true",
                     help="Get unique list of GO term associated to genes for each bait (default=complete)")
 args = parser.parse_args()
@@ -18,9 +17,10 @@ AnnotationType = "unique" if args.UniqueGO else "complete"
 
 path = "/beegfs/data/necsulea/GOntact/"
 AnnotatedBaits = path + "/results/" + args.species + "/" + AnnotationType + ".GO.annotated.baits.txt"
-InputContacts = path + "/results/" + args.species + "/" + args.ContactType + ".contacts.txt"
+ForegroundContacts = path + "/results/" + args.species + "/foreground.contacts.txt"
+BackgroundContacts = path + "/results/" + args.species + "/background.contacts.txt"
 
-OutputFile = path + "/results/" + args.species + "/" + args.ContactType + "." + AnnotationType + ".GO.frequency.txt"
+OutputFile = path + "/results/" + args.species + "/" + AnnotationType + ".GO.frequency.txt"
 
 ######################################################################
 # Dictionary of GO annotated Baits
@@ -35,34 +35,48 @@ with open(AnnotatedBaits, 'r') as f:
         Baits2GO[BaitID] = GOIDs.split(',')
 
 print("Found", len(Baits2GO), "baits with GO terms")
+
 ######################################################################
-# Get list of interested baits
-Contacts = pandas.read_csv(InputContacts, sep='\t', usecols=["BaitID"])
-SelectedBaits = list(itertools.chain(*Contacts.values.tolist()))
 
-print("Found", len(SelectedBaits), "contacts.")
+def GOTerm_Frequency(InputContacts):
+    # Get list of interested baits
+    Contacts = pandas.read_csv(InputContacts, sep='\t', usecols=["BaitID"])
+    SelectedBaits = list(itertools.chain(*Contacts.values.tolist()))
 
-# Count number of GO Term in InputContacts
-GOFrequency = {}
-for BaitID in SelectedBaits:
-    if BaitID in Baits2GO.keys():           # Daits may don't have any associated GO Term
-        for GOID in Baits2GO[BaitID]:
-            if GOID in GOFrequency.keys():
-                GOFrequency[GOID] = GOFrequency[GOID] + 1
-            else:
-                GOFrequency[GOID] = 1
+    N = len(SelectedBaits)
+    print("Found", N , "contacts.")
 
-print("Found", len(GOFrequency.keys()), "associated GOTerm.")
+    # Count number of GO Term in InputContacts
+    GOFrequency = {}
+    for BaitID in SelectedBaits:
+        if BaitID in Baits2GO.keys():           # Baits may don't have any associated GO Term
+            for GOID in Baits2GO[BaitID]:
+                if GOID in GOFrequency.keys():
+                    GOFrequency[GOID] = GOFrequency[GOID] + 1
+                else:
+                    GOFrequency[GOID] = 1
+
+    print("Found", len(GOFrequency.keys()), "associated GOTerm.")
+
+    return GOFrequency, N
+
+
+print("## Running Foreground:")
+ForegroundFrequency, NbForeground = GOTerm_Frequency(ForegroundContacts)
+print("## Running Background:")
+BackgroundFrequency, NbBackground = GOTerm_Frequency(BackgroundContacts)
 
 ######################################################################
 print("Writing output...")
 Output = open(OutputFile, "w")
-Output.write("# Total number of contacts = " + str(len(SelectedBaits)) + "\n")
-Output.write("GOTerm\tFrequency\n")
+Output.write("# Total number of Foreground contacts = " + str(NbForeground) + "\n")
+Output.write("# Total number of Background contacts = " + str(NbBackground) + "\n")
+Output.write("GOTerm\tForegroundFrequency\tBackgroundFrequency\n")
 
-for GOTerm, Frequency in GOFrequency.items():
+for GOTerm in BackgroundFrequency.keys():
     if GOTerm != '':
-        Output.write(str(GOTerm) + "\t" + str(Frequency) + "\n")
+        FreqForeground = str(ForegroundFrequency[GOTerm]) if GOTerm in ForegroundFrequency.keys() else str(0)
+        Output.write(str(GOTerm) + "\t" + FreqForeground + "\t" + str(BackgroundFrequency[GOTerm]) + "\n")
 
 Output.close()
 print("Done!")
