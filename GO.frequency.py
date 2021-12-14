@@ -4,23 +4,39 @@
 import argparse
 import pandas
 import itertools
+import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("species", help="species")
+parser.add_argument("Enhancers", help="species")
 parser.add_argument("--UniqueGO", action="store_true",
                     help="Get unique list of GO term associated to genes for each bait (default=complete)")
 args = parser.parse_args()
 
 ######################################################################
-
+Prefix = os.path.basename(args.Enhancers).strip('.bed')
 AnnotationType = "unique" if args.UniqueGO else "complete"
 
 path = "/beegfs/data/necsulea/GOntact/"
-AnnotatedBaits = path + "/results/" + args.species + "/" + AnnotationType + ".GO.annotated.baits.txt"
-ForegroundContacts = path + "/results/" + args.species + "/foreground.contacts.txt"
-BackgroundContacts = path + "/results/" + args.species + "/background.contacts.txt"
+pathResults = path + "/results/" + args.species
 
-OutputFile = path + "/results/" + args.species + "/" + AnnotationType + ".GO.frequency.txt"
+GODescription = path + "/data/GeneOntology/GODescription.txt"
+AnnotatedBaits =  pathResults+ "/" + AnnotationType + ".GO.annotated.baits.txt"
+ForegroundContacts = pathResults + "/" + Prefix + "/foreground.contacts.txt"
+BackgroundContacts = pathResults + "/" + Prefix + "/background.contacts.txt"
+
+OutputFile = pathResults + "/" + Prefix + "/" + AnnotationType + ".GO.frequency.txt"
+
+######################################################################
+# Dictionary of GO Description
+GOInfos = {}
+with open(GODescription, 'r') as f:
+    for GO in f.readlines()[1:]:
+        GO = GO.strip("\n")
+        GO = GO.split("\t")
+        GOID, GOName, GONamespace = GO[0], GO[1], GO[2]
+
+        GOInfos[GOID] = (GOName, GONamespace)
 
 ######################################################################
 # Dictionary of GO annotated Baits
@@ -29,8 +45,7 @@ with open(AnnotatedBaits, 'r') as f:
     for bait in f.readlines()[1:]:
         bait = bait.strip("\n")
         bait = bait.split("\t")
-        BaitID = bait[0]
-        GOIDs = bait[3]
+        BaitID, GOIDs = bait[0], bait[3]
 
         Baits2GO[BaitID] = GOIDs.split(',')
 
@@ -44,7 +59,7 @@ def GOTerm_Frequency(InputContacts):
     SelectedBaits = list(itertools.chain(*Contacts.values.tolist()))
 
     N = len(SelectedBaits)
-    print("Found", N , "contacts.")
+    print("Found", N, "contacts.")
 
     # Count number of GO Term in InputContacts
     GOFrequency = {}
@@ -71,12 +86,13 @@ print("Writing output...")
 Output = open(OutputFile, "w")
 Output.write("# Total number of Foreground contacts = " + str(NbForeground) + "\n")
 Output.write("# Total number of Background contacts = " + str(NbBackground) + "\n")
-Output.write("GOTerm\tForegroundFrequency\tBackgroundFrequency\n")
+Output.write("GOName\tGONamespace\tGOTerm\tForegroundFrequency\tBackgroundFrequency\n")
 
 for GOTerm in BackgroundFrequency.keys():
     if GOTerm != '':
         FreqForeground = str(ForegroundFrequency[GOTerm]) if GOTerm in ForegroundFrequency.keys() else str(0)
-        Output.write(str(GOTerm) + "\t" + FreqForeground + "\t" + str(BackgroundFrequency[GOTerm]) + "\n")
+        Output.write(GOInfos[GOTerm][0] + "\t" + GOInfos[GOTerm][1] + "\t" + str(GOTerm) + "\t" +
+                     FreqForeground + "\t" + str(BackgroundFrequency[GOTerm]) + "\n")
 
 Output.close()
 print("Done!")
