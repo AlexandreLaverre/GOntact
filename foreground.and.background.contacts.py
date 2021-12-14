@@ -5,10 +5,11 @@ import argparse
 from collections import defaultdict
 import pandas
 import itertools
+import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("species", help="species")
-parser.add_argument("InputEnhancers", help="Input file of enhancers coordinates in BED format")
+parser.add_argument("Enhancers", help="Input file of enhancers coordinates in BED format")
 parser.add_argument("--KeepBaitedEnhancers", action="store_true", help="Keep contacts where Enhancers are in baits (default = False)")
 parser.add_argument("--KeepTransContact", action="store_true", help="Keep inter-chromosome contacts (default = False)")
 parser.add_argument("--KeepBaitBait", action="store_true", help="Keep inter-chromosome contacts (default = False)")
@@ -17,28 +18,36 @@ args = parser.parse_args()
 ################################################
 
 GenomeAssembly = "hg38" if args.species == "human" else "mm10"
+Prefix = os.path.basename(args.Enhancers).strip('.bed')
 
 path = "/beegfs/data/necsulea/GOntact/"
 Baits = path + "/data/PCHi-C/" + args.species + "/bait_coords_" + GenomeAssembly + ".txt"
 Fragments = path + "/data/PCHi-C/" + args.species + "/frag_coords_" + GenomeAssembly + ".txt"
 Contacts = path + "/data/PCHi-C/" + args.species + "/all_interactions_simplified.txt"
 
-ForegroundOutput = path + "/results/" + args.species + "/foreground.contacts.txt"
-BackgroundOutput = path + "/results/" + args.species + "/background.contacts.txt"
+InputEnhancers = path + "data/enhancers/" + args.species + "/" + args.Enhancers
+PathOutput = path + "/results/" + args.species + "/" + Prefix
+if not os.path.exists(PathOutput):
+        os.makedirs(PathOutput)
+
+ForegroundOutput = PathOutput + "/foreground.contacts.txt"
+BackgroundOutput = PathOutput + "/background.contacts.txt"
 
 ##############################################################################
 ######## Overlap between input enhancers and restriction fragments ########
 
 # Create dictionary of coordinates
-def Coord_Dict(Coordinates):
+def Coord_Dict(Coordinates, type):
     dic = defaultdict(list)
     N = 0
     with open(Coordinates, 'r') as f:
         for i in f.readlines()[1:]:
             i = i.strip("\n")
             i = i.split("\t")
-            chr = str(i[1])
-            coord = (int(i[2]), int(i[3]), str(i[0]))  # coord = (start, end, ID)
+
+            # coord = (start, end, ID)
+            coord = (int(i[2]), int(i[3]), str(i[0])) if type == "background" else (int(i[1]), int(i[2]), str(i[3]))
+            chr = str(i[1]) if type == "background" else str(i[0])
 
             dic[chr].append(coord)
             N += 1
@@ -51,13 +60,14 @@ def Coord_Dict(Coordinates):
     return dic, N
 
 
-EnhancersDict, NbEnhancers = Coord_Dict(args.InputEnhancers)
+EnhancersDict, NbEnhancers = Coord_Dict(InputEnhancers, "foreground")
 print("Found", NbEnhancers, "input enhancers.")
-FragmentsDict, NbFragments = Coord_Dict(Fragments)
+FragmentsDict, NbFragments = Coord_Dict(Fragments, "background")
 
-print("Attribute input enhancers to restriction fragments...")
+#### Attribute input enhancers to restriction fragments... ####
 # Overlap Enhancers to Fragments
 OverlapDict = defaultdict(list)
+OverlapEnh = []
 MissingEnhancers = []
 
 for chr in EnhancersDict.keys():
@@ -76,21 +86,23 @@ for chr in EnhancersDict.keys():
 
             # Adding all overlapping interest position to reference position
             while i < len(FragmentsDict[chr]) and FragmentsDict[chr][i][0] <= end:
-                OverlapDict[EnhancerID].append(FragmentsDict[chr][i][2])
+                OverlapEnh.append(EnhancerID)
+                OverlapDict[FragmentsDict[chr][i][2]].append(EnhancerID)
                 i += 1
 
-        if EnhancerID not in OverlapDict.keys():
+        if EnhancerID not in OverlapEnh:
             MissingEnhancers.append(EnhancerID)
 
 if len(MissingEnhancers) != 0:
     print("Warning:", len(MissingEnhancers), "enhancers do not overlap any restriction fragments")
+    print(MissingEnhancers)
 
 # Get all fragments containing input enhancers
-SelectedFragments = list(set(list(itertools.chain(*OverlapDict.values()))))
+SelectedFragments = OverlapDict.keys()
 print("Found", len(SelectedFragments), "associated restriction fragments.")
 
 ##############################################################################
-print("Get contacts involving input enhancers...")
+### Get contacts involving input enhancers... ###
 
 # Get all contacts
 AllContacts = pandas.read_csv(Contacts, sep='\t')
@@ -104,7 +116,7 @@ if not args.KeepBaitBait:
     AllContacts = AllContacts.drop(AllContacts[AllContacts.Type == "baited"].index)
 
 if not args.KeepTransContact:
-    AllContacts = AllContacts.drop(AllContacts[(AllContacts.Type == "trans") & (AllContacts.Distance > 2000000)].index)
+    AllContacts = AllContacts.drop(AllContacts[(AllContacts.Synteny == "trans") | (AllContacts.Distance > 2000000)].index)
 
 print("Found", len(AllContacts.index), "background contacts.")
 
@@ -115,7 +127,13 @@ if args.KeepBaitedEnhancers:
 else:
     SelectedContacts = AllContacts.loc[AllContacts['FragmentID'].isin(SelectedFragments)]
 
-print("Found", len(SelectedContacts.index), "foreground contacts.")
+FragInContacts = list(set(SelectedContacts['FragmentID'].tolist()))
+
+EnhInContacts = [OverlapDict[frag] for frag in FragInContacts]
+EnhInContacts = set(list(itertools.chain(*EnhInContacts)))
+
+print("Found", len(SelectedContacts.index), "foreground contacts with", len(FragInContacts), "selected fragments",
+      "from", len(EnhInContacts), "input enhancers:", round(len(EnhInContacts)/NbEnhancers,2), "% enhancers are present.")
 
 print("Writing output...")
 AllContacts.to_csv(BackgroundOutput, sep="\t", index=False)
