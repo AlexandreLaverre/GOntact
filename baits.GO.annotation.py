@@ -18,7 +18,7 @@ Prefix = "unique" if args.UniqueGO else "complete"
 path = "/beegfs/data/necsulea/GOntact/"
 Baits = path + "/data/PCHi-C/" + args.species + "/bait_coords_" + GenomeAssembly + ".txt"
 EnsemblAnnotation = path + "/data/ensembl_annotations/" + args.species + "/GeneNames_Ensembl94.txt"
-AnnotatedGenes = path + "/data/GeneOntology/tmp.genes.annotation.txt"
+AnnotatedGenes = path + "/data/GeneOntology/tmp." + args.species + ".genes.annotation.txt"
 OutputFile = path + "/results/" + args.species + "/" + Prefix + ".GO.annotated.baits.txt"
 
 ######################################################################
