@@ -6,6 +6,7 @@ from collections import defaultdict
 import pandas
 import itertools
 import os
+import re
 
 parser = argparse.ArgumentParser()
 parser.add_argument("species", help="species")
@@ -28,10 +29,14 @@ Contacts = path + "/data/PCHi-C/" + args.species + "/all_interactions_simplified
 InputEnhancers = path + "data/enhancers/" + args.species + "/" + args.Enhancers
 PathOutput = path + "/results/" + args.species + "/" + Prefix
 if not os.path.exists(PathOutput):
-        os.makedirs(PathOutput)
+    os.makedirs(PathOutput)
 
-ForegroundOutput = PathOutput + "/foreground.contacts.txt"
-BackgroundOutput = PathOutput + "/background.contacts.txt"
+Baited = ".BaitedEnh" if args.KeepBaitedEnhancers else ""
+Trans = ".Trans" if args.KeepTransContact else ""
+Bait2Bait = ".bait2bait" if args.KeepBaitBait else ""
+
+ForegroundOutput = PathOutput + "/foreground.contacts" + Baited + Trans + Bait2Bait + ".txt"
+BackgroundOutput = PathOutput + "/background.contacts" + Baited + Trans + Bait2Bait + ".txt"
 
 ##############################################################################
 ######## Overlap between input enhancers and restriction fragments ########
@@ -41,7 +46,11 @@ def Coord_Dict(Coordinates, type):
     dic = defaultdict(list)
     N = 0
     with open(Coordinates, 'r') as f:
-        for i in f.readlines()[1:]:
+        # Check if header is present
+        start = 1 if bool(re.search('start', f.readline())) is True else 0
+        f.seek(0)
+
+        for i in f.readlines()[start:]:
             i = i.strip("\n")
             i = i.split("\t")
 
@@ -121,19 +130,26 @@ if not args.KeepTransContact:
 print("Found", len(AllContacts.index), "background contacts.")
 
 # Get all interactions involving selected fragments
-if args.KeepBaitedEnhancers:
-    SelectedContacts = AllContacts.loc[
-        AllContacts['FragmentID'].isin(SelectedFragments) | AllContacts['BaitID'].isin(SelectedFragments)]
-else:
-    SelectedContacts = AllContacts.loc[AllContacts['FragmentID'].isin(SelectedFragments)]
+SelectedContacts = AllContacts.loc[AllContacts['FragmentID'].isin(SelectedFragments)]
 
 FragInContacts = list(set(SelectedContacts['FragmentID'].tolist()))
-
-EnhInContacts = [OverlapDict[frag] for frag in FragInContacts]
-EnhInContacts = set(list(itertools.chain(*EnhInContacts)))
+EnhInContactedFrag = [OverlapDict[frag] for frag in FragInContacts]
+EnhInContactedFrag = set(list(itertools.chain(*EnhInContactedFrag)))
 
 print("Found", len(SelectedContacts.index), "foreground contacts with", len(FragInContacts), "selected fragments",
-      "from", len(EnhInContacts), "input enhancers:", round(len(EnhInContacts)/NbEnhancers,2), "% enhancers are present.")
+      "from", len(EnhInContactedFrag), "input enhancers:", round(len(EnhInContactedFrag)/NbEnhancers, 2), "% enhancers are present in contacted fragments.")
+
+if args.KeepBaitedEnhancers:
+    BaitedEnhancersContacts = AllContacts.loc[AllContacts['BaitID'].isin(SelectedFragments)]
+    SelectedContacts = pandas.concat([SelectedContacts, BaitedEnhancersContacts])
+
+    BaitInContacts = list(set(BaitedEnhancersContacts['BaitID'].tolist()))
+    EnhInBait = [OverlapDict[frag] for frag in BaitInContacts]
+    EnhInBait = set(list(itertools.chain(*EnhInBait)))
+
+    print("Found", len(BaitedEnhancersContacts.index), "foreground contacts with", len(BaitInContacts), "baited fragments",
+          "from", len(EnhInBait), "input enhancers:", round(len(EnhInBait)/NbEnhancers, 2), "% enhancers are present in baits.")
+
 
 print("Writing output...")
 AllContacts.to_csv(BackgroundOutput, sep="\t", index=False)
