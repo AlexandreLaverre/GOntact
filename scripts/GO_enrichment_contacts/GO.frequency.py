@@ -9,11 +9,14 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument("species", help="species")
 parser.add_argument("Enhancers", help="species")
+parser.add_argument("--WithoutPropagation", action="store_true", help="Get gene annotation without GO propagation")
 parser.add_argument("--KeepBaitedEnhancers", action="store_true", help="Keep contacts where Enhancers are in baits (default = False)")
 parser.add_argument("--KeepTransContact", action="store_true", help="Keep inter-chromosome contacts (default = False)")
 parser.add_argument("--KeepBaitBait", action="store_true", help="Keep inter-chromosome contacts (default = False)")
 parser.add_argument("--UniqueGO", action="store_true",
                     help="Get unique list of GO term associated to genes for each bait (default=complete)")
+parser.add_argument("--CountBaitOnce", action="store_true",
+                    help="Count only one time each bait on foreground and background set")
 args = parser.parse_args()
 
 ######################################################################
@@ -24,16 +27,23 @@ path = "/beegfs/data/necsulea/GOntact/"
 pathResults = path + "/results/" + args.species
 
 GODescription = path + "/data/GeneOntology/GODescription.txt"
-AnnotatedBaits = pathResults + "/" + AnnotationType + ".GO.annotated.baits.txt"
+
+if args.WithoutPropagation:
+    AnnotatedBaits = pathResults + "/before.propagation/" + AnnotationType + ".GO.annotated.baits.txt"
+else:
+    AnnotatedBaits = pathResults + "/" + AnnotationType + ".GO.annotated.baits.txt"
 
 Baited = ".BaitedEnh" if args.KeepBaitedEnhancers else ""
 Trans = ".Trans" if args.KeepTransContact else ""
 Bait2Bait = ".bait2bait" if args.KeepBaitBait else ""
+CountOnce = ".CountOnce" if args.CountBaitOnce else ""
+WithoutPropagation = ".WithoutPropagation" if args.WithoutPropagation else ""
 
 ForegroundContacts = pathResults + "/" + Prefix + "/foreground.contacts" + Baited + Trans + Bait2Bait + ".txt"
 BackgroundContacts = pathResults + "/" + Prefix + "/background.contacts" + Baited + Trans + Bait2Bait + ".txt"
 
-OutputFile = pathResults + "/" + Prefix + "/" + AnnotationType + ".GO.frequency" + Baited + Trans + Bait2Bait + ".txt"
+OutputFile = pathResults + "/" + Prefix + "/" + AnnotationType + ".GO.frequency" + Baited + Trans + \
+             Bait2Bait + CountOnce + WithoutPropagation + ".txt"
 
 ######################################################################
 # Dictionary of GO Description
@@ -65,6 +75,9 @@ def GOTerm_Frequency(InputContacts):
     # Get list of interested baits
     Contacts = pandas.read_csv(InputContacts, sep='\t', usecols=["BaitID"])
     SelectedBaits = list(itertools.chain(*Contacts.values.tolist()))
+
+    if args.CountBaitOnce:
+        SelectedBaits = list(set(SelectedBaits))
 
     N = len(SelectedBaits)
     print("Found", N, "contacts.")
