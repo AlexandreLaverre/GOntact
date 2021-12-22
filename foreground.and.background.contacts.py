@@ -8,12 +8,13 @@ import itertools
 import os
 import re
 
+import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("species", help="species")
 parser.add_argument("Enhancers", help="Input file of enhancers coordinates in BED format")
 parser.add_argument("--KeepBaitedEnhancers", action="store_true", help="Keep contacts where Enhancers are in baits (default = False)")
-parser.add_argument("--KeepTransContact", action="store_true", help="Keep inter-chromosome contacts (default = False)")
-parser.add_argument("--KeepBaitBait", action="store_true", help="Keep inter-chromosome contacts (default = False)")
+parser.add_argument("--KeepTransContact", action="store_true", help="Keep inter-chromosome and intra >2Mb contacts (default = False)")
+parser.add_argument("--KeepBaitBait", action="store_true", help="Keep bait-bait contacts (default = False)")
 args = parser.parse_args()
 
 ################################################
