@@ -104,7 +104,7 @@ for chr in EnhancersDict.keys():
             MissingEnhancers.append(EnhancerID)
 
 if len(MissingEnhancers) != 0:
-    print("Warning:", len(MissingEnhancers), "enhancers do not overlap any restriction fragments")
+    print("Warning:", len(MissingEnhancers), "enhancer(s) do not overlap any restriction fragments")
     print(MissingEnhancers)
 
 # Get all fragments containing input enhancers
@@ -142,7 +142,7 @@ print("Found", len(SelectedContacts.index), "foreground contacts with", len(Frag
 
 if args.KeepBaitedEnhancers:
     BaitedEnhancersContacts = AllContacts.loc[AllContacts['BaitID'].isin(SelectedFragments)]
-    SelectedContacts = pandas.concat([SelectedContacts, BaitedEnhancersContacts])
+    SelectedContacts = pandas.concat([SelectedContacts, BaitedEnhancersContacts]).drop_duplicates().reset_index(drop=True)
 
     BaitInContacts = list(set(BaitedEnhancersContacts['BaitID'].tolist()))
     EnhInBait = [OverlapDict[frag] for frag in BaitInContacts]
