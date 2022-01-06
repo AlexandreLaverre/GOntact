@@ -272,7 +272,7 @@ sub printHelp{
     my $parvalues=$_[1];
     
     print "\n";
-    print "This script extracts promoters and enhancers found in neighboring regulatory regions.\n";
+    print "This script extracts gene ontology stats for regulatory regions.\n";
     print "\n";
     
     print "Options:\n";
