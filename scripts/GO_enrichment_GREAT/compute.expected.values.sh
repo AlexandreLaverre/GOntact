@@ -6,7 +6,7 @@ export sp=$1
 
 export path=/beegfs/data/necsulea/GOntact
 export pathGO=${path}/data/GeneOntology
-export pathResults=${path}/results/GO_enrichment_GREAT/${sp}
+export pathResults=${path}/results/GO_enrichment_GREAT
 export pathScripts=${path}/scripts/GO_enrichment_GREAT
 
 export ensrelease=94
