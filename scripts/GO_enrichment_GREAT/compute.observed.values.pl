@@ -1,4 +1,5 @@
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
+use POSIX;
 use strict;
 
 ####################################################################################
@@ -196,10 +197,9 @@ sub orderCoordinates{
     my %hashcoords;
     
     foreach my $id (keys %{$unordered}){
-	
-	my $chr=${$unordered->{$id}{"chr"}};
-	my $start=${$unordered->{$id}{"start"}};
-	my $end=${$unordered->{$id}{"end"}};
+	my $chr=$unordered->{$id}{"chr"};
+	my $start=$unordered->{$id}{"start"};
+	my $end=$unordered->{$id}{"end"};
 
 	if(exists $hashcoords{$chr}){
 	    if(exists $hashcoords{$chr}{$start}){
@@ -387,6 +387,10 @@ my %elements;
 
 readElementCoordinates($parameters{"pathInputElements"}, \%okchromo, \%elements);
 
+my $nbel=keys %elements;
+
+print "Found ".$nbel." elements.\n";
+
 my %orderedelements;
 
 orderCoordinates(\%elements, \%orderedelements);
@@ -400,6 +404,10 @@ print "Computing overlap between elements and regions...\n";
 my %overlap;
 
 overlapCoordinates(\%orderedelements, \%orderedregions, \%overlap);
+
+my $nbov=keys %overlap;
+
+print "There are ".$nbov." elements that overlap with regions.\n";
 
 print "Done.\n";
 
