@@ -176,31 +176,92 @@ sub computeExpectedValues{
     my $nbdone=0;
     
     foreach my $cat (keys %goregions){
-	my %hashpos;
+	my %blocks;
+	makeBlocks($goregions{$cat}, \%blocks);
 
-	my $nbr=@{$goregions{$cat}{"chr"}};
+	my $totalsize;
+	my $nbr=@{$blocks{"chr"}};
 
 	for(my $i=0; $i<$nbr; $i++){
-	    my $chr=${$goregions{$cat}{"chr"}}[$i];
-	    my $start=${$goregions{$cat}{"start"}}[$i];
-	    my $end=${$goregions{$cat}{"end"}}[$i];
+	    my $start=${$blocks{"start"}}[$i];
+	    my $end=${$blocks{"end"}}[$i];
 
-	    for(my $pos=$start; $pos<=$end; $pos++){
-		my $key=$chr.":".$pos;
-		$hashpos{$key}=1;
+	    $totalsize+=($end-$start+1);
+	}
+
+
+	$totalsizes->{$cat}=$totalsize;
+    }    
+}
+
+####################################################################################
+
+sub makeBlocks{
+    my $coords=$_[0];
+    my $blocks=$_[1];
+
+    $blocks->{"chr"}=[];
+    $blocks->{"start"}=[];
+    $blocks->{"end"}=[];
+    
+    my %hashpos;
+
+    my $nb=@{$coords->{"chr"}};
+
+    for(my $i=0; $i<$nb; $i++){
+	my $chr=${$coords->{"chr"}}[$i];
+	my $start=${$coords->{"start"}}[$i];
+	my $end=${$coords->{"end"}}[$i];
+	
+	if(exists $hashpos{$chr}){
+	    if(exists $hashpos{$chr}{$start}){
+		if($end>$hashpos{$chr}{$start}){
+		    $hashpos{$chr}{$start}=$end;
+		}
+	    } else{
+		$hashpos{$chr}{$start}=$end;
+	    }
+	} else{
+	    $hashpos{$chr}={$start=>$end};
+	}
+    }
+
+    foreach my $chr (keys %hashpos){
+	my @uniquestart = keys %{$hashpos{$chr}};
+	my @sortedstart = sort {$a <=> $b} @uniquestart;
+
+	my $nb=@sortedstart;
+	
+	my $currentstart=$sortedstart[0];
+	my $currentend=$hashpos{$chr}{$currentstart};
+
+	for(my $i=1; $i<$nb; $i++){
+	    my $thisstart=$sortedstart[$i];
+	    my $thisend=$hashpos{$chr}{$thisstart};
+
+	    if($thisstart>=$currentstart && $thisstart<=($currentend+1)){  
+		
+		## we only change the end if it's larger than the current position
+		if($thisend>$currentend){
+		    $currentend=$thisend;
+		}
+	    } else{
+		push(@{$blocks->{"chr"}},$chr);
+		push(@{$blocks->{"start"}},$currentstart);
+		push(@{$blocks->{"end"}},$currentend);
+		
+		$currentstart=$thisstart;
+		$currentend=$thisend;
+		
 	    }
 	}
 
-	my $nb=keys %hashpos;
-
-	$totalsizes->{$cat}=$nb;
-
-	$nbdone++;
-
-	if($nbdone%1000==0){
-	    print $nbdone." categories done.\n";
-	}
-    }    
+	## last block
+	push(@{$blocks->{"chr"}},$chr);
+	push(@{$blocks->{"start"}},$currentstart);
+	push(@{$blocks->{"end"}},$currentend);
+	
+    }
 }
 
 ####################################################################################
