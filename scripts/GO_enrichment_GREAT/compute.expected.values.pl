@@ -148,6 +148,8 @@ sub computeExpectedValues{
 
     my %goregions;
 
+    print "assigning regions to GO\n";
+    
     foreach my $space (keys %{$gocat}){
 	foreach my $cat (@{$gocat->{$space}}){
 	    if(exists $gogene->{$cat}){
@@ -170,6 +172,9 @@ sub computeExpectedValues{
 	}
     }
 
+    print "computing total size\n";
+    my $nbdone=0;
+    
     foreach my $cat (keys %goregions){
 	my %hashpos;
 
@@ -189,6 +194,12 @@ sub computeExpectedValues{
 	my $nb=keys %hashpos;
 
 	$totalsizes->{$cat}=$nb;
+
+	$nbdone++;
+
+	if($nbdone%1000==0){
+	    print $nbdone." categories done.\n";
+	}
     }    
 }
 
