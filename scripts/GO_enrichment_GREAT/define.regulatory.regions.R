@@ -178,7 +178,7 @@ for(sp in c("human", "mouse")){
     }
   }
 
-  write.table(reg.regions, file=paste(pathResults, sp, "/regulatory_regions_Ensembl",ensrelease,"_basal5",basal5,"_basal3",basal3,"_max_extend",maxextend,".txt",sep=""), row.names=F, col.names=T, sep="\t", quote=F)
+  write.table(reg.regions, file=paste(pathResults, sp, "/regulatory_regions_Ensembl",ensrelease,"_basal5",basal5,"_basal3",basal3,"_max_extend",max.extend,".txt",sep=""), row.names=F, col.names=T, sep="\t", quote=F)
   
 }
 
