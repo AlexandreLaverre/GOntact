@@ -56,7 +56,7 @@ for(space in unique(expected$GOSpace)){
     x=observed$NbAssociatedElements[which(observed$ID==cat)]
     p=expected$NbNonNBases[which(expected$ID==cat)]/size.nonN
 
-    pval=1-pbinom(q=x/n, size=n, p=p)
+    pval=binom.test(x, n, p=p, alternative="greater")$p.value
 
     tested.cat=c(tested.cat, cat)
     tested.observed=c(tested.observed, x/n)
@@ -73,8 +73,6 @@ for(space in unique(expected$GOSpace)){
   res=res[order(res$FDR),]
 
   res=res[,c("ID","Name", "Observed","Expected", "PValue", "FDR")]
-  res$Expected=round(res$Expected, digits=2)
-  res$Observed=round(res$Observed, digits=2)
 
   write.table(res, file=paste(pathResults, sp,"/",method, "/",dataset,"/enrichment_",space,"_Ensembl",ensrelease,".txt",sep=""), row.names=F, col.names=T, quote=F)
 }
