@@ -7,17 +7,29 @@ import pandas
 import itertools
 import os
 import re
-
 import argparse
+
+########################################################################################################################
+### Arguments ###
 parser = argparse.ArgumentParser()
 parser.add_argument("species", help="species")
 parser.add_argument("Enhancers", help="Input file of enhancers coordinates in BED format")
-parser.add_argument("--KeepBaitedEnhancers", action="store_true", help="Keep contacts where Enhancers are in baits (default = False)")
-parser.add_argument("--KeepTransContact", action="store_true", help="Keep inter-chromosome and intra >2Mb contacts (default = False)")
+
+# Options
+parser.add_argument("--minDistance", nargs="?", default=0, const=0, type=int,
+                    help="minimum distance (in bp) between bait and contacted region (default = 0bp)")
+parser.add_argument("--maxDistance", nargs="?", default=2000000, const=0, type=int,
+                    help="maximum distance (in bp) between bait and contacted region (default = 2Mb)")
+parser.add_argument("--KeepBaitedEnhancers", action="store_true",
+                    help="Keep contacts where Enhancers are in baits (default = False)")
+parser.add_argument("--KeepTransContact", action="store_true",
+                    help="Keep inter-chromosome and intra >2Mb contacts (default = False)")
 parser.add_argument("--KeepBaitBait", action="store_true", help="Keep bait-bait contacts (default = False)")
+
 args = parser.parse_args()
 
-################################################
+########################################################################################################################
+### Define path and files ###
 
 GenomeAssembly = "hg38" if args.species == "human" else "mm10"
 Prefix = os.path.basename(args.Enhancers).strip('.bed')
@@ -39,8 +51,8 @@ Bait2Bait = ".bait2bait" if args.KeepBaitBait else ""
 ForegroundOutput = PathOutput + "/foreground.contacts" + Baited + Trans + Bait2Bait + ".txt"
 BackgroundOutput = PathOutput + "/background.contacts" + Baited + Trans + Bait2Bait + ".txt"
 
-##############################################################################
-######## Overlap between input enhancers and restriction fragments ########
+########################################################################################################################
+### Overlap between input enhancers and restriction fragments ###
 
 # Create dictionary of coordinates
 def Coord_Dict(Coordinates, type):
@@ -74,7 +86,7 @@ EnhancersDict, NbEnhancers = Coord_Dict(InputEnhancers, "foreground")
 print("Found", NbEnhancers, "input enhancers.")
 FragmentsDict, NbFragments = Coord_Dict(Fragments, "background")
 
-#### Attribute input enhancers to restriction fragments... ####
+#### Attribute input enhancers to restriction fragments ####
 # Overlap Enhancers to Fragments
 OverlapDict = defaultdict(list)
 OverlapEnh = []
@@ -111,34 +123,37 @@ if len(MissingEnhancers) != 0:
 SelectedFragments = OverlapDict.keys()
 print("Found", len(SelectedFragments), "associated restriction fragments.")
 
-##############################################################################
-### Get contacts involving input enhancers... ###
+########################################################################################################################
+### Get contacts involving input enhancers ###
 
 # Get all contacts
 AllContacts = pandas.read_csv(Contacts, sep='\t')
 
-# Define IDs
-# AllContacts['BaitID'] = AllContacts[AllContacts.columns[0:3]].apply(lambda x: ':'.join(x.astype(str)), axis=1)
-# AllContacts['FragmentID'] = AllContacts[AllContacts.columns[3:6]].apply(lambda x: ':'.join(x.astype(str)), axis=1)
+# Drop contacts outside of specified distance range
+AllContacts = AllContacts.drop(AllContacts[(AllContacts.Synteny == "cis") & (AllContacts.Distance > args.maxDistance)].index)
+AllContacts = AllContacts.drop(AllContacts[(AllContacts.Synteny == "cis") & (AllContacts.Distance < args.minDistance)].index)
 
-# Filters
+# Drop contacts according to specified filters
 if not args.KeepBaitBait:
     AllContacts = AllContacts.drop(AllContacts[AllContacts.Type == "baited"].index)
 
 if not args.KeepTransContact:
-    AllContacts = AllContacts.drop(AllContacts[(AllContacts.Synteny == "trans") | (AllContacts.Distance > 2000000)].index)
+    AllContacts = AllContacts.drop(AllContacts[(AllContacts.Synteny == "trans")].index)
 
 print("Found", len(AllContacts.index), "background contacts.")
 
 # Get all interactions involving selected fragments
 SelectedContacts = AllContacts.loc[AllContacts['FragmentID'].isin(SelectedFragments)]
 
+########################################################################################################################
+# Print some stats
 FragInContacts = list(set(SelectedContacts['FragmentID'].tolist()))
 EnhInContactedFrag = [OverlapDict[frag] for frag in FragInContacts]
 EnhInContactedFrag = set(list(itertools.chain(*EnhInContactedFrag)))
 
 print("Found", len(SelectedContacts.index), "foreground contacts with", len(FragInContacts), "selected fragments",
-      "from", len(EnhInContactedFrag), "input enhancers:", round(len(EnhInContactedFrag)/NbEnhancers, 2), "% enhancers are present in contacted fragments.")
+      "from", len(EnhInContactedFrag), "input enhancers:", round(len(EnhInContactedFrag)/NbEnhancers, 2)*100,
+      "% enhancers are present in contacted fragments.")
 
 if args.KeepBaitedEnhancers:
     BaitedEnhancersContacts = AllContacts.loc[AllContacts['BaitID'].isin(SelectedFragments)]
@@ -149,7 +164,7 @@ if args.KeepBaitedEnhancers:
     EnhInBait = set(list(itertools.chain(*EnhInBait)))
 
     print("Found", len(BaitedEnhancersContacts.index), "foreground contacts with", len(BaitInContacts), "baited fragments",
-          "from", len(EnhInBait), "input enhancers:", round(len(EnhInBait)/NbEnhancers, 2), "% enhancers are present in baits.")
+          "from", len(EnhInBait), "input enhancers:", round(len(EnhInBait)/NbEnhancers, 2)*100, "% enhancers are present in baits.")
 
 
 print("Writing output...")
@@ -157,4 +172,5 @@ AllContacts.to_csv(BackgroundOutput, sep="\t", index=False)
 SelectedContacts.to_csv(ForegroundOutput, sep="\t", index=False)
 
 print("Done!")
+
 ##############################################################################
