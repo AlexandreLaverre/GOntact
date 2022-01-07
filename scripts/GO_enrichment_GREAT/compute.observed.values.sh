@@ -30,6 +30,6 @@ perl ${pathScripts}/compute.observed.values.pl --pathInputElements=${pathEnhance
 
 ## do the test
 
-R CMD BATCH '--args sp=\"${sp}\" dataset=\"${dataset}\" method=\"${method}\"' ${pathScripts}/test.enrichment.R log/${pathScripts}/test.enrichment.${sp}.${dataset}.${method}.Rout
+R CMD BATCH '--args sp=\"${sp}\" dataset=\"${dataset}\" method=\"${method}\"' ${pathScripts}/test.enrichment.R ${pathScripts}/log/test.enrichment.${sp}.${dataset}.${method}.Rout
 
 ####################################################################################
