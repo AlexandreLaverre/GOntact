@@ -12,6 +12,8 @@ export pathEnhancers=${path}/data/enhancers
 export pathResults=${path}/results/GO_enrichment_GREAT
 export pathScripts=${path}/scripts/GO_enrichment_GREAT
 
+export ensrelease=94
+
 ####################################################################################
 
 if [ -e ${pathResults}/${sp}/${method}/${dataset} ]; then
