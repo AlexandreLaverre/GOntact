@@ -41,6 +41,7 @@ observed=read.table(paste(pathResults, sp, "/",method,"/",dataset,"/observed_val
 
 info=readLines(paste(pathResults, sp, "/",method,"/",dataset,"/observed_values_Ensembl",ensrelease,".txt",sep=""))[1:2]
 n=as.numeric(unlist(strsplit(info[1],split="\t"))[2]) ## total number of elements
+nreg=as.numeric(unlist(strsplit(info[2],split="\t"))[2]) ## total number of elements found in regulatory regions
 
 ###########################################################################
 
