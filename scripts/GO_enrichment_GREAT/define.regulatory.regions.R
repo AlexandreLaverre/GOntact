@@ -11,6 +11,13 @@ chromo=c(as.character(1:22), "X", "Y")
 basal5=5e3
 basal3=1e3
 max.extend=1e6
+outputdir="classical_upstream5kb_downstream1kb_extend1Mb"
+
+general.go=c("GO:0005575", "GO:0110165", "GO:0003674", "GO:0008150")
+## cellular component
+## cellular anatomical entity
+## molecular function
+## biological process
 
 #######################################################################
 
@@ -45,6 +52,10 @@ for(sp in c("human", "mouse")){
   ## gene ontology
   go=read.table(paste(pathGO, sp, ".gene.annotation.txt",sep=""),h=T, sep="\t", stringsAsFactors=F, quote="\"")
   print(paste(length(unique(go$GeneName)), "genes in GO annotation"))
+
+  go=go[which(!go$GOID%in%general.GO),]
+
+  print(paste(length(unique(go$GeneName)), "genes in GO annotation after removing non-meaningful categories"))
   
   ## select only genes that have at least one GO category
   gene.info=gene.info[which(gene.info$Symbol%in%go$GeneName),]
@@ -178,7 +189,7 @@ for(sp in c("human", "mouse")){
     }
   }
 
-  write.table(reg.regions, file=paste(pathResults, sp, "/regulatory_regions_Ensembl",ensrelease,"_basal5",basal5,"_basal3",basal3,"_max_extend",max.extend,".txt",sep=""), row.names=F, col.names=T, sep="\t", quote=F)
+  write.table(reg.regions, file=paste(pathResults, sp, "/",outputdir,"/regulatory_regions_Ensembl",ensrelease,".txt",sep=""), row.names=F, col.names=T, sep="\t", quote=F)
   
 }
 
