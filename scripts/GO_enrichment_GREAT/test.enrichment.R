@@ -9,11 +9,9 @@ ensrelease=94
 
 args <- commandArgs(trailingOnly = TRUE)
 
-if(length(args)>0){
-  for(k in 1:length(args)){
-    eval(parse(text=args[[k]]))
-  }
-}
+sp=args[1]
+dataset=args[2]
+method=args[3]
 
 print(paste("sp=",sp)) ## human or mouse
 print(paste("dataset=",dataset)) ## e.g. "FANTOM5.first1000.kidney.enhancers.hg38"

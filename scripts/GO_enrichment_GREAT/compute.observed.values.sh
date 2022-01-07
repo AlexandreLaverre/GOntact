@@ -24,12 +24,12 @@ fi
 
 ####################################################################################
 
-perl ${pathScripts}/compute.observed.values.pl --pathInputElements=${pathEnhancers}/${sp}/${dataset}.bed --pathGOCategories=${pathGO}/GOCategories.txt --pathGOAnnotations=${pathGO}/${sp}.gene.annotation.txt --pathRegulatoryRegions=${pathResults}/${sp}/${method}/regulatory_regions_Ensembl${ensrelease}.txt --pathOutput=${pathResults}/${sp}/${method}/${dataset}/observed_values_Ensembl${ensrelease}.txt 
+## perl ${pathScripts}/compute.observed.values.pl --pathInputElements=${pathEnhancers}/${sp}/${dataset}.bed --pathGOCategories=${pathGO}/GOCategories.txt --pathGOAnnotations=${pathGO}/${sp}.gene.annotation.txt --pathRegulatoryRegions=${pathResults}/${sp}/${method}/regulatory_regions_Ensembl${ensrelease}.txt --pathOutput=${pathResults}/${sp}/${method}/${dataset}/observed_values_Ensembl${ensrelease}.txt 
 
 ####################################################################################
 
 ## do the test
 
-R CMD BATCH '--args sp=\"${sp}\" dataset=\"${dataset}\" method=\"${method}\"' ${pathScripts}/test.enrichment.R ${pathScripts}/log/test.enrichment.${sp}.${dataset}.${method}.Rout
+Rscript ${pathScripts}/test.enrichment.R ${sp} ${dataset} ${method} > ${pathScripts}/log/test.enrichment.${sp}.${dataset}.${method}.Rout
 
 ####################################################################################
