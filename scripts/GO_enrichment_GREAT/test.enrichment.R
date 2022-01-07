@@ -1,13 +1,13 @@
 ###########################################################################
 
 pathResults="../../results/GO_enrichment_GREAT/"
-pathEnsembl="../../data/ensembl_annotations/"
 pathGO="../../data/GeneOntology/"
 
 ensrelease=94
 basal5=5000
 basal3=1000
 max.extend=1e+06
+outdir="classical_upstream5kb_downstream1kb_extend1Mb"
 
 ###########################################################################
 
@@ -21,14 +21,18 @@ rownames(go)=go$ID
 
 ###########################################################################
 
-chr.sizes=read.table(paste(pathEnsembl, sp,"/chr_sizes_Ensembl",ensrelease,".txt",sep=""),h=F, stringsAsFactors=F)
-tot.size=sum(chr.sizes[,2])
+info.chr=readLines(paste(pathResults, sp, "/",outdir,"/expected_values_Ensembl",ensrelease,".txt",sep=""))[1:2]
+  
+totsize=as.numeric(unlist(strsplit(info.chr[1], split="\t"))[2])
+nbN=as.numeric(unlist(strsplit(info.chr[2], split="\t"))[2])
+
+size.nonN=totsize-nbN
 
 ###########################################################################
 
-expected=read.table(paste(pathResults, sp, "/expected_values_Ensembl",ensrelease,"_basal5",basal5,"_basal3",basal3,"_max_extend",max.extend,".txt",sep=""), h=T, stringsAsFactors=F)
+expected=read.table(paste(pathResults, sp, "/",outdir,"/expected_values_Ensembl",ensrelease,".txt",sep=""), h=T, stringsAsFactors=F)
 
-observed=read.table(paste(pathResults, sp, "/",dataset,"/observed_values_Ensembl",ensrelease,"_basal5",basal5,"_basal3",basal3,"_max_extend",max.extend,".txt",sep=""), h=T, stringsAsFactors=F)
+observed=read.table(paste(pathResults, sp, "/",outdir,"/",dataset,"/observed_values_Ensembl",ensrelease,".txt",sep=""), h=T, stringsAsFactors=F)
 
 ###########################################################################
 
@@ -43,9 +47,9 @@ for(space in unique(expected$GOSpace)){
   for(cat in expected$ID[which(expected$GOSpace==space)]){
     x=observed$NbAssociatedElements[which(observed$ID==cat)]
     n=observed$NbTotalElements[which(observed$ID==cat)]
-    p=expected$NbBases[which(expected$ID==cat)]/tot.size
+    p=expected$NbNonNBases[which(expected$ID==cat)]/size.nonN
 
-    pval=binom.test(x=x, n=n, p=p)$p.value
+    pval=1-pbinom(q=x/n, size=n, p=p)
 
     tested.cat=c(tested.cat, cat)
     tested.observed=c(tested.observed, x/n)
@@ -65,7 +69,7 @@ for(space in unique(expected$GOSpace)){
   res$Expected=round(res$Expected, digits=2)
   res$Observed=round(res$Observed, digits=2)
 
-  write.table(res, file=paste(pathResults, sp,"/",dataset,"/enrichment_",space,"_Ensembl",ensrelease,"_basal5",basal5,"_basal3",basal3,"_max_extend",max.extend,".txt",sep=""), row.names=F, col.names=T, quote=F)
+  write.table(res, file=paste(pathResults, sp,"/",outdir, "/",dataset,"/enrichment_",space,"_Ensembl",ensrelease,".txt",sep=""), row.names=F, col.names=T, quote=F)
 }
 
 ###########################################################################
