@@ -5,9 +5,13 @@ pathGO="../../data/GeneOntology/"
 
 ###########################################################################
 
+ensrelease=94
+
+###########################################################################
+
 sp="human"
 dataset="FANTOM5.first1000.kidney.enhancers.hg38"
-outdir="classical_upstream5kb_downstream1kb_extend1Mb"
+method="classical_upstream5kb_downstream1kb_extend1Mb"
 
 ###########################################################################
 
@@ -22,7 +26,7 @@ go=go[which(!go$ID%in%general.GO),]
 
 ###########################################################################
 
-info.chr=readLines(paste(pathResults, sp, "/",outdir,"/expected_values_Ensembl",ensrelease,".txt",sep=""))[1:2]
+info.chr=readLines(paste(pathResults, sp, "/",method,"/expected_values_Ensembl",ensrelease,".txt",sep=""))[1:2]
   
 totsize=as.numeric(unlist(strsplit(info.chr[1], split="\t"))[2])
 nbN=as.numeric(unlist(strsplit(info.chr[2], split="\t"))[2])
@@ -31,9 +35,9 @@ size.nonN=totsize-nbN
 
 ###########################################################################
 
-expected=read.table(paste(pathResults, sp, "/",outdir,"/expected_values_Ensembl",ensrelease,".txt",sep=""), h=T, stringsAsFactors=F)
+expected=read.table(paste(pathResults, sp, "/",method,"/expected_values_Ensembl",ensrelease,".txt",sep=""), h=T, stringsAsFactors=F)
 
-observed=read.table(paste(pathResults, sp, "/",outdir,"/",dataset,"/observed_values_Ensembl",ensrelease,".txt",sep=""), h=T, stringsAsFactors=F)
+observed=read.table(paste(pathResults, sp, "/",method,"/",dataset,"/observed_values_Ensembl",ensrelease,".txt",sep=""), h=T, stringsAsFactors=F)
 
 ###########################################################################
 
@@ -70,7 +74,7 @@ for(space in unique(intersect(expected$GOSpace, go$ID))){
   res$Expected=round(res$Expected, digits=2)
   res$Observed=round(res$Observed, digits=2)
 
-  write.table(res, file=paste(pathResults, sp,"/",outdir, "/",dataset,"/enrichment_",space,"_Ensembl",ensrelease,".txt",sep=""), row.names=F, col.names=T, quote=F)
+  write.table(res, file=paste(pathResults, sp,"/",method, "/",dataset,"/enrichment_",space,"_Ensembl",ensrelease,".txt",sep=""), row.names=F, col.names=T, quote=F)
 }
 
 ###########################################################################
