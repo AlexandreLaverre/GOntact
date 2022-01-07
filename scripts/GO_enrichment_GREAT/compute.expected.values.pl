@@ -209,8 +209,8 @@ sub computeRegionSize{
     my $regions=$_[0];
     my $stats=$_[1];
 
-    my %totcoords=("chr"=>[], "start", "end"=>[]);
-    my %ungappedcoords=("chr"=>[], "start", "end"=>[]);
+    my %totcoords=("chr"=>[], "start"=>[], "end"=>[]);
+    my %ungappedcoords=("chr"=>[], "start"=>[], "end"=>[]);
     
     foreach my $gene (keys %{$regions}){
 	my $chr=$regions->{$gene}{"chr"};
