@@ -41,7 +41,7 @@ observed=read.table(paste(pathResults, sp, "/",method,"/",dataset,"/observed_val
 
 ###########################################################################
 
-for(space in unique(intersect(expected$GOSpace, go$ID))){
+for(space in unique(expected$GOSpace)){
   print(space)
   
   tested.cat=c()
@@ -49,7 +49,7 @@ for(space in unique(intersect(expected$GOSpace, go$ID))){
   tested.expected=c()
   tested.pval=c()
   
-  for(cat in expected$ID[which(expected$GOSpace==space)]){
+  for(cat in intersect(expected$ID[which(expected$GOSpace==space)], go$ID)){
     x=observed$NbAssociatedElements[which(observed$ID==cat)]
     n=observed$NbTotalElements[which(observed$ID==cat)]
     p=expected$NbNonNBases[which(expected$ID==cat)]/size.nonN
