@@ -462,8 +462,8 @@ print "Writing output...\n";
 
 open(my $output, ">".$parameters{"pathOutput"});
 
-print $output "#NbTotalElements\t".$nbtot."\n"; 
-print $output "#NbElementsInRegions\t".$nbcov."\n";
+print $output "#NbTotalElements\t".$nbel."\n"; 
+print $output "#NbElementsInRegions\t".$nbov."\n";
 
 print $output "ID\tGOSpace\tNbAssociatedElements\n";
 
