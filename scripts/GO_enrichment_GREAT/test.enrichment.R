@@ -39,6 +39,9 @@ expected=read.table(paste(pathResults, sp, "/",method,"/expected_values_Ensembl"
 
 observed=read.table(paste(pathResults, sp, "/",method,"/",dataset,"/observed_values_Ensembl",ensrelease,".txt",sep=""), h=T, stringsAsFactors=F)
 
+info=readLines(paste(pathResults, sp, "/",method,"/",dataset,"/observed_values_Ensembl",ensrelease,".txt",sep=""))[1:2]
+n=as.numeric(unlist(strsplit(info[1],split="\t"))[2]) ## total number of elements
+
 ###########################################################################
 
 for(space in unique(expected$GOSpace)){
@@ -51,7 +54,6 @@ for(space in unique(expected$GOSpace)){
   
   for(cat in intersect(expected$ID[which(expected$GOSpace==space)], go$ID)){
     x=observed$NbAssociatedElements[which(observed$ID==cat)]
-    n=observed$NbTotalElements[which(observed$ID==cat)]
     p=expected$NbNonNBases[which(expected$ID==cat)]/size.nonN
 
     pval=1-pbinom(q=x/n, size=n, p=p)
