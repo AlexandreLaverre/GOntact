@@ -462,17 +462,18 @@ print "Writing output...\n";
 
 open(my $output, ">".$parameters{"pathOutput"});
 
-print $output "ID\tGOSpace\tNbAssociatedElements\tNbTotalElements\n";
+print $output "#NbTotalElements\t".$nbtot."\n"; 
+print $output "#NbElementsInRegions\t".$nbcov."\n";
 
-my $nbtot=keys %elements;
+print $output "ID\tGOSpace\tNbAssociatedElements\n";
 
 foreach my $space (keys %gocat){
     foreach my $go (@{$gocat{$space}}){
 	if(exists $elgo{$go}){
 	    my $nbel=keys %{$elgo{$go}};
-	    print $output $go."\t".$space."\t".$nbel."\t".$nbtot."\n";
+	    print $output $go."\t".$space."\t".$nbel."\n";
 	} else{
-	    print $output $go."\t".$space."\t0\t".$nbtot."\n";
+	    print $output $go."\t".$space."\t0\n";
 	}
     }
 }
