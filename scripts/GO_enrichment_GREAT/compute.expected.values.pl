@@ -205,6 +205,68 @@ sub computeExpectedValues{
 
 ####################################################################################
 
+sub computeRegionSize{
+    my $regions=$_[0];
+    my $stats=$_[1];
+
+    my %totcoords=("chr"=>[], "start", "end"=>[]);
+    my %ungappedcoords=("chr"=>[], "start", "end"=>[]);
+    
+    foreach my $gene (keys %{$regions}){
+	my $chr=$regions->{$gene}{"chr"};
+	my $start=$regions->{$gene}{"start"};
+	my $end=$regions->{$gene}{"end"};
+       
+	push(@{$totcoords{"chr"}}, $chr);
+	push(@{$totcoords{"start"}}, $start);
+	push(@{$totcoords{"end"}}, $end);
+
+	my $nbug=@{$regions->{$gene}{"ungappedstart"}};
+
+	for(my $i=0; $i<$nbug; $i++){
+	    my $ustart=${$regions->{$gene}{"ungappedstart"}}[$i];
+	    my $uend=${$regions->{$gene}{"ungappedend"}}[$i];
+	    
+	    push(@{$ungappedcoords{"chr"}}, $chr);
+	    push(@{$ungappedcoords{"start"}}, $ustart);
+	    push(@{$ungappedcoords{"end"}}, $uend);
+	}
+    }
+
+    my %totblocks;
+    makeBlocks(\%totcoords, \%totblocks);
+
+    my $totsize=computeTotalSize(\%totblocks);
+    $stats->{"totalsize"}=$totsize;
+    
+    my %ungappedblocks;
+    makeBlocks(\%ungappedcoords, \%ungappedblocks);
+
+    my $ungappedsize=computeTotalSize(\%ungappedblocks);
+    $stats->{"ungappedsize"}=$ungappedsize;
+    
+}
+
+####################################################################################
+
+sub computeTotalSize{
+    my $blocks=$_[0];
+
+    my $size=0;
+    my $nb=@{$blocks->{"chr"}};
+
+    for(my $i=0; $i<$nb; $i++){
+	my $start=${$blocks->{"start"}}[$i];
+	my $end=${$blocks->{"end"}}[$i];
+
+	$size+=($end-$start+1);
+    }
+
+    return($size);
+}
+
+####################################################################################
+
 sub makeBlocks{
     my $coords=$_[0];
     my $blocks=$_[1];
@@ -554,12 +616,23 @@ print "Done.\n";
 
 ####################################################################################
 
+print "Computing total region size...\n";
+
+my %statsregions;
+computeRegionSize(\%regions, \%statsregions);
+
+print "Done.\n";
+
+####################################################################################
+
 if($nbgr>0){
     print "Writing output...\n";
     
     open(my $output, ">".$parameters{"pathOutput"});
     print $output "#TotalChromosomeLength\t".$l."\n";
     print $output "#NbNBases\t".$n."\n";
+    print $output "#TotalRegionLength\t".$statsregions{"totalsize"}."\n";
+    print $output "#NonNRegionLength\t".$statsregions{"ungappedsize"}."\n";
     
     print $output "ID\tGOSpace\tNbNonNBases\n";
     
