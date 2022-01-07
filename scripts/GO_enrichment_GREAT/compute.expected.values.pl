@@ -7,6 +7,7 @@ use strict;
 sub readRegulatoryRegions{
     my $pathin=$_[0];
     my $regions=$_[1];
+    my $okchromo=$_[2];
 
     open(my $input, $pathin);
     
@@ -36,6 +37,7 @@ sub readRegulatoryRegions{
 	    $duplicated{$gene}=1;
 	} else{
 	    $regions->{$gene}={"chr"=>$chr, "start"=>$start, "end"=>$end};
+	    $okchromo->{$chr}=1;
 	}
 	
 	$line=<$input>;
@@ -156,15 +158,22 @@ sub computeExpectedValues{
 		foreach my $gene (@{$gogene->{$cat}}){
 		    if(exists $regions->{$gene}){
 			my $chr=$regions->{$gene}{"chr"};
-			my $start=$regions->{$gene}{"start"};
-			my $end=$regions->{$gene}{"end"};
 
-			if(exists $goregions{$cat}){
-			    push(@{$goregions{$cat}{"chr"}}, $chr);
-			    push(@{$goregions{$cat}{"start"}}, $start);
-			    push(@{$goregions{$cat}{"end"}}, $end);
-			} else{
-			    $goregions{$cat}={"chr"=>[$chr], "start"=>[$start], "end"=>[$end]};
+			## we are only adding ungapped regions
+			
+			my $nbug=@{$regions->{$gene}{"ungappedstart"}};
+
+			for(my $i=0; $i<$nbug; $i++){
+			    my $start=${$regions->{$gene}{"ungappedstart"}}[$i];
+			    my $end=${$regions->{$gene}{"ungappedend"}}[$i];
+			    
+			    if(exists $goregions{$cat}){
+				push(@{$goregions{$cat}{"chr"}}, $chr);
+				push(@{$goregions{$cat}{"start"}}, $start);
+				push(@{$goregions{$cat}{"end"}}, $end);
+			    } else{
+				$goregions{$cat}={"chr"=>[$chr], "start"=>[$start], "end"=>[$end]};
+			    }
 			}
 		    }
 		}
@@ -264,7 +273,139 @@ sub makeBlocks{
     }
 }
 
+#####################################################################################
+
+sub readFasta{
+    my $path=$_[0];
+    my $reffasta=$_[1];
+   
+    my @s=split("\\.",$path);
+    my $ext=$s[-1];
+
+    my $input;
+
+    if($ext eq "gz"){
+	open($input,"zcat $path |");
+    }
+    else{
+	open($input, $path);
+    }
+    
+    my $line=<$input>;
+
+    while($line){
+	my $b=substr $line,0,1;
+	
+	if($b eq ">"){
+	    chomp $line;
+	    my $id=substr $line,1;
+
+	    my @s=split(" ",$id);
+	    $id=$s[0];
+
+	    # print "saw chromosome ".$id."\n";
+	    
+	    $reffasta->{$id}="";
+
+	    $line=<$input>;
+	    $b=substr $line,0,1;
+	    
+	    while($line && !($b eq ">")){
+		chomp $line;
+		$reffasta->{$id}.=$line;
+		$line=<$input>;
+		$b=substr $line,0,1;
+	    }
+	}
+    }
+
+    close($input);
+}
+
 ####################################################################################
+
+sub removeNs{
+    my $genome=$_[0];
+    my $regions=$_[1];
+    my $okchromo=$_[2];
+    my $stats=$_[3];
+
+    my $totalN=0;
+    my $totalL=0;
+    
+    foreach my $chr (keys %{$okchromo}){
+	print "removing Ns for ".$chr."\n";
+	
+	if(!exists $genome->{$chr}){
+	    print "Weird! cannot find genome sequence for ".$chr."\n";
+	    exit(1);
+	}
+	
+	my $seq=$genome->{$chr};
+	my $l=length $seq;
+
+	$totalL+=$l;
+	
+	my %hashN;
+
+	for(my $i=0; $i<$l; $i++){
+	    my $base=uc (substr $seq, $i, 1);
+
+	    if($base eq "N"){
+		$hashN{$i+1}=1;
+	    }
+	}
+
+	my $nbN=keys %hashN;
+
+	print "there are ".$nbN." N bases out of ".$l." on chr ".$chr."\n";
+
+	$totalN+=$nbN;
+	
+	foreach my $gene (keys %{$regions}){
+	    if($regions->{$gene}{"chr"} eq $chr){
+		$regions->{$gene}{"ungappedstart"}=[];
+		$regions->{$gene}{"ungappedend"}=[];
+
+		my $rstart=$regions->{$gene}{"start"};
+		my $rend=$regions->{$gene}{"end"};
+
+		my $currentstart="NA";
+		my $currentend="NA";
+
+		for(my $i=$rstart; $i<=$rend; $i++){
+		    if(!exists $hashN{$i}){
+			if($currentstart eq "NA"){
+			    $currentstart=$i;
+			    $currentend=$i;
+			} else{
+			    if($i==($currentend+1)){
+				$currentend=$i;
+			    } else{
+				push(@{$regions->{$gene}{"ungappedstart"}}, $currentstart);
+				push(@{$regions->{$gene}{"ungappedend"}}, $currentend);
+
+				$currentstart=$i;
+				$currentend=$i;
+			    }
+			}
+		    }
+		}
+
+		## last ungapped block
+		
+		if($currentstart ne "NA"){
+		    push(@{$regions->{$gene}{"ungappedstart"}}, $currentstart);
+		    push(@{$regions->{$gene}{"ungappedend"}}, $currentend);
+		}
+	    }
+	}
+    }
+
+    $stats->{"totalL"}=$totalL;
+    $stats->{"totalN"}=$totalN;
+}
+
 ####################################################################################
 
 sub printHelp{
@@ -291,10 +432,11 @@ my %parameters;
 
 $parameters{"pathGOCategories"}="NA";
 $parameters{"pathGOAnnotations"}="NA";
+$parameters{"pathGenomeSequence"}="NA";
 $parameters{"pathRegulatoryRegions"}="NA";
 $parameters{"pathOutput"}="NA";
 
-my @defaultpars=("pathGOCategories", "pathGOAnnotations", "pathRegulatoryRegions", "pathOutput");
+my @defaultpars=("pathGOCategories", "pathGOAnnotations", "pathGenomeSequence", "pathRegulatoryRegions", "pathOutput");
 
 my %defaultvalues;
 
@@ -365,11 +507,38 @@ print "There are ".$nbgene." genes and ".$nbgo." GO categories.\n";
 print "Reading regulatory regions...\n";
 
 my %regions;
-readRegulatoryRegions($parameters{"pathRegulatoryRegions"}, \%regions);
+my %okchromo;
+
+readRegulatoryRegions($parameters{"pathRegulatoryRegions"}, \%regions, \%okchromo);
 
 my $nbgr=keys %regions;
+my $nbchr=keys %okchromo;
 
-print "There are ".$nbgr." genes with regulatory regions.\n";
+print "There are ".$nbgr." genes with regulatory regions on ".$nbchr." chromosomes.\n";
+
+print "Done.\n";
+
+####################################################################################
+
+print "Reading genome sequence...\n";
+
+my %genome;
+
+readFasta($parameters{"pathGenomeSequence"}, \%genome);
+
+print "Done.\n";
+
+####################################################################################
+
+print "Removing Ns from regulatory regions...\n";
+
+my %stats;
+removeNs(\%genome, \%regions, \%okchromo, \%stats);
+
+my $l=$stats{"totalL"};
+my $n=$stats{"totalN"};
+
+print "There are ".$l." bases in total on these ".$nbchr." chromosomes. There were ".$n." N bases.\n";
 
 print "Done.\n";
 
@@ -385,22 +554,26 @@ print "Done.\n";
 
 ####################################################################################
 
-print "Writing output...\n";
-
-open(my $output, ">".$parameters{"pathOutput"});
-
-print $output "ID\tGOSpace\tNbBases\n";
-
-foreach my $space (keys %gocat){
-    foreach my $go (@{$gocat{$space}}){
-	if(exists $totalsizes{$go}){
-	    print $output $go."\t".$space."\t".$totalsizes{$go}."\n";
+if($nbgr>0){
+    print "Writing output...\n";
+    
+    open(my $output, ">".$parameters{"pathOutput"});
+    print $output "#TotalChromosomeLength\t".$l."\n";
+    print $output "#NbNBases\t".$n."\n";
+    
+    print $output "ID\tGOSpace\tNbNonNBases\n";
+    
+    foreach my $space (keys %gocat){
+	foreach my $go (@{$gocat{$space}}){
+	    if(exists $totalsizes{$go}){
+		print $output $go."\t".$space."\t".$totalsizes{$go}."\n";
+	    }
 	}
     }
+    
+    close($output);
+    
+    print "Done.\n";
 }
-
-close($output);
-
-print "Done.\n";
 
 ####################################################################################
