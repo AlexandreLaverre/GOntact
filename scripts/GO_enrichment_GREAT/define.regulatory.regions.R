@@ -13,7 +13,7 @@ basal3=1e3
 max.extend=1e6
 outputdir="classical_upstream5kb_downstream1kb_extend1Mb"
 
-general.go=c("GO:0005575", "GO:0110165", "GO:0003674", "GO:0008150")
+general.GO=c("GO:0005575", "GO:0110165", "GO:0003674", "GO:0008150")
 ## cellular component
 ## cellular anatomical entity
 ## molecular function
