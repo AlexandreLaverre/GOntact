@@ -3,21 +3,22 @@
 pathResults="../../results/GO_enrichment_GREAT/"
 pathGO="../../data/GeneOntology/"
 
-ensrelease=94
-basal5=5000
-basal3=1000
-max.extend=1e+06
-outdir="classical_upstream5kb_downstream1kb_extend1Mb"
-
 ###########################################################################
 
 sp="human"
 dataset="FANTOM5.first1000.kidney.enhancers.hg38"
+outdir="classical_upstream5kb_downstream1kb_extend1Mb"
+
+###########################################################################
+
+general.GO=c("GO:0005575", "GO:0110165", "GO:0003674", "GO:0008150")
 
 ###########################################################################
 
 go=read.table(paste(pathGO,"GOCategories.txt",sep=""),h=T, stringsAsFactors=F,sep="\t", quote="\"")
 rownames(go)=go$ID
+
+go=go[which(!go$ID%in%general.GO),]
 
 ###########################################################################
 
@@ -36,7 +37,7 @@ observed=read.table(paste(pathResults, sp, "/",outdir,"/",dataset,"/observed_val
 
 ###########################################################################
 
-for(space in unique(expected$GOSpace)){
+for(space in unique(intersect(expected$GOSpace, go$ID))){
   print(space)
   
   tested.cat=c()
