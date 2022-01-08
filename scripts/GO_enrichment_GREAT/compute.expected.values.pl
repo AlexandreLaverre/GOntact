@@ -468,8 +468,6 @@ sub removeNs{
 			push(@{$regions->{$gene}{"ungappedend"}}, $currentend);
 		    }
 		} else{
-		    print "excluding regions\n";
-
 		    $exstart=$regions->{$gene}{"exclude_start"}+0;
 		    $exend=$regions->{$gene}{"exclude_end"}+0;
 
