@@ -10,12 +10,12 @@ sub readRegulatoryRegions{
     my $okchromo=$_[2];
 
     open(my $input, $pathin);
-    
+
     my $line=<$input>;
     chomp $line;
     my %header;
     my @s=split("\t", $line);
-    
+
     for(my $i=0; $i<@s; $i++){
 	$header{$s[$i]}=$i;
     }
@@ -23,7 +23,7 @@ sub readRegulatoryRegions{
     $line=<$input>;
 
     my %duplicated;
-    
+
     while($line){
 	chomp $line;
 	my @s=split("\t", $line);
@@ -33,13 +33,16 @@ sub readRegulatoryRegions{
 	my $start=$s[$header{"region_start"}];
 	my $end=$s[$header{"region_end"}];
 
+	my $excludestart=$s[$header{"exclude_start"}];
+	my $excludeend=$s[$header{"exclude_end"}];
+
 	if(exists $regions->{$gene}){
 	    $duplicated{$gene}=1;
 	} else{
-	    $regions->{$gene}={"chr"=>$chr, "start"=>$start, "end"=>$end};
+	    $regions->{$gene}={"chr"=>$chr, "start"=>$start, "end"=>$end, "excludestart"=>$excludestart, "excludeend"=>$excludeend};
 	    $okchromo->{$chr}=1;
 	}
-	
+
 	$line=<$input>;
     }
 
@@ -48,7 +51,7 @@ sub readRegulatoryRegions{
     ## we remove duplicated gene names
 
     my $nbd=keys %duplicated;
-    
+
     print "Found ".$nbd." duplicated gene names, we remove them.\n";
 
     foreach my $d (keys %duplicated){
@@ -63,22 +66,22 @@ sub readGOCategories{
     my $gocat=$_[1];
 
     open(my $input, $pathin);
-    
+
     my $line=<$input>;
     chomp $line;
     my %header;
     my @s=split("\t", $line);
-    
+
     for(my $i=0; $i<@s; $i++){
 	$header{$s[$i]}=$i;
     }
 
     $line=<$input>;
-    
+
     while($line){
 	chomp $line;
 	my @s=split("\t", $line);
-	
+
 	my $id=$s[$header{"ID"}];
 	my $space=$s[$header{"GOSpace"}];
 
@@ -87,7 +90,7 @@ sub readGOCategories{
 	} else{
 	    $gocat->{$space}=[$id];
 	}
-	
+
 	$line=<$input>;
     }
 
@@ -102,18 +105,18 @@ sub readGOAnnotations{
     my $gogene=$_[2];
 
     open(my $input, $pathin);
-    
+
     my $line=<$input>;
     chomp $line;
     my %header;
     my @s=split("\t", $line);
-    
+
     for(my $i=0; $i<@s; $i++){
 	$header{$s[$i]}=$i;
     }
 
     $line=<$input>;
-    
+
     while($line){
 	chomp $line;
 	my @s=split("\t", $line);
@@ -132,10 +135,10 @@ sub readGOAnnotations{
 	} else{
 	    $gogene->{$go}=[$gene];
 	}
-	
+
 	$line=<$input>;
     }
-    
+
     close($input);
 
 }
@@ -151,7 +154,7 @@ sub computeExpectedValues{
     my %goregions;
 
     print "assigning regions to GO\n";
-    
+
     foreach my $space (keys %{$gocat}){
 	foreach my $cat (@{$gocat->{$space}}){
 	    if(exists $gogene->{$cat}){
@@ -160,13 +163,13 @@ sub computeExpectedValues{
 			my $chr=$regions->{$gene}{"chr"};
 
 			## we are only adding ungapped regions
-			
+
 			my $nbug=@{$regions->{$gene}{"ungappedstart"}};
 
 			for(my $i=0; $i<$nbug; $i++){
 			    my $start=${$regions->{$gene}{"ungappedstart"}}[$i];
 			    my $end=${$regions->{$gene}{"ungappedend"}}[$i];
-			    
+
 			    if(exists $goregions{$cat}){
 				push(@{$goregions{$cat}{"chr"}}, $chr);
 				push(@{$goregions{$cat}{"start"}}, $start);
@@ -183,7 +186,7 @@ sub computeExpectedValues{
 
     print "computing total size\n";
     my $nbdone=0;
-    
+
     foreach my $cat (keys %goregions){
 	my %blocks;
 	makeBlocks($goregions{$cat}, \%blocks);
@@ -200,7 +203,7 @@ sub computeExpectedValues{
 
 
 	$totalsizes->{$cat}=$totalsize;
-    }    
+    }
 }
 
 ####################################################################################
@@ -211,12 +214,12 @@ sub computeRegionSize{
 
     my %totcoords=("chr"=>[], "start"=>[], "end"=>[]);
     my %ungappedcoords=("chr"=>[], "start"=>[], "end"=>[]);
-    
+
     foreach my $gene (keys %{$regions}){
 	my $chr=$regions->{$gene}{"chr"};
 	my $start=$regions->{$gene}{"start"};
 	my $end=$regions->{$gene}{"end"};
-       
+
 	push(@{$totcoords{"chr"}}, $chr);
 	push(@{$totcoords{"start"}}, $start);
 	push(@{$totcoords{"end"}}, $end);
@@ -226,7 +229,7 @@ sub computeRegionSize{
 	for(my $i=0; $i<$nbug; $i++){
 	    my $ustart=${$regions->{$gene}{"ungappedstart"}}[$i];
 	    my $uend=${$regions->{$gene}{"ungappedend"}}[$i];
-	    
+
 	    push(@{$ungappedcoords{"chr"}}, $chr);
 	    push(@{$ungappedcoords{"start"}}, $ustart);
 	    push(@{$ungappedcoords{"end"}}, $uend);
@@ -238,13 +241,13 @@ sub computeRegionSize{
 
     my $totsize=computeTotalSize(\%totblocks);
     $stats->{"totalsize"}=$totsize;
-    
+
     my %ungappedblocks;
     makeBlocks(\%ungappedcoords, \%ungappedblocks);
 
     my $ungappedsize=computeTotalSize(\%ungappedblocks);
     $stats->{"ungappedsize"}=$ungappedsize;
-    
+
 }
 
 ####################################################################################
@@ -274,7 +277,7 @@ sub makeBlocks{
     $blocks->{"chr"}=[];
     $blocks->{"start"}=[];
     $blocks->{"end"}=[];
-    
+
     my %hashpos;
 
     my $nb=@{$coords->{"chr"}};
@@ -283,7 +286,7 @@ sub makeBlocks{
 	my $chr=${$coords->{"chr"}}[$i];
 	my $start=${$coords->{"start"}}[$i];
 	my $end=${$coords->{"end"}}[$i];
-	
+
 	if(exists $hashpos{$chr}){
 	    if(exists $hashpos{$chr}{$start}){
 		if($end>$hashpos{$chr}{$start}){
@@ -302,7 +305,7 @@ sub makeBlocks{
 	my @sortedstart = sort {$a <=> $b} @uniquestart;
 
 	my $nb=@sortedstart;
-	
+
 	my $currentstart=$sortedstart[0];
 	my $currentend=$hashpos{$chr}{$currentstart};
 
@@ -310,8 +313,8 @@ sub makeBlocks{
 	    my $thisstart=$sortedstart[$i];
 	    my $thisend=$hashpos{$chr}{$thisstart};
 
-	    if($thisstart>=$currentstart && $thisstart<=($currentend+1)){  
-		
+	    if($thisstart>=$currentstart && $thisstart<=($currentend+1)){
+
 		## we only change the end if it's larger than the current position
 		if($thisend>$currentend){
 		    $currentend=$thisend;
@@ -320,10 +323,10 @@ sub makeBlocks{
 		push(@{$blocks->{"chr"}},$chr);
 		push(@{$blocks->{"start"}},$currentstart);
 		push(@{$blocks->{"end"}},$currentend);
-		
+
 		$currentstart=$thisstart;
 		$currentend=$thisend;
-		
+
 	    }
 	}
 
@@ -331,7 +334,7 @@ sub makeBlocks{
 	push(@{$blocks->{"chr"}},$chr);
 	push(@{$blocks->{"start"}},$currentstart);
 	push(@{$blocks->{"end"}},$currentend);
-	
+
     }
 }
 
@@ -340,7 +343,7 @@ sub makeBlocks{
 sub readFasta{
     my $path=$_[0];
     my $reffasta=$_[1];
-   
+
     my @s=split("\\.",$path);
     my $ext=$s[-1];
 
@@ -352,12 +355,12 @@ sub readFasta{
     else{
 	open($input, $path);
     }
-    
+
     my $line=<$input>;
 
     while($line){
 	my $b=substr $line,0,1;
-	
+
 	if($b eq ">"){
 	    chomp $line;
 	    my $id=substr $line,1;
@@ -366,12 +369,12 @@ sub readFasta{
 	    $id=$s[0];
 
 	    # print "saw chromosome ".$id."\n";
-	    
+
 	    $reffasta->{$id}="";
 
 	    $line=<$input>;
 	    $b=substr $line,0,1;
-	    
+
 	    while($line && !($b eq ">")){
 		chomp $line;
 		$reffasta->{$id}.=$line;
@@ -394,20 +397,20 @@ sub removeNs{
 
     my $totalN=0;
     my $totalL=0;
-    
+
     foreach my $chr (keys %{$okchromo}){
 	print "removing Ns for ".$chr."\n";
-	
+
 	if(!exists $genome->{$chr}){
 	    print "Weird! cannot find genome sequence for ".$chr."\n";
 	    exit(1);
 	}
-	
+
 	my $seq=$genome->{$chr};
 	my $l=length $seq;
 
 	$totalL+=$l;
-	
+
 	my %hashN;
 
 	for(my $i=0; $i<$l; $i++){
@@ -423,7 +426,7 @@ sub removeNs{
 	print "there are ".$nbN." N bases out of ".$l." on chr ".$chr."\n";
 
 	$totalN+=$nbN;
-	
+
 	foreach my $gene (keys %{$regions}){
 	    if($regions->{$gene}{"chr"} eq $chr){
 		$regions->{$gene}{"ungappedstart"}=[];
@@ -432,34 +435,107 @@ sub removeNs{
 		my $rstart=$regions->{$gene}{"start"};
 		my $rend=$regions->{$gene}{"end"};
 
-		my $currentstart="NA";
-		my $currentend="NA";
+		my $exstart=$regions->{$gene}{"exclude_start"};
+		my $exend=$regions->{$gene}{"exclude_end"};
 
-		for(my $i=$rstart; $i<=$rend; $i++){
-		    if(!exists $hashN{$i}){
-			if($currentstart eq "NA"){
-			    $currentstart=$i;
-			    $currentend=$i;
-			} else{
-			    if($i==($currentend+1)){
-				$currentend=$i;
-			    } else{
-				push(@{$regions->{$gene}{"ungappedstart"}}, $currentstart);
-				push(@{$regions->{$gene}{"ungappedend"}}, $currentend);
+		if($exstart eq "NA" && $exend eq "NA"){
+		    my $currentstart="NA";
+		    my $currentend="NA";
 
+		    for(my $i=$rstart; $i<=$rend; $i++){
+			if(!exists $hashN{$i}){
+			    if($currentstart eq "NA"){
 				$currentstart=$i;
 				$currentend=$i;
+			    } else{
+				if($i==($currentend+1)){
+				    $currentend=$i;
+				} else{
+				    push(@{$regions->{$gene}{"ungappedstart"}}, $currentstart);
+				    push(@{$regions->{$gene}{"ungappedend"}}, $currentend);
+
+				    $currentstart=$i;
+				    $currentend=$i;
+				}
 			    }
 			}
 		    }
+
+		    ## last ungapped block
+
+		    if($currentstart ne "NA"){
+			push(@{$regions->{$gene}{"ungappedstart"}}, $currentstart);
+			push(@{$regions->{$gene}{"ungappedend"}}, $currentend);
+		    }
+		} else{
+		    $exstart=$regions->{$gene}{"exclude_start"}+0;
+		    $exend=$regions->{$gene}{"exclude_end"}+0;
+
+		    ## before exclude
+
+		    my $currentstart="NA";
+		    my $currentend="NA";
+
+		    for(my $i=$rstart; $i<$exstart; $i++){
+			if(!exists $hashN{$i}){
+			    if($currentstart eq "NA"){
+				$currentstart=$i;
+				$currentend=$i;
+			    } else{
+				if($i==($currentend+1)){
+				    $currentend=$i;
+				} else{
+				    push(@{$regions->{$gene}{"ungappedstart"}}, $currentstart);
+				    push(@{$regions->{$gene}{"ungappedend"}}, $currentend);
+
+				    $currentstart=$i;
+				    $currentend=$i;
+				}
+			    }
+			}
+		    }
+
+		    ## last ungapped block
+
+		    if($currentstart ne "NA"){
+			push(@{$regions->{$gene}{"ungappedstart"}}, $currentstart);
+			push(@{$regions->{$gene}{"ungappedend"}}, $currentend);
+		    }
+
+		    ## after exclude
+
+		    my $currentstart="NA";
+		    my $currentend="NA";
+
+		    for(my $i=($exend+1); $i<=$rend; $i++){
+			if(!exists $hashN{$i}){
+			    if($currentstart eq "NA"){
+				$currentstart=$i;
+				$currentend=$i;
+			    } else{
+				if($i==($currentend+1)){
+				    $currentend=$i;
+				} else{
+				    push(@{$regions->{$gene}{"ungappedstart"}}, $currentstart);
+				    push(@{$regions->{$gene}{"ungappedend"}}, $currentend);
+
+				    $currentstart=$i;
+				    $currentend=$i;
+				}
+			    }
+			}
+		    }
+
+		    ## last ungapped block
+
+		    if($currentstart ne "NA"){
+			push(@{$regions->{$gene}{"ungappedstart"}}, $currentstart);
+			push(@{$regions->{$gene}{"ungappedend"}}, $currentend);
+		    }
+
 		}
 
-		## last ungapped block
-		
-		if($currentstart ne "NA"){
-		    push(@{$regions->{$gene}{"ungappedstart"}}, $currentstart);
-		    push(@{$regions->{$gene}{"ungappedend"}}, $currentend);
-		}
+
 	    }
 	}
     }
@@ -473,13 +549,13 @@ sub removeNs{
 sub printHelp{
     my $parnames=$_[0];
     my $parvalues=$_[1];
-    
+
     print "\n";
     print "This script extracts gene ontology stats for regulatory regions.\n";
     print "\n";
-    
+
     print "Options:\n";
-    
+
     foreach my $par (@{$parnames}){
 	print "--".$par."  [  default value: ".$parvalues->{$par}."  ]\n";
     }
@@ -513,11 +589,11 @@ my $nbargs=@ARGV;
 for(my $i=0;$i<$nbargs; $i++){
     my $arg=$ARGV[$i];
     $arg=substr $arg,2;
-    
+
     my @s=split("=",$arg);
     my $parname=$s[0];
     my $parval=$s[1];
-    
+
     if(exists $parameters{$parname}){
 	$parameters{$parname}=$parval;
     }
@@ -627,15 +703,15 @@ print "Done.\n";
 
 if($nbgr>0){
     print "Writing output...\n";
-    
+
     open(my $output, ">".$parameters{"pathOutput"});
     print $output "#TotalChromosomeLength\t".$l."\n";
     print $output "#NbNBases\t".$n."\n";
     print $output "#TotalRegionLength\t".$statsregions{"totalsize"}."\n";
     print $output "#NonNRegionLength\t".$statsregions{"ungappedsize"}."\n";
-    
+
     print $output "ID\tGOSpace\tNbNonNBases\n";
-    
+
     foreach my $space (keys %gocat){
 	foreach my $go (@{$gocat{$space}}){
 	    if(exists $totalsizes{$go}){
@@ -643,9 +719,9 @@ if($nbgr>0){
 	    }
 	}
     }
-    
+
     close($output);
-    
+
     print "Done.\n";
 }
 
