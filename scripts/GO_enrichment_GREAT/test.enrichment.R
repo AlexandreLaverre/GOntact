@@ -131,7 +131,7 @@ for(space in unique(expected$GOSpace)){
 
   res.genome=res.genome[,c("ID","Name", "Observed","Expected", "PValue", "FDR")]
 
-  write.table(res.genome, file=paste(pathResults, sp,"/",method, "/",dataset,"/enrichment_whole_genome_",space,"_Ensembl",ensrelease,".txt",sep=""), row.names=F, col.names=T, quote=F)
+  write.table(res.genome, file=paste(pathResults, sp,"/",method, "/",dataset,"/enrichment_whole_genome_",space,"_Ensembl",ensrelease,".txt",sep=""), row.names=F, col.names=T, quote=F,sep="\t")
 
 
   ## only regulatory regions
@@ -142,7 +142,7 @@ for(space in unique(expected$GOSpace)){
 
   res.region=res.region[,c("ID","Name", "Observed","Expected", "PValue", "FDR")]
 
-  write.table(res.region, file=paste(pathResults, sp,"/",method, "/",dataset,"/enrichment_regulatory_regions_",space,"_Ensembl",ensrelease,".txt",sep=""), row.names=F, col.names=T, quote=F)
+  write.table(res.region, file=paste(pathResults, sp,"/",method, "/",dataset,"/enrichment_regulatory_regions_",space,"_Ensembl",ensrelease,".txt",sep=""), row.names=F, col.names=T, quote=F,sep="\t")
 
   ## compared to background
 
@@ -155,7 +155,7 @@ for(space in unique(expected$GOSpace)){
     
     res.bg=res.bg[,c("ID","Name", "Observed","Expected", "PValue", "FDR")]
     
-    write.table(res.bg, file=paste(pathResults, sp,"/",method, "/",dataset,"/enrichment_",space,"_Ensembl",ensrelease,"_background",background,".txt",sep=""), row.names=F, col.names=T, quote=F)
+    write.table(res.bg, file=paste(pathResults, sp,"/",method, "/",dataset,"/enrichment_",space,"_Ensembl",ensrelease,"_background",background,".txt",sep=""), row.names=F, col.names=T, quote=F,sep="\t")
   }
 }
 
