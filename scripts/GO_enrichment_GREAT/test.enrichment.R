@@ -46,9 +46,17 @@ print(paste("region size without Ns", regionsize.nonN))
 
 expected=read.table(paste(pathResults, sp, "/",method,"/expected_values_Ensembl",ensrelease,".txt",sep=""), h=T, stringsAsFactors=F)
 
-observed=read.table(paste(pathResults, sp, "/",method,"/",dataset,"/observed_values_Ensembl",ensrelease,".txt",sep=""), h=T, stringsAsFactors=F)
+pathObserved="NA";
 
-info=readLines(paste(pathResults, sp, "/",method,"/",dataset,"/observed_values_Ensembl",ensrelease,".txt",sep=""))[1:5]
+if(background!="NA"){
+  pathObserved=paste(pathResults, sp, "/",method,"/",dataset,"/observed_values_Ensembl",ensrelease,"_background", background,".txt",sep="")
+} else{
+  pathObserved=paste(pathResults, sp, "/",method,"/",dataset,"/observed_values_Ensembl",ensrelease,".txt",sep="")
+}
+
+observed=read.table(pathObserved, h=T, stringsAsFactors=F)
+
+info=readLines(pathObserved)[1:5]
 ntot=as.numeric(unlist(strsplit(info[1],split="\t"))[2]) ## total number of input elements
 nreg=as.numeric(unlist(strsplit(info[2],split="\t"))[2]) ## total number of input elements found in regulatory regions
 
