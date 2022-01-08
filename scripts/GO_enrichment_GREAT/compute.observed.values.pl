@@ -11,13 +11,13 @@ sub readElementCoordinates{
     my $elements=$_[2];
 
     open(my $input, $pathin);
-    
+
     my $line=<$input>; ## no header
-    
+
     while($line){
 	chomp $line;
 	my @s=split("\t", $line);
-	
+
 	my $chr=$s[0];
 	my $prefix=substr $chr, 0, 3;
 
@@ -29,12 +29,12 @@ sub readElementCoordinates{
 	    my $start=$s[1]+0;
 	    my $end=$s[2]+0;
 	    my $id=$s[3];
-	    
+
 	    my $midpos=floor (($start+$end)/2); ## lower median position
-	    
-	    $elements->{$id}={"chr"=>$chr, "start"=>$midpos, "end"=>$midpos};
+
+	    $elements->{$id}={"chr"=>$chr, "start"=>[$midpos], "end"=>[$midpos]};
 	}
-	
+
 	$line=<$input>;
     }
 
@@ -49,12 +49,12 @@ sub readRegulatoryRegions{
     my $okchromo=$_[2];
 
     open(my $input, $pathin);
-    
+
     my $line=<$input>;
     chomp $line;
     my %header;
     my @s=split("\t", $line);
-    
+
     for(my $i=0; $i<@s; $i++){
 	$header{$s[$i]}=$i;
     }
@@ -62,7 +62,7 @@ sub readRegulatoryRegions{
     $line=<$input>;
 
     my %duplicated;
-    
+
     while($line){
 	chomp $line;
 	my @s=split("\t", $line);
@@ -75,18 +75,45 @@ sub readRegulatoryRegions{
 	if($prefix eq "chr"){
 	    $chr=substr $chr, 3;
 	}
-	
+
 	my $start=$s[$header{"region_start"}];
 	my $end=$s[$header{"region_end"}];
+
+	my $excludestart=$s[$header{"exclude_start"}];
+	my $excludeend=$s[$header{"exclude_end"}];
 
 	if(exists $regions->{$gene}){
 	    $duplicated{$gene}=1;
 	} else{
-	    $regions->{$gene}={"chr"=>$chr, "start"=>$start, "end"=>$end};
+
+	    if($excludestart eq "NA"){
+		$regions->{$gene}={"chr"=>$chr, "start"=>[$start], "end"=>[$end]};
+	    } else{
+		$excludestart=$s[$header{"exclude_start"}]+0;
+		$excludeend=$s[$header{"exclude_end"}]+0;
+
+		if($excludestart>$start){
+		    if(exists $regions->{$gene}){
+			push(@{$regions->{$gene}{"start"}}, $start);
+			push(@{$regions->{$gene}{"end"}}, ($excludestart-1));
+		    } else{
+			$regions->{$gene}={"chr"=>$chr, "start"=>[$start], "end"=>[$excludestart-1]};
+		    }
+		}
+
+		if($excludeend<$end){
+		    if(exists $regions->{$gene}){
+			push(@{$regions->{$gene}{"start"}}, ($excludeend+1));
+			push(@{$regions->{$gene}{"end"}}, $end);
+		    } else{
+			$regions->{$gene}={"chr"=>$chr, "start"=>[$excludeend+1], "end"=>[$end]};
+		    }
+		}
+	    }
 	}
 
 	$okchromo->{$chr}=1;
-	
+
 	$line=<$input>;
     }
 
@@ -95,7 +122,7 @@ sub readRegulatoryRegions{
     ## we remove duplicated gene names
 
     my $nbd=keys %duplicated;
-    
+
     print "Found ".$nbd." duplicated gene names, we remove them.\n";
 
     foreach my $d (keys %duplicated){
@@ -110,22 +137,22 @@ sub readGOCategories{
     my $gocat=$_[1];
 
     open(my $input, $pathin);
-    
+
     my $line=<$input>;
     chomp $line;
     my %header;
     my @s=split("\t", $line);
-    
+
     for(my $i=0; $i<@s; $i++){
 	$header{$s[$i]}=$i;
     }
 
     $line=<$input>;
-    
+
     while($line){
 	chomp $line;
 	my @s=split("\t", $line);
-	
+
 	my $id=$s[$header{"ID"}];
 	my $space=$s[$header{"GOSpace"}];
 
@@ -134,7 +161,7 @@ sub readGOCategories{
 	} else{
 	    $gocat->{$space}=[$id];
 	}
-	
+
 	$line=<$input>;
     }
 
@@ -149,18 +176,18 @@ sub readGOAnnotations{
     my $gogene=$_[2];
 
     open(my $input, $pathin);
-    
+
     my $line=<$input>;
     chomp $line;
     my %header;
     my @s=split("\t", $line);
-    
+
     for(my $i=0; $i<@s; $i++){
 	$header{$s[$i]}=$i;
     }
 
     $line=<$input>;
-    
+
     while($line){
 	chomp $line;
 	my @s=split("\t", $line);
@@ -179,49 +206,52 @@ sub readGOAnnotations{
 	} else{
 	    $gogene->{$go}=[$gene];
 	}
-	
+
 	$line=<$input>;
     }
-    
+
     close($input);
-
 }
-
 
 ####################################################################################
 
 sub orderCoordinates{
     my $unordered=$_[0];
     my $ordered=$_[1];
-    
+
     my %hashcoords;
-    
+
     foreach my $id (keys %{$unordered}){
 	my $chr=$unordered->{$id}{"chr"};
-	my $start=$unordered->{$id}{"start"};
-	my $end=$unordered->{$id}{"end"};
 
-	if(exists $hashcoords{$chr}){
-	    if(exists $hashcoords{$chr}{$start}){
-		push(@{$hashcoords{$chr}{$start}{"end"}}, $end);
-		push(@{$hashcoords{$chr}{$start}{"id"}}, $id);
+	my $nb=@{$unordered->{$id}{"start"}};
+
+	for(my $i=0; $i<$nb; $i++){
+	    my $start=${$unordered->{$id}{"start"}}[$i];
+	    my $end=${$unordered->{$id}{"end"}}[$i];
+
+	    if(exists $hashcoords{$chr}){
+		if(exists $hashcoords{$chr}{$start}){
+		    push(@{$hashcoords{$chr}{$start}{"end"}}, $end);
+		    push(@{$hashcoords{$chr}{$start}{"id"}}, $id);
+		} else{
+		    $hashcoords{$chr}{$start}={"end"=>[$end], "id"=>[$id]};
+		}
 	    } else{
-		$hashcoords{$chr}{$start}={"end"=>[$end], "id"=>[$id]};
+		$hashcoords{$chr}={$start=>{"end"=>[$end], "id"=>[$id]}};
 	    }
-	} else{
-	    $hashcoords{$chr}={$start=>{"end"=>[$end], "id"=>[$id]}};
 	}
     }
-	
+
     foreach my $chr (keys %hashcoords){
 	$ordered->{$chr}={"start"=>[], "end"=>[], "id"=>[]};
 
 	my @startpos=keys %{$hashcoords{$chr}};
 	my @orderedstart=sort {$a<=>$b} @startpos;
-	
+
 	foreach my $start (@orderedstart){
 	    my $nbpos=@{$hashcoords{$chr}{$start}{"end"}};
-	    
+
 	    for(my $i=0; $i<$nbpos; $i++){
 		my $end=${$hashcoords{$chr}{$start}{"end"}}[$i];
 		my $id=${$hashcoords{$chr}{$start}{"id"}}[$i];
@@ -247,7 +277,7 @@ sub overlapCoordinates{
 	    my $nb2=@{$coords2->{$chr}{"start"}};
 
 	    my $firstj=0;
-	    
+
 	    for(my $i=0; $i<$nb1; $i++){
 		my $start1=${$coords1->{$chr}{"start"}}[$i];
 		my $end1=${$coords1->{$chr}{"end"}}[$i];
@@ -276,11 +306,11 @@ sub overlapCoordinates{
 			    $overlap->{$id1}={$id2=>1};
 			}
 		    }
-		    
+
 		    $j++;
 		}
 	    }
-	}	
+	}
     }
 }
 
@@ -289,13 +319,13 @@ sub overlapCoordinates{
 sub printHelp{
     my $parnames=$_[0];
     my $parvalues=$_[1];
-    
+
     print "\n";
     print "This script computes gene ontology stats for a set of input genomic elements.\n";
     print "\n";
-    
+
     print "Options:\n";
-    
+
     foreach my $par (@{$parnames}){
 	print "--".$par."  [  default value: ".$parvalues->{$par}."  ]\n";
     }
@@ -329,11 +359,11 @@ my $nbargs=@ARGV;
 for(my $i=0;$i<$nbargs; $i++){
     my $arg=$ARGV[$i];
     $arg=substr $arg,2;
-    
+
     my @s=split("=",$arg);
     my $parname=$s[0];
     my $parval=$s[1];
-    
+
     if(exists $parameters{$parname}){
 	$parameters{$parname}=$parval;
     }
@@ -462,7 +492,7 @@ print "Writing output...\n";
 
 open(my $output, ">".$parameters{"pathOutput"});
 
-print $output "#NbTotalElements\t".$nbel."\n"; 
+print $output "#NbTotalElements\t".$nbel."\n";
 print $output "#NbElementsInRegions\t".$nbov."\n";
 
 print $output "ID\tGOSpace\tNbAssociatedElements\n";
