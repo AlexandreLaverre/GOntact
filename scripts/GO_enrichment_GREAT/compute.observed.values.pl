@@ -339,12 +339,13 @@ sub printHelp{
 my %parameters;
 
 $parameters{"pathInputElements"}="NA";
+$parameters{"pathBackgroundElements"}="NA";
 $parameters{"pathGOCategories"}="NA";
 $parameters{"pathGOAnnotations"}="NA";
 $parameters{"pathRegulatoryRegions"}="NA";
 $parameters{"pathOutput"}="NA";
 
-my @defaultpars=("pathInputElements","pathGOCategories", "pathGOAnnotations", "pathRegulatoryRegions", "pathOutput");
+my @defaultpars=("pathInputElements", "pathBackgroundElements", "pathGOCategories", "pathGOAnnotations", "pathRegulatoryRegions", "pathOutput");
 
 my %defaultvalues;
 
@@ -443,6 +444,47 @@ print "Done.\n";
 
 ####################################################################################
 
+print "Reading genomic coordinates for background elements...\n";
+
+my %bgelements;
+
+readElementCoordinates($parameters{"pathBackgroundElements"}, \%okchromo, \%bgelements);
+
+my $nbelbg=keys %bgelements;
+
+print "Found ".$nbelbg." background elements.\n";
+
+my %orderedbgelements;
+
+orderCoordinates(\%bgelements, \%orderedbgelements);
+
+print "Done.\n";
+
+####################################################################################
+
+print "Computing overlap between elements and regions...\n";
+
+my %overlap;
+
+overlapCoordinates(\%orderedelements, \%orderedregions, \%overlap);
+
+my $nbov=keys %overlap;
+
+print "There are ".$nbov." input elements that overlap with regions.\n";
+
+
+my %overlapbg;
+
+overlapCoordinates(\%orderedbgelements, \%orderedregions, \%overlapbg);
+
+my $nbovbg=keys %overlapbg;
+
+print "There are ".$nbovbg." background elements that overlap with regions.\n";
+
+print "Done.\n";
+
+####################################################################################
+
 print "Reading GO categories...\n";
 
 my %gocat;
@@ -484,6 +526,23 @@ foreach my $idel (keys %overlap){
     }
 }
 
+my %bgelgo;
+
+foreach my $idel (keys %overlapbg){
+    foreach my $idgene (keys %{$overlapbg{$idel}}){
+	if(exists $genego{$idgene}){
+	    foreach my $go (@{$genego{$idgene}}){
+		if(exists $bgelgo{$go}){
+		    $bgelgo{$go}{$idel}=1;
+		} else{
+		    $bgelgo{$go}={$idel=>1};
+		}
+	    }
+	}
+    }
+}
+
+
 print "Done.\n";
 
 ####################################################################################
@@ -492,19 +551,29 @@ print "Writing output...\n";
 
 open(my $output, ">".$parameters{"pathOutput"});
 
-print $output "#NbTotalElements\t".$nbel."\n";
-print $output "#NbElementsInRegions\t".$nbov."\n";
+print $output "#NbTotalInputElements\t".$nbel."\n";
+print $output "#NbInputElementsInRegions\t".$nbov."\n";
 
-print $output "ID\tGOSpace\tNbAssociatedElements\n";
+print $output "#NbTotalBackgroundElements\t".$nbelbg."\n";
+print $output "#NbBackgroundElementsInRegions\t".$nbovbg."\n";
+
+print $output "ID\tGOSpace\tNbAssociatedInputElements\tNbAssociatedBackgroundElements\n";
 
 foreach my $space (keys %gocat){
     foreach my $go (@{$gocat{$space}}){
+	my $nbinputel=0;
+	
 	if(exists $elgo{$go}){
-	    my $nbel=keys %{$elgo{$go}};
-	    print $output $go."\t".$space."\t".$nbel."\n";
-	} else{
-	    print $output $go."\t".$space."\t0\n";
+	    $nbinputel=keys %{$elgo{$go}};
 	}
+
+	my $nbbgel=0;
+	
+	if(exists $bgelgo{$go}){
+	    $nbbgel=keys %{$bgelgo{$go}};
+	}
+
+	print $output $go."\t".$space."\t".$nbinputel."\t".$nbbgel."\n";
     }
 }
 
