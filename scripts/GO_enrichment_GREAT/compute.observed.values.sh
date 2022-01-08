@@ -2,7 +2,8 @@
 
 export sp=$1
 export dataset=$2
-export method=$3
+export background=$3
+export method=$4
 
 ####################################################################################
 
@@ -24,12 +25,12 @@ fi
 
 ####################################################################################
 
-perl ${pathScripts}/compute.observed.values.pl --pathInputElements=${pathEnhancers}/${sp}/${dataset}.bed --pathGOCategories=${pathGO}/GOCategories.txt --pathGOAnnotations=${pathGO}/${sp}.gene.annotation.txt --pathRegulatoryRegions=${pathResults}/${sp}/${method}/regulatory_regions_Ensembl${ensrelease}.txt --pathOutput=${pathResults}/${sp}/${method}/${dataset}/observed_values_Ensembl${ensrelease}.txt 
+perl ${pathScripts}/compute.observed.values.pl --pathInputElements=${pathEnhancers}/${sp}/${dataset}.bed --pathBackgroundElements=${pathEnhancers}/${sp}/${background}.bed --pathGOCategories=${pathGO}/GOCategories.txt --pathGOAnnotations=${pathGO}/${sp}.gene.annotation.txt --pathRegulatoryRegions=${pathResults}/${sp}/${method}/regulatory_regions_Ensembl${ensrelease}.txt --pathOutput=${pathResults}/${sp}/${method}/${dataset}/observed_values_Ensembl${ensrelease}_background${background}.txt 
 
 ####################################################################################
 
 ## do the test
 
-Rscript ${pathScripts}/test.enrichment.R ${sp} ${dataset} ${method} > ${pathScripts}/log/test.enrichment.${sp}.${dataset}.${method}.Rout
+Rscript ${pathScripts}/test.enrichment.R ${sp} ${dataset} ${background} ${method} > ${pathScripts}/log/test.enrichment.${sp}.${dataset}.${method}.Rout
 
 ####################################################################################

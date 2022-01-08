@@ -444,21 +444,28 @@ print "Done.\n";
 
 ####################################################################################
 
-print "Reading genomic coordinates for background elements...\n";
-
-my %bgelements;
-
-readElementCoordinates($parameters{"pathBackgroundElements"}, \%okchromo, \%bgelements);
-
-my $nbelbg=keys %bgelements;
-
-print "Found ".$nbelbg." background elements.\n";
+my $usingbg=0;
+my $nbelbg=0;
 
 my %orderedbgelements;
+my %bgelements;
 
-orderCoordinates(\%bgelements, \%orderedbgelements);
-
-print "Done.\n";
+if($parameters{"pathBackgroundElements"} ne "NA"){
+    $usingbg=1;
+    
+    print "Reading genomic coordinates for background elements...\n";
+    
+    
+    readElementCoordinates($parameters{"pathBackgroundElements"}, \%okchromo, \%bgelements);
+    
+    $nbelbg=keys %bgelements;
+    
+    print "Found ".$nbelbg." background elements.\n";
+    
+    orderCoordinates(\%bgelements, \%orderedbgelements);
+    
+    print "Done.\n";
+}
 
 ####################################################################################
 
@@ -472,14 +479,16 @@ my $nbov=keys %overlap;
 
 print "There are ".$nbov." input elements that overlap with regions.\n";
 
-
+my $nbovbg=0;
 my %overlapbg;
 
-overlapCoordinates(\%orderedbgelements, \%orderedregions, \%overlapbg);
-
-my $nbovbg=keys %overlapbg;
-
-print "There are ".$nbovbg." background elements that overlap with regions.\n";
+if($usingbg==1){
+    overlapCoordinates(\%orderedbgelements, \%orderedregions, \%overlapbg);
+    
+    $nbovbg=keys %overlapbg;
+    
+    print "There are ".$nbovbg." background elements that overlap with regions.\n";
+}
 
 print "Done.\n";
 
@@ -528,20 +537,21 @@ foreach my $idel (keys %overlap){
 
 my %bgelgo;
 
-foreach my $idel (keys %overlapbg){
-    foreach my $idgene (keys %{$overlapbg{$idel}}){
-	if(exists $genego{$idgene}){
-	    foreach my $go (@{$genego{$idgene}}){
-		if(exists $bgelgo{$go}){
-		    $bgelgo{$go}{$idel}=1;
-		} else{
-		    $bgelgo{$go}={$idel=>1};
+if($usingbg==1){
+    foreach my $idel (keys %overlapbg){
+	foreach my $idgene (keys %{$overlapbg{$idel}}){
+	    if(exists $genego{$idgene}){
+		foreach my $go (@{$genego{$idgene}}){
+		    if(exists $bgelgo{$go}){
+			$bgelgo{$go}{$idel}=1;
+		    } else{
+			$bgelgo{$go}={$idel=>1};
+		    }
 		}
 	    }
 	}
     }
 }
-
 
 print "Done.\n";
 
@@ -554,10 +564,14 @@ open(my $output, ">".$parameters{"pathOutput"});
 print $output "#NbTotalInputElements\t".$nbel."\n";
 print $output "#NbInputElementsInRegions\t".$nbov."\n";
 
-print $output "#NbTotalBackgroundElements\t".$nbelbg."\n";
-print $output "#NbBackgroundElementsInRegions\t".$nbovbg."\n";
+if($usingbg==1){
+    print $output "#NbTotalBackgroundElements\t".$nbelbg."\n";
+    print $output "#NbBackgroundElementsInRegions\t".$nbovbg."\n";
 
-print $output "ID\tGOSpace\tNbAssociatedInputElements\tNbAssociatedBackgroundElements\n";
+    print $output "ID\tGOSpace\tNbAssociatedInputElements\tNbAssociatedBackgroundElements\n";
+} else{
+   print $output "ID\tGOSpace\tNbAssociatedInputElements\n";
+}
 
 foreach my $space (keys %gocat){
     foreach my $go (@{$gocat{$space}}){
@@ -567,13 +581,18 @@ foreach my $space (keys %gocat){
 	    $nbinputel=keys %{$elgo{$go}};
 	}
 
-	my $nbbgel=0;
-	
-	if(exists $bgelgo{$go}){
-	    $nbbgel=keys %{$bgelgo{$go}};
+	if($usingbg==1){
+	    
+	    my $nbbgel=0;
+	    
+	    if(exists $bgelgo{$go}){
+		$nbbgel=keys %{$bgelgo{$go}};
+	    }
+	    
+	    print $output $go."\t".$space."\t".$nbinputel."\t".$nbbgel."\n";
+	} else{
+	    print $output $go."\t".$space."\t".$nbinputel."\n";
 	}
-
-	print $output $go."\t".$space."\t".$nbinputel."\t".$nbbgel."\n";
     }
 }
 
