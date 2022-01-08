@@ -228,6 +228,7 @@ for(method in names(pars)){
       write.table(reg.regions, file=paste(pathResults, sp, "/",outputdir,"/regulatory_regions_Ensembl",ensrelease,".txt",sep=""), row.names=F, col.names=T, sep="\t", quote=F)
 
     }
+  }
 }
 
 #######################################################################
