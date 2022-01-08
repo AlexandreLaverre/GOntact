@@ -39,7 +39,7 @@ sub readRegulatoryRegions{
 	if(exists $regions->{$gene}){
 	    $duplicated{$gene}=1;
 	} else{
-	    $regions->{$gene}={"chr"=>$chr, "start"=>$start, "end"=>$end, "excludestart"=>$excludestart, "excludeend"=>$excludeend};
+	    $regions->{$gene}={"chr"=>$chr, "start"=>$start, "end"=>$end, "exclude_start"=>$excludestart, "exclude_end"=>$excludeend};
 	    $okchromo->{$chr}=1;
 	}
 
@@ -468,6 +468,8 @@ sub removeNs{
 			push(@{$regions->{$gene}{"ungappedend"}}, $currentend);
 		    }
 		} else{
+		    print "excluding regions\n";
+
 		    $exstart=$regions->{$gene}{"exclude_start"}+0;
 		    $exend=$regions->{$gene}{"exclude_end"}+0;
 
