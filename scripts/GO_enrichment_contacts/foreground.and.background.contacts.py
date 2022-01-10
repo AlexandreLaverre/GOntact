@@ -16,6 +16,8 @@ parser.add_argument("species", help="species")
 parser.add_argument("Enhancers", help="Input file of enhancers coordinates in BED format")
 
 # Options
+parser.add_argument("--extendOverlap", nargs="?", default=0, const=0, type=int,
+                    help="allow greater overlap (in bp) between enhancers and restriction fragments (default = 0bp)")
 parser.add_argument("--minDistance", nargs="?", default=0, const=0, type=int,
                     help="minimum distance (in bp) between bait and contacted region (default = 0bp)")
 parser.add_argument("--maxDistance", nargs="?", default=2000000, const=0, type=int,
@@ -102,12 +104,12 @@ for chr in EnhancersDict.keys():
         if chr in FragmentsDict.keys():
             # Initialization of first possible overlapping interest position
             i = first_i
-            while i < len(FragmentsDict[chr]) and FragmentsDict[chr][i][1] < start:
+            while i < len(FragmentsDict[chr]) and FragmentsDict[chr][i][1] < (start - args.extendOverlap):
                 i += 1
             first_i = i
 
             # Adding all overlapping interest position to reference position
-            while i < len(FragmentsDict[chr]) and FragmentsDict[chr][i][0] <= end:
+            while i < len(FragmentsDict[chr]) and FragmentsDict[chr][i][0] <= end (start + args.extendOverlap):
                 OverlapEnh.append(EnhancerID)
                 OverlapDict[FragmentsDict[chr][i][2]].append(EnhancerID)
                 i += 1
