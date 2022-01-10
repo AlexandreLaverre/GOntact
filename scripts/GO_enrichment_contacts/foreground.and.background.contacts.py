@@ -16,7 +16,8 @@ parser.add_argument("species", help="species")
 parser.add_argument("Enhancers", help="Input file of enhancers coordinates in BED format")
 
 # Options
-parser.add_argument("--extendOverlap", nargs="?", default=0, const=0, type=int,
+parser.add_argument("--BackgroundEnhancers", nargs="?", help="Input file of background enhancers coordinates in BED format")
+parser.add_argument("--ExtendOverlap", nargs="?", default=0, const=0, type=int,
                     help="allow greater overlap (in bp) between enhancers and restriction fragments (default = 0bp)")
 parser.add_argument("--minDistance", nargs="?", default=0, const=0, type=int,
                     help="minimum distance (in bp) between bait and contacted region (default = 0bp)")
@@ -42,6 +43,9 @@ Fragments = path + "/data/PCHi-C/" + args.species + "/frag_coords_" + GenomeAsse
 Contacts = path + "/data/PCHi-C/" + args.species + "/all_interactions_simplified.txt"
 
 InputEnhancers = path + "data/enhancers/" + args.species + "/" + args.Enhancers
+if args.BackgroundEnhancers:
+    BackgroundEnhancers = path + "data/enhancers/" + args.species + "/" + args.BackgroundEnhancers
+
 PathOutput = path + "/results/" + args.species + "/" + Prefix
 if not os.path.exists(PathOutput):
     os.makedirs(PathOutput)
@@ -88,42 +92,53 @@ EnhancersDict, NbEnhancers = Coord_Dict(InputEnhancers, "foreground")
 print("Found", NbEnhancers, "input enhancers.")
 FragmentsDict, NbFragments = Coord_Dict(Fragments, "background")
 
+if args.BackgroundEnhancers:
+    BackgroundEnhancersDict, NbBackgroundEnhancers = Coord_Dict(BackgroundEnhancers, "background")
+
 #### Attribute input enhancers to restriction fragments ####
 # Overlap Enhancers to Fragments
-OverlapDict = defaultdict(list)
-OverlapEnh = []
-MissingEnhancers = []
 
-for chr in EnhancersDict.keys():
-    first_i = 0
-    for Enhancer in EnhancersDict[chr]:
-        start = Enhancer[0]
-        end = Enhancer[1]
-        EnhancerID = str(Enhancer[2])
+def OverlapEnhToFrag(EnhancersCoord, type):
+    OverlapDict = defaultdict(list)
+    OverlapEnh = []
+    MissingEnhancers = []
 
-        if chr in FragmentsDict.keys():
-            # Initialization of first possible overlapping interest position
-            i = first_i
-            while i < len(FragmentsDict[chr]) and FragmentsDict[chr][i][1] < (start - args.extendOverlap):
-                i += 1
-            first_i = i
+    for chr in EnhancersDict.keys():
+        first_i = 0
+        for Enhancer in EnhancersDict[chr]:
+            start = Enhancer[0]
+            end = Enhancer[1]
+            EnhancerID = str(Enhancer[2])
 
-            # Adding all overlapping interest position to reference position
-            while i < len(FragmentsDict[chr]) and FragmentsDict[chr][i][0] <= end (start + args.extendOverlap):
-                OverlapEnh.append(EnhancerID)
-                OverlapDict[FragmentsDict[chr][i][2]].append(EnhancerID)
-                i += 1
+            if chr in FragmentsDict.keys():
+                # Initialization of first possible overlapping interest position
+                i = first_i
+                while i < len(FragmentsDict[chr]) and FragmentsDict[chr][i][1] < (start - args.ExtendOverlap):
+                    i += 1
+                first_i = i
 
-        if EnhancerID not in OverlapEnh:
-            MissingEnhancers.append(EnhancerID)
+                # Adding all overlapping interest position to reference position
+                while i < len(FragmentsDict[chr]) and FragmentsDict[chr][i][0] <= end (start + args.ExtendOverlap):
+                    OverlapEnh.append(EnhancerID)
+                    OverlapDict[FragmentsDict[chr][i][2]].append(EnhancerID)
+                    i += 1
 
-if len(MissingEnhancers) != 0:
-    print("Warning:", len(MissingEnhancers), "enhancer(s) do not overlap any restriction fragments")
-    print(MissingEnhancers)
+            if EnhancerID not in OverlapEnh:
+                MissingEnhancers.append(EnhancerID)
+
+    if len(MissingEnhancers) != 0:
+        print("Warning:", len(MissingEnhancers), type, "enhancer(s) do not overlap any restriction fragments")
+        print(MissingEnhancers)
 
 # Get all fragments containing input enhancers
-SelectedFragments = OverlapDict.keys()
-print("Found", len(SelectedFragments), "associated restriction fragments.")
+InputOverlap = OverlapEnhToFrag(EnhancersDict, "input")
+SelectedFragments = InputOverlap.keys()
+print("Found", len(SelectedFragments), "restriction fragments associated with input enhancers.")
+
+if args.BackgroundEnhancers:
+    BackgroundOverlap = OverlapEnhToFrag(BackgroundEnhancersDict, "background")
+    SelectedBackgroundFragments = BackgroundOverlap.keys()
+    print("Found", len(SelectedBackgroundFragments), "restriction fragments associated with background enhancers.")
 
 ########################################################################################################################
 ### Get contacts involving input enhancers ###
@@ -147,10 +162,16 @@ print("Found", len(AllContacts.index), "background contacts.")
 # Get all interactions involving selected fragments
 SelectedContacts = AllContacts.loc[AllContacts['FragmentID'].isin(SelectedFragments)]
 
+# Create new column for overlapped enhancers
+SelectedContacts['OverlappedEnhancers'] = df['FragmentID'].map(InputOverlap)
+
+if args.BackgroundEnhancers:
+    AllContacts['OverlappedEnhancers'] = df['FragmentID'].map(BackgroundOverlap)
+
 ########################################################################################################################
 # Print some stats
 FragInContacts = list(set(SelectedContacts['FragmentID'].tolist()))
-EnhInContactedFrag = [OverlapDict[frag] for frag in FragInContacts]
+EnhInContactedFrag = [InputOverlap[frag] for frag in FragInContacts]
 EnhInContactedFrag = set(list(itertools.chain(*EnhInContactedFrag)))
 
 print("Found", len(SelectedContacts.index), "foreground contacts with", len(FragInContacts), "selected fragments",
