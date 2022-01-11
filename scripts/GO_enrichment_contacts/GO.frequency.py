@@ -35,16 +35,18 @@ if args.WithoutPropagation:
 else:
     AnnotatedBaits = pathResults + "/" + AnnotationType + ".GO.annotated.baits.txt"
 
+EnhancerContact = ".EnhancerContact" if args.EnhancerContact else ""
+BackgroundEnhancer = ".BackgroundEnhancers" if args.BackgroundEnhancers else ""
 Baited = ".BaitedEnh" if args.KeepBaitedEnhancers else ""
 Trans = ".Trans" if args.KeepTransContact else ""
 Bait2Bait = ".bait2bait" if args.KeepBaitBait else ""
 WithoutPropagation = ".WithoutPropagation" if args.WithoutPropagation else ""
 
-ForegroundContacts = pathResults + "/" + Prefix + "/foreground.contacts" + Baited + Trans + Bait2Bait + ".txt"
-BackgroundContacts = pathResults + "/" + Prefix + "/background.contacts" + Baited + Trans + Bait2Bait + ".txt"
+ForegroundContacts = pathResults + "/" + Prefix + "/foreground.contacts" + BackgroundEnhancer + Baited + Trans + Bait2Bait + ".txt"
+BackgroundContacts = pathResults + "/" + Prefix + "/background.contacts" + BackgroundEnhancer + Baited + Trans + Bait2Bait + ".txt"
 
-OutputFile = pathResults + "/" + Prefix + "/" + AnnotationType + ".GO.frequency" + Baited + Trans + \
-             Bait2Bait + WithoutPropagation + ".txt"
+OutputFile = pathResults + "/" + Prefix + "/" + AnnotationType + ".GO.frequency" + EnhancerContact \
+             + BackgroundEnhancer + Baited + Trans + Bait2Bait + WithoutPropagation + ".txt"
 
 ######################################################################
 # Dictionary of GO Description

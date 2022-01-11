@@ -51,12 +51,13 @@ PathOutput = path + "/results/GO_enrichment_contacts/" + args.species + "/" + Pr
 if not os.path.exists(PathOutput):
     os.makedirs(PathOutput)
 
+BackgroundEnhancer = ".BackgroundEnhancers" if args.BackgroundEnhancers else ""
 Baited = ".BaitedEnh" if args.KeepBaitedEnhancers else ""
 Trans = ".Trans" if args.KeepTransContact else ""
 Bait2Bait = ".bait2bait" if args.KeepBaitBait else ""
 
-ForegroundOutput = PathOutput + "/foreground.contacts" + Baited + Trans + Bait2Bait + ".txt"
-BackgroundOutput = PathOutput + "/background.contacts" + Baited + Trans + Bait2Bait + ".txt"
+ForegroundOutput = PathOutput + "/foreground.contacts" + BackgroundEnhancer + Baited + Trans + Bait2Bait + ".txt"
+BackgroundOutput = PathOutput + "/background.contacts" + BackgroundEnhancer + Baited + Trans + Bait2Bait + ".txt"
 
 ########################################################################################################################
 ### Overlap between input enhancers and restriction fragments ###
