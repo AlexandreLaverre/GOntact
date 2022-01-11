@@ -8,6 +8,7 @@ import itertools
 import os
 import re
 import argparse
+pandas.options.mode.chained_assignment = None
 
 ########################################################################################################################
 ### Arguments ###
@@ -37,7 +38,7 @@ args = parser.parse_args()
 GenomeAssembly = "hg38" if args.species == "human" else "mm10"
 Prefix = os.path.basename(args.Enhancers).strip('.bed')
 
-path = "/beegfs/data/necsulea/GOntact/"
+path = "/home/laverre/Documents/GOntact/" #"/beegfs/data/necsulea/GOntact/"
 Baits = path + "/data/PCHi-C/" + args.species + "/bait_coords_" + GenomeAssembly + ".txt"
 Fragments = path + "/data/PCHi-C/" + args.species + "/frag_coords_" + GenomeAssembly + ".txt"
 Contacts = path + "/data/PCHi-C/" + args.species + "/all_interactions_simplified.txt"
@@ -46,7 +47,7 @@ InputEnhancers = path + "data/enhancers/" + args.species + "/" + args.Enhancers
 if args.BackgroundEnhancers:
     BackgroundEnhancers = path + "data/enhancers/" + args.species + "/" + args.BackgroundEnhancers
 
-PathOutput = path + "/results/" + args.species + "/" + Prefix
+PathOutput = path + "/results/GO_enrichment_contacts/" + args.species + "/" + Prefix
 if not os.path.exists(PathOutput):
     os.makedirs(PathOutput)
 
@@ -118,7 +119,7 @@ def OverlapEnhToFrag(EnhancersCoord, type):
                 first_i = i
 
                 # Adding all overlapping interest position to reference position
-                while i < len(FragmentsDict[chr]) and FragmentsDict[chr][i][0] <= end (start + args.ExtendOverlap):
+                while i < len(FragmentsDict[chr]) and FragmentsDict[chr][i][0] <= (end + args.ExtendOverlap):
                     OverlapEnh.append(EnhancerID)
                     OverlapDict[FragmentsDict[chr][i][2]].append(EnhancerID)
                     i += 1
@@ -129,6 +130,9 @@ def OverlapEnhToFrag(EnhancersCoord, type):
     if len(MissingEnhancers) != 0:
         print("Warning:", len(MissingEnhancers), type, "enhancer(s) do not overlap any restriction fragments")
         print(MissingEnhancers)
+
+    return OverlapDict
+
 
 # Get all fragments containing input enhancers
 InputOverlap = OverlapEnhToFrag(EnhancersDict, "input")
@@ -163,10 +167,10 @@ print("Found", len(AllContacts.index), "background contacts.")
 SelectedContacts = AllContacts.loc[AllContacts['FragmentID'].isin(SelectedFragments)]
 
 # Create new column for overlapped enhancers
-SelectedContacts['OverlappedEnhancers'] = df['FragmentID'].map(InputOverlap)
+SelectedContacts['EnhancerID'] = SelectedContacts['FragmentID'].map(InputOverlap).agg(','.join)
 
 if args.BackgroundEnhancers:
-    AllContacts['OverlappedEnhancers'] = df['FragmentID'].map(BackgroundOverlap)
+    AllContacts['EnhancerID'] = AllContacts['FragmentID'].map(BackgroundOverlap).agg(','.join)
 
 ########################################################################################################################
 # Print some stats
@@ -175,7 +179,7 @@ EnhInContactedFrag = [InputOverlap[frag] for frag in FragInContacts]
 EnhInContactedFrag = set(list(itertools.chain(*EnhInContactedFrag)))
 
 print("Found", len(SelectedContacts.index), "foreground contacts with", len(FragInContacts), "selected fragments",
-      "from", len(EnhInContactedFrag), "input enhancers:", round(len(EnhInContactedFrag)/NbEnhancers, 2)*100,
+      "from", len(EnhInContactedFrag), "input enhancers:", round((len(EnhInContactedFrag)/NbEnhancers)*100, 2),
       "% enhancers are present in contacted fragments.")
 
 if args.KeepBaitedEnhancers:
@@ -183,11 +187,11 @@ if args.KeepBaitedEnhancers:
     SelectedContacts = pandas.concat([SelectedContacts, BaitedEnhancersContacts]).drop_duplicates().reset_index(drop=True)
 
     BaitInContacts = list(set(BaitedEnhancersContacts['BaitID'].tolist()))
-    EnhInBait = [OverlapDict[frag] for frag in BaitInContacts]
+    EnhInBait = [InputOverlap[frag] for frag in BaitInContacts]
     EnhInBait = set(list(itertools.chain(*EnhInBait)))
 
     print("Found", len(BaitedEnhancersContacts.index), "foreground contacts with", len(BaitInContacts), "baited fragments",
-          "from", len(EnhInBait), "input enhancers:", round(len(EnhInBait)/NbEnhancers, 2)*100, "% enhancers are present in baits.")
+          "from", len(EnhInBait), "input enhancers:", round((len(EnhInBait)/NbEnhancers)*100, 2), "% enhancers are present in baits.")
 
 
 print("Writing output...")
