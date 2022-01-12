@@ -31,6 +31,7 @@ parser.add_argument("--KeepTransContact", action="store_true",
 parser.add_argument("--KeepBaitBait", action="store_true", help="Keep bait-bait contacts (default = False)")
 
 args = parser.parse_args()
+print(args)
 
 ########################################################################################################################
 ### Define path and files ###
@@ -38,7 +39,7 @@ args = parser.parse_args()
 GenomeAssembly = "hg38" if args.species == "human" else "mm10"
 Prefix = os.path.basename(args.Enhancers).strip('.bed')
 
-path = "/home/laverre/Documents/GOntact/" #"/beegfs/data/necsulea/GOntact/"
+path = "/beegfs/data/necsulea/GOntact/"  # "/home/laverre/Documents/GOntact/"
 Baits = path + "/data/PCHi-C/" + args.species + "/bait_coords_" + GenomeAssembly + ".txt"
 Fragments = path + "/data/PCHi-C/" + args.species + "/frag_coords_" + GenomeAssembly + ".txt"
 Contacts = path + "/data/PCHi-C/" + args.species + "/all_interactions_simplified.txt"
@@ -56,7 +57,7 @@ PathOutput = path + "/results/GO_enrichment_contacts/" + args.species + "/" +\
 if not os.path.exists(PathOutput):
     os.makedirs(PathOutput)
 
-BackgroundType = "Background.EnhancersContactsFANTOM52022" if args.BackgroundEnhancers else "Background.AllContacts"
+BackgroundType = "Background.EnhancersContacts" + args.BackgroundEnhancers.strip('.bed') if args.BackgroundEnhancers else "Background.AllContacts"
 Baited = ".BaitedEnh" if args.KeepBaitedEnhancers else ""
 Trans = ".Trans" if args.KeepTransContact else ""
 Bait2Bait = ".bait2bait" if args.KeepBaitBait else ""
