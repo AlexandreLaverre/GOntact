@@ -51,13 +51,13 @@ PathOutput = path + "/results/GO_enrichment_contacts/" + args.species + "/" + Pr
 if not os.path.exists(PathOutput):
     os.makedirs(PathOutput)
 
-BackgroundEnhancer = ".BackgroundEnhancers" if args.BackgroundEnhancers else ""
+BackgroundType = "Background.EnhancersContacts" if args.BackgroundEnhancers else "Background.AllContacts"
 Baited = ".BaitedEnh" if args.KeepBaitedEnhancers else ""
 Trans = ".Trans" if args.KeepTransContact else ""
 Bait2Bait = ".bait2bait" if args.KeepBaitBait else ""
 
-ForegroundOutput = PathOutput + "/foreground.contacts" + BackgroundEnhancer + Baited + Trans + Bait2Bait + ".txt"
-BackgroundOutput = PathOutput + "/background.contacts" + BackgroundEnhancer + Baited + Trans + Bait2Bait + ".txt"
+ForegroundOutput = PathOutput + "/Foreground.Contacts" + Baited + Trans + Bait2Bait + ".txt"
+BackgroundOutput = PathOutput + "/" + BackgroundType + Baited + Trans + Bait2Bait + ".txt"
 
 ########################################################################################################################
 ### Overlap between input enhancers and restriction fragments ###
@@ -76,8 +76,8 @@ def Coord_Dict(Coordinates, type):
             i = i.split("\t")
 
             # coord = (start, end, ID)
-            coord = (int(i[2]), int(i[3]), str(i[0])) if type == "background" else (int(i[1]), int(i[2]), str(i[3]))
-            chr = str(i[1]) if type == "background" else str(i[0])
+            coord = (int(i[2]), int(i[3]), str(i[0])) if type == "RestrictionFragments" else (int(i[1]), int(i[2]), str(i[3]))
+            chr = str(i[1]) if type == "RestrictionFragments" else str(i[0])
 
             dic[chr].append(coord)
             N += 1
@@ -90,12 +90,13 @@ def Coord_Dict(Coordinates, type):
     return dic, N
 
 
-EnhancersDict, NbEnhancers = Coord_Dict(InputEnhancers, "foreground")
+EnhancersDict, NbEnhancers = Coord_Dict(InputEnhancers, "ForegroundEnhancers")
 print("Found", NbEnhancers, "input enhancers.")
-FragmentsDict, NbFragments = Coord_Dict(Fragments, "background")
+FragmentsDict, NbFragments = Coord_Dict(Fragments, "RestrictionFragments")
 
 if args.BackgroundEnhancers:
-    BackgroundEnhancersDict, NbBackgroundEnhancers = Coord_Dict(BackgroundEnhancers, "background")
+    BackgroundEnhancersDict, NbBackgroundEnhancers = Coord_Dict(BackgroundEnhancers, "BackgroundEnhancers")
+    print("Found", NbBackgroundEnhancers, "background enhancers.")
 
 #### Attribute input enhancers to restriction fragments ####
 # Overlap Enhancers to Fragments
@@ -105,9 +106,9 @@ def OverlapEnhToFrag(EnhancersCoord, type):
     OverlapEnh = []
     MissingEnhancers = []
 
-    for chr in EnhancersDict.keys():
+    for chr in EnhancersCoord.keys():
         first_i = 0
-        for Enhancer in EnhancersDict[chr]:
+        for Enhancer in EnhancersCoord[chr]:
             start = Enhancer[0]
             end = Enhancer[1]
             EnhancerID = str(Enhancer[2])
@@ -162,30 +163,40 @@ if not args.KeepBaitBait:
 if not args.KeepTransContact:
     AllContacts = AllContacts.drop(AllContacts[(AllContacts.Synteny == "trans")].index)
 
-print("Found", len(AllContacts.index), "background contacts.")
+print("Found", len(AllContacts.index), "contacts.")
 
 # Get all interactions involving selected fragments
-SelectedContacts = AllContacts.loc[AllContacts['FragmentID'].isin(SelectedFragments)]
+ForegroundContacts = AllContacts.loc[AllContacts['FragmentID'].isin(SelectedFragments)]
 
 # Create new column for overlapped enhancers
-SelectedContacts['EnhancerID'] = SelectedContacts['FragmentID'].map(InputOverlap).agg(','.join)
+ForegroundContacts['EnhancerID'] = ForegroundContacts['FragmentID'].map(InputOverlap).agg(','.join)
 
 if args.BackgroundEnhancers:
+    AllContacts = AllContacts.loc[AllContacts['FragmentID'].isin(SelectedBackgroundFragments)]
     AllContacts['EnhancerID'] = AllContacts['FragmentID'].map(BackgroundOverlap).agg(','.join)
 
 ########################################################################################################################
 # Print some stats
-FragInContacts = list(set(SelectedContacts['FragmentID'].tolist()))
-EnhInContactedFrag = [InputOverlap[frag] for frag in FragInContacts]
-EnhInContactedFrag = set(list(itertools.chain(*EnhInContactedFrag)))
+ForegroundContactsFrag = list(set(ForegroundContacts['FragmentID'].tolist()))
+ForegroundContactsEnh = [InputOverlap[frag] for frag in ForegroundContactsFrag]
+ForegroundEnhinContact = set(list(itertools.chain(*ForegroundContactsEnh)))
 
-print("Found", len(SelectedContacts.index), "foreground contacts with", len(FragInContacts), "selected fragments",
-      "from", len(EnhInContactedFrag), "input enhancers:", round((len(EnhInContactedFrag)/NbEnhancers)*100, 2),
+print("Found", len(ForegroundContacts.index), "foreground contacts with", len(ForegroundContactsFrag), "selected fragments",
+      "from", len(ForegroundEnhinContact), "input enhancers:", round((len(ForegroundEnhinContact)/NbEnhancers)*100, 2),
       "% enhancers are present in contacted fragments.")
+
+if args.BackgroundEnhancers:
+    BackgroundContactsFrag = list(set(AllContacts['FragmentID'].tolist()))
+    BackgroundContactsEnh = [BackgroundOverlap[frag] for frag in BackgroundContactsFrag]
+    BackgroundEnhinContact = set(list(itertools.chain(*BackgroundContactsEnh)))
+
+    print("Found", len(AllContacts.index), "background contacts with", len(BackgroundContactsEnh), "selected fragments",
+          "from", len(BackgroundEnhinContact), "background enhancers:", round((len(BackgroundEnhinContact) / NbBackgroundEnhancers) * 100, 2),
+          "% enhancers are present in contacted fragments.")
 
 if args.KeepBaitedEnhancers:
     BaitedEnhancersContacts = AllContacts.loc[AllContacts['BaitID'].isin(SelectedFragments)]
-    SelectedContacts = pandas.concat([SelectedContacts, BaitedEnhancersContacts]).drop_duplicates().reset_index(drop=True)
+    SelectedContacts = pandas.concat([ForegroundContacts, BaitedEnhancersContacts]).drop_duplicates().reset_index(drop=True)
 
     BaitInContacts = list(set(BaitedEnhancersContacts['BaitID'].tolist()))
     EnhInBait = [InputOverlap[frag] for frag in BaitInContacts]
@@ -197,7 +208,7 @@ if args.KeepBaitedEnhancers:
 
 print("Writing output...")
 AllContacts.to_csv(BackgroundOutput, sep="\t", index=False)
-SelectedContacts.to_csv(ForegroundOutput, sep="\t", index=False)
+ForegroundContacts.to_csv(ForegroundOutput, sep="\t", index=False)
 
 print("Done!")
 
