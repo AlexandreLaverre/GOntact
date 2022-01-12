@@ -19,8 +19,8 @@ export ensrelease=94
 echo "#!/bin/bash" > ${pathScripts}/bsub_script_expected
 echo "#SBATCH --job-name=exp_${sp}_${method}_${space}" >>  ${pathScripts}/bsub_script_expected
 echo "#SBATCH --partition=normal" >>  ${pathScripts}/bsub_script_expected
-echo "#SBATCH --output=${pathScripts}/std_out_exp_${sp}_${method}_${space}" >>  ${pathScripts}/bsub_script_expected
-echo "#SBATCH --error=${pathScripts}/std_err_exp_${sp}_${method}_${space}" >>  ${pathScripts}/bsub_script_expected
+echo "#SBATCH --output=${pathScripts}/log/std_out_exp_${sp}_${method}_${space}" >>  ${pathScripts}/bsub_script_expected
+echo "#SBATCH --error=${pathScripts}/log/std_err_exp_${sp}_${method}_${space}" >>  ${pathScripts}/bsub_script_expected
 echo "#SBATCH --cpus-per-task=1" >>  ${pathScripts}/bsub_script_expected ## 1 CPUs
 echo "#SBATCH --time=3:00:00" >>  ${pathScripts}/bsub_script_expected ## 3 hours
 echo "#SBATCH --mem=20G" >>  ${pathScripts}/bsub_script_expected ## 20g per CPU
