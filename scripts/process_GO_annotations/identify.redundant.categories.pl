@@ -5,6 +5,44 @@ use strict;
 
 #######################################################################
 
+sub readGOCategories{
+    my $pathin=$_[0];
+    my $gocat=$_[1];
+
+    open(my $input, $pathin);
+
+    my $line=<$input>;
+    chomp $line;
+    my %header;
+    my @s=split("\t", $line);
+
+    for(my $i=0; $i<@s; $i++){
+	$header{$s[$i]}=$i;
+    }
+
+    $line=<$input>;
+
+    while($line){
+	chomp $line;
+	my @s=split("\t", $line);
+
+	my $id=$s[$header{"ID"}];
+	my $space=$s[$header{"GOSpace"}];
+
+	if(exists $gocat->{$space}){
+	    push(@{$gocat->{$space}}, $id);
+	} else{
+	    $gocat->{$space}=[$id];
+	}
+
+	$line=<$input>;
+    }
+
+    close($input);
+}
+
+##########################################################################
+
 sub readGOAnnotations{
     my $pathin=$_[0];
     my $genego=$_[1];
@@ -210,11 +248,12 @@ sub printHelp{
 
 my %parameters;
 
+$parameters{"pathGOCategories"}="NA";
 $parameters{"pathGOAnnotations"}="NA";
 $parameters{"pathOutputSimplifiedAnnotations"}="NA";
 $parameters{"pathOutputGOClusters"}="NA";
 
-my @defaultpars=("pathGOAnnotations", "pathOutputSimplifiedAnnotations", "pathOutputGOClusters");
+my @defaultpars=("pathGOCategories", "pathGOAnnotations", "pathOutputSimplifiedAnnotations", "pathOutputGOClusters");
 
 my %defaultvalues;
 
@@ -257,6 +296,10 @@ foreach my $par (@defaultpars){
 print "\n";
 
 ####################################################################################
+####################################################################################
+
+print "Reading GO categories...\n";
+
 ####################################################################################
 
 print "Reading GO annotations...\n";
@@ -315,7 +358,7 @@ my %geneclust;
 foreach my $idclust (keys %clusters){
     my $written=0;
     
-    foreach my $go (@{$clusters{$idclust}}){
+    foreach my $go (keys %{$clusters{$idclust}}){
 	print $outclust "GOCluster".$idclust."\t".$go."\n";
 
 	$inclusters{$go}=$idclust;
