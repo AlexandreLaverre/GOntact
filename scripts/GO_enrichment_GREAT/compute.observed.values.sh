@@ -5,6 +5,7 @@ export dataset=$2
 export background=$3
 export method=$4
 export space=$5
+export cluster=$6
 
 ####################################################################################
 
@@ -27,13 +28,16 @@ fi
 ####################################################################################
 
 echo "#!/bin/bash" > ${pathScripts}/bsub_script_observed
-echo "#SBATCH --job-name=exp_${sp}_${method}_${space}" >>  ${pathScripts}/bsub_script_observed
-echo "#SBATCH --partition=normal" >>  ${pathScripts}/bsub_script_observed
-echo "#SBATCH --output=${pathScripts}/log/std_out_obs_${sp}_${method}_${space}" >>  ${pathScripts}/bsub_script_observed
-echo "#SBATCH --error=${pathScripts}/log/std_err_obs_${sp}_${method}_${space}" >>  ${pathScripts}/bsub_script_observed
-echo "#SBATCH --cpus-per-task=1" >>  ${pathScripts}/bsub_script_observed ## 1 CPUs
-echo "#SBATCH --time=3:00:00" >>  ${pathScripts}/bsub_script_observed ## 3 hours
-echo "#SBATCH --mem=10G" >>  ${pathScripts}/bsub_script_observed ## 10g per CPU
+
+if [ ${cluster} = "pbil" ]; then
+    echo "#SBATCH --job-name=exp_${sp}_${method}_${space}" >>  ${pathScripts}/bsub_script_observed
+    echo "#SBATCH --partition=normal" >>  ${pathScripts}/bsub_script_observed
+    echo "#SBATCH --output=${pathScripts}/log/std_out_obs_${sp}_${method}_${space}" >>  ${pathScripts}/bsub_script_observed
+    echo "#SBATCH --error=${pathScripts}/log/std_err_obs_${sp}_${method}_${space}" >>  ${pathScripts}/bsub_script_observed
+    echo "#SBATCH --cpus-per-task=1" >>  ${pathScripts}/bsub_script_observed ## 1 CPUs
+    echo "#SBATCH --time=3:00:00" >>  ${pathScripts}/bsub_script_observed ## 3 hours
+    echo "#SBATCH --mem=10G" >>  ${pathScripts}/bsub_script_observed ## 10g per CPU
+fi
 
 echo "perl ${pathScripts}/compute.observed.values.pl --pathInputElements=${pathEnhancers}/${sp}/${dataset}.bed --pathBackgroundElements=${pathEnhancers}/${sp}/${background}.bed --pathGOCategories=${pathGO}/GOCategories.txt --pathGOAnnotations=${pathGO}/${sp}.simplified.gene.annotation.${space}.txt --pathRegulatoryRegions=${pathResults}/${sp}/${method}/regulatory_regions_Ensembl${ensrelease}_${space}.txt --pathOutput=${pathResults}/${sp}/${method}/${dataset}/observed_values_Ensembl${ensrelease}_background${background}_${space}.txt  --pathOutputAssociation=${pathResults}/${sp}/${method}/${dataset}/enhancer_GO_association_Ensembl${ensrelease}_${space}.txt " >>  ${pathScripts}/bsub_script_observed
 
@@ -45,6 +49,14 @@ echo "Rscript ${pathScripts}/test.enrichment.R ${sp} ${dataset} ${background} ${
 
 ####################################################################################
 
-sbatch ${pathScripts}/bsub_script_observed
+if [ ${cluster} = "pbil" ]; then
+    sbatch ${pathScripts}/bsub_script_observed
+fi
+
+
+if [ ${cluster} = "local" ]; then
+    chmod a+x ${pathScripts}/bsub_script_observed
+    ${pathScripts}/bsub_script_observed
+fi
 
 ####################################################################################
