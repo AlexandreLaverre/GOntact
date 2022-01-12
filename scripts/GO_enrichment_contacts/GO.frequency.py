@@ -9,51 +9,60 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument("species", help="species")
 parser.add_argument("Enhancers", help="species")
+parser.add_argument("GONameSpace", help="GONameSpace : biological_process, molecular_function, cellular_component")
 
 # Options
+parser.add_argument("--ExtendOverlap", nargs="?", default=0, const=0, type=int,
+                    help="allow greater overlap (in bp) between enhancers and restriction fragments (default = 0bp)")
+parser.add_argument("--minDistance", nargs="?", default=0, const=0, type=int,
+                    help="minimum distance (in bp) between bait and contacted region (default = 0bp)")
+parser.add_argument("--maxDistance", nargs="?", default=2000000, const=0, type=int,
+                    help="maximum distance (in bp) between bait and contacted region (default = 2Mb)")
 parser.add_argument("--EnhancerContact", action="store_true", help="Get contacts at bait-enhancer scale (default = False)")
-parser.add_argument("--BackgroundEnhancers", action="store_true", help="Consider the background set as annotated with enhancers (default = False)")
+parser.add_argument("--BackgroundEnhancers", nargs="?", help="Input file of background enhancers coordinates in BED format")
 parser.add_argument("--UniqueGO", action="store_true",
                     help="Get unique list of GO term associated to genes for each bait (default=complete)")
 parser.add_argument("--EnhancerCountOnce", action="store_true", help="Enhancer can contribute only once for a given GOTerm (default = False)")
-parser.add_argument("--WithoutPropagation", action="store_true", help="Get gene annotation without GO propagation")
 parser.add_argument("--KeepBaitedEnhancers", action="store_true", help="Keep contacts where Enhancers are in baits (default = False)")
 parser.add_argument("--KeepTransContact", action="store_true", help="Keep inter-chromosome contacts (default = False)")
 parser.add_argument("--KeepBaitBait", action="store_true", help="Keep inter-chromosome contacts (default = False)")
 
 args = parser.parse_args()
+print(args)
 
 ######################################################################
 Prefix = os.path.basename(args.Enhancers).strip('.bed')
-Prefix = "mindist0Kb_maxdist1Mb_extendOverlap1Kb/" + Prefix
+
+minDistance = "mindist" + str(int(args.minDistance/1000)) + "Kb"
+maxDistance = "_maxdist" + str(int(args.maxDistance/1000000)) + "Mb"
+extendOverlap = "_extendOverlap" + str(int(args.ExtendOverlap/1000)) + "Kb"
+
+Prefix = minDistance + maxDistance + extendOverlap + "/" + Prefix
+
 AnnotationType = "unique" if args.UniqueGO else "complete"
 
-path = "/home/laverre/Documents/GOntact/" #"/beegfs/data/necsulea/GOntact/"
+path = "/beegfs/data/necsulea/GOntact/"
 pathResults = path + "/results/GO_enrichment_contacts/" + args.species
 
 GODescription = path + "/data/GeneOntology/GODescription.txt"
-
-if args.WithoutPropagation:
-    AnnotatedBaits = pathResults + "/before.propagation/" + AnnotationType + ".GO.annotated.baits.txt"
-else:
-    AnnotatedBaits = pathResults + "/" + AnnotationType + ".GO.annotated.baits.txt"
+AnnotatedBaits = pathResults + "/" + AnnotationType + ".GO.annotated.baits." + args.GONameSpace + ".txt"
 
 # Define output files names according to options
 EnhancerContact = ".EnhancerScale" if args.EnhancerContact else ""
-BackgroundType = "Background.EnhancersContacts" if args.BackgroundEnhancers else "Background.AllContacts"
+BackgroundType = "Background.EnhancersContacts" + args.BackgroundEnhancers.strip('.bed') if args.BackgroundEnhancers else "Background.AllContacts"
 EnhancerContribution = ".EnhancerCountOnce" if args.EnhancerCountOnce else ""
 Baited = ".BaitedEnh" if args.KeepBaitedEnhancers else ""
 Trans = ".Trans" if args.KeepTransContact else ""
 Bait2Bait = ".bait2bait" if args.KeepBaitBait else ""
-WithoutPropagation = ".WithoutPropagation" if args.WithoutPropagation else ""
 
 ForegroundContacts = pathResults + "/" + Prefix + "/Foreground.Contacts" + Baited + Trans + Bait2Bait + ".txt"
 BackgroundContacts = pathResults + "/" + Prefix + "/" + BackgroundType + Baited + Trans + Bait2Bait + ".txt"
 
-OutputFile = pathResults + "/" + Prefix + "/" + AnnotationType + ".GO.frequency." + BackgroundType + EnhancerContact \
-             + EnhancerContribution + Baited + Trans + Bait2Bait + WithoutPropagation + ".txt"
+OutputFile = pathResults + "/" + Prefix + "/" + AnnotationType + ".GO.frequency." + args.GONameSpace + "." + \
+             BackgroundType + EnhancerContact + EnhancerContribution + Baited + Trans + Bait2Bait + ".txt"
 
 ######################################################################
+'''
 # Dictionary of GO Description
 GOInfos = {}
 with open(GODescription, 'r') as f:
@@ -63,6 +72,7 @@ with open(GODescription, 'r') as f:
         GOID, GOName, GONamespace = GO[0], GO[1], GO[2]
 
         GOInfos[GOID] = (GOName, GONamespace)
+'''
 
 ######################################################################
 # Dictionary of GO annotated Baits
@@ -142,7 +152,7 @@ print("Writing output...")
 Output = open(OutputFile, "w")
 Output.write("# Total number of Foreground contacts = " + str(NbForeground) + "\n")
 Output.write("# Total number of Background contacts = " + str(NbBackground) + "\n")
-Output.write("GOName\tGONamespace\tGOTerm\tForegroundFrequency\tBackgroundFrequency\tForegroundEnhancers\n")
+Output.write("GOTerm\tForegroundFrequency\tBackgroundFrequency\tForegroundEnhancers\n")
 
 for GOTerm in BackgroundFrequency.keys():
     if GOTerm != '':
@@ -162,8 +172,7 @@ for GOTerm in BackgroundFrequency.keys():
 
         FreqBackground = str(len(BackgroundFrequency[GOTerm]))
 
-        Output.write(GOInfos[GOTerm][0] + "\t" + GOInfos[GOTerm][1] + "\t" + str(GOTerm) + "\t" +
-                     FreqForeground + "\t" + FreqBackground + "\t" + EnhancersForeground + "\n")
+        Output.write(str(GOTerm) + "\t" + FreqForeground + "\t" + FreqBackground + "\t" + EnhancersForeground + "\n")
 
 Output.close()
 print("Done!")
