@@ -47,11 +47,16 @@ InputEnhancers = path + "data/enhancers/" + args.species + "/" + args.Enhancers
 if args.BackgroundEnhancers:
     BackgroundEnhancers = path + "data/enhancers/" + args.species + "/" + args.BackgroundEnhancers
 
-PathOutput = path + "/results/GO_enrichment_contacts/" + args.species + "/" + Prefix
+minDistance = "mindist" + str(int(args.minDistance/1000)) + "Kb"
+maxDistance = "_maxdist" + str(int(args.maxDistance/1000000)) + "Mb"
+extendOverlap = "_extendOverlap" + str(int(args.ExtendOverlap/1000)) + "Kb"
+
+PathOutput = path + "/results/GO_enrichment_contacts/" + args.species + "/" +\
+             minDistance + maxDistance + extendOverlap + "/" + Prefix
 if not os.path.exists(PathOutput):
     os.makedirs(PathOutput)
 
-BackgroundType = "Background.EnhancersContacts" if args.BackgroundEnhancers else "Background.AllContacts"
+BackgroundType = "Background.EnhancersContactsFANTOM52022" if args.BackgroundEnhancers else "Background.AllContacts"
 Baited = ".BaitedEnh" if args.KeepBaitedEnhancers else ""
 Trans = ".Trans" if args.KeepTransContact else ""
 Bait2Bait = ".bait2bait" if args.KeepBaitBait else ""

@@ -25,6 +25,7 @@ args = parser.parse_args()
 
 ######################################################################
 Prefix = os.path.basename(args.Enhancers).strip('.bed')
+Prefix = "mindist0Kb_maxdist1Mb_extendOverlap1Kb/" + Prefix
 AnnotationType = "unique" if args.UniqueGO else "complete"
 
 path = "/home/laverre/Documents/GOntact/" #"/beegfs/data/necsulea/GOntact/"
@@ -72,65 +73,63 @@ with open(AnnotatedBaits, 'r') as f:
         bait = bait.split("\t")
         BaitID, GOIDs = bait[0], bait[3]
 
-        Baits2GO[BaitID] = GOIDs.split(',')
+        if GOIDs != "":
+            Baits2GO[BaitID] = GOIDs.split(',')
 
 print("Found", len(Baits2GO), "baits with GO terms")
 
 ######################################################################
+# Calculate the frequency of each contacted GOTerm
 
 def GOTerm_Frequency(InputContacts, type):
+    scale = "enhancer" if (type == "foreground" and args.EnhancerContact) or (type == "background" and args.BackgroundEnhancers) else "fragment"
+
     # Get list of interested baits
     if type == "foreground" or args.BackgroundEnhancers:
         Contacts = pandas.read_csv(InputContacts, sep='\t', usecols=["BaitID", "EnhancerID"])
     else:
         Contacts = pandas.read_csv(InputContacts, sep='\t', usecols=["BaitID", "FragmentID"])
 
-    N = len(Contacts)
-    print("Found", N, " bait-fragment contacts.")
-
-    # List of baits
-    SelectedBaits = Contacts["BaitID"].tolist()
+    print("Found", len(Contacts), " bait-fragment contacts.")
 
     # Count number of GO Term in InputContacts
     GOFrequency = {}
-    for BaitID in SelectedBaits:
-        if BaitID in Baits2GO.keys():           # Baits may don't have any associated GO Term
-            for GOID in Baits2GO[BaitID]:
-                GOFrequency.setdefault(GOID, 0)
-                GOFrequency[GOID] += 1
+    ContactByEnhancer = {}
+    NbContact = NbEnhancerContact = 0
+
+    for contact in range(len(Contacts)):
+        baitID = Contacts.iloc[contact, 0]
+        ContactedID = Contacts.iloc[contact, 1]
+
+        if baitID in Baits2GO.keys():  # Baits may don't have any associated GO Term
+            NbContact += 1
+
+            # Bait-enhancer scale
+            if scale == "enhancer":
+                for enhancer in ContactedID.split(','):
+                    ContactByEnhancer.setdefault(baitID, [])
+                    if enhancer not in ContactByEnhancer[baitID]:
+                        ContactByEnhancer[baitID].append(enhancer)
+                        NbEnhancerContact += 1
+
+                    for GOID in Baits2GO[baitID]:
+                        GOFrequency.setdefault(GOID, [])
+                        GOFrequency[GOID].append(enhancer)
+
+            # Bait-fragment scale
+            else:
+                for GOID in Baits2GO[baitID]:
+                    GOFrequency.setdefault(GOID, [])
+                    GOFrequency[GOID].append(ContactedID)
 
     print("Found", len(GOFrequency.keys()), "associated GOTerm.")
+    print("Found", NbContact, " bait-fragment contacts with GOTerm.")
+    if scale == "enhancer":
+        print("Found", NbEnhancerContact, " bait-enhancer contacts with GOTerm.")
 
-    # Contacts between baits and enhancers
-    if (type == "foreground" and args.EnhancerContact) or (type == "background" and args.BackgroundEnhancers):
-        ContactByEnhancer = {}
-        N = 0
-        for x in range(len(Contacts)):
-            baitID = Contacts.iloc[x, 0]
-            enhancersID = Contacts.iloc[x, 1]
+    Nb = NbEnhancerContact if scale == "enhancer" else NbContact
 
-            if enhancersID != 'NA':
-                ContactByEnhancer.setdefault(baitID, [])
-                for enhancerID in enhancersID.split(','):
-                    if enhancerID not in ContactByEnhancer[baitID]:
-                        ContactByEnhancer[baitID].append(enhancerID)
-                        N += 1
-
-        print("Found", N, " bait-enhancer contacts.")
-
-        GOFrequency = {}
-        for BaitID in ContactByEnhancer.keys():
-            if BaitID in Baits2GO.keys():  # Baits may don't have any associated GO Term
-                for GOID in Baits2GO[BaitID]:
-                    GOFrequency.setdefault(GOID, [])
-                    for enhancerID in ContactByEnhancer[BaitID]:
-                        # Enhancer contribution can be binary or not
-                        if args.EnhancerCountOnce and enhancerID not in GOFrequency[GOID]:
-                            GOFrequency[GOID].append(enhancerID)
-                        else:
-                            GOFrequency[GOID].append(enhancerID)
-
-    return GOFrequency, N
+    return GOFrequency, Nb
 
 
 print("## Running Foreground:")
@@ -143,22 +142,28 @@ print("Writing output...")
 Output = open(OutputFile, "w")
 Output.write("# Total number of Foreground contacts = " + str(NbForeground) + "\n")
 Output.write("# Total number of Background contacts = " + str(NbBackground) + "\n")
-Output.write("GOName\tGONamespace\tGOTerm\tForegroundFrequency\tBackgroundFrequency\n")
+Output.write("GOName\tGONamespace\tGOTerm\tForegroundFrequency\tBackgroundFrequency\tForegroundEnhancers\n")
 
 for GOTerm in BackgroundFrequency.keys():
     if GOTerm != '':
+        # Foreground Frequency
         FreqForeground = str(0)
+        EnhancersForeground = "NA"
         if GOTerm in ForegroundFrequency.keys():
-            if args.EnhancerContact:
-                ForegroundFrequency[GOTerm] = len(ForegroundFrequency[GOTerm])
-            FreqForeground = str(ForegroundFrequency[GOTerm])
+            if args.EnhancerCountOnce:
+                ForegroundFrequency[GOTerm] = list(set(ForegroundFrequency[GOTerm]))
 
-        if args.BackgroundEnhancers:
-            BackgroundFrequency[GOTerm] = len(BackgroundFrequency[GOTerm])
-        FreqBackground = str(BackgroundFrequency[GOTerm])
+            FreqForeground = str(len(ForegroundFrequency[GOTerm]))
+            EnhancersForeground = ','.join(ForegroundFrequency[GOTerm])
+
+        # Background Frequency
+        if args.EnhancerCountOnce:
+            BackgroundFrequency[GOTerm] = list(set(BackgroundFrequency[GOTerm]))
+
+        FreqBackground = str(len(BackgroundFrequency[GOTerm]))
 
         Output.write(GOInfos[GOTerm][0] + "\t" + GOInfos[GOTerm][1] + "\t" + str(GOTerm) + "\t" +
-                     FreqForeground + "\t" + FreqBackground + "\n")
+                     FreqForeground + "\t" + FreqBackground + "\t" + EnhancersForeground + "\n")
 
 Output.close()
 print("Done!")
