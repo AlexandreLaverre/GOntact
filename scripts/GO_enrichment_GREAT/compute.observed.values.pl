@@ -561,6 +561,8 @@ print "Done.\n";
 print "Writing output...\n";
 
 open(my $outputassoc, ">".$parameters{"pathOutputAssociation"});
+print $outputassoc "GOTerm\tForegroundEnhancers\n";
+
 open(my $output, ">".$parameters{"pathOutput"});
 
 print $output "#NbTotalInputElements\t".$nbel."\n";
@@ -581,10 +583,8 @@ foreach my $space (keys %gocat){
 	
 	if(exists $elgo{$go}){
 	    $nbinputel=keys %{$elgo{$go}};
-
-	    foreach my $e (keys %{$elgo{$go}}){
-		print $outputassoc $go."\t".$e."\n";
-	    }
+	    
+	    print $outputassoc $go."\t".join(",", keys %{$elgo{$go}})."\n";
 	}
 
 	if($usingbg==1){
