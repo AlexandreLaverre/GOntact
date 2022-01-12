@@ -25,7 +25,7 @@ echo "#SBATCH --cpus-per-task=1" >>  ${pathScripts}/bsub_script_expected ## 1 CP
 echo "#SBATCH --time=3:00:00" >>  ${pathScripts}/bsub_script_expected ## 3 hours
 echo "#SBATCH --mem=20G" >>  ${pathScripts}/bsub_script_expected ## 20g per CPU
 
-echo "perl ${pathScripts}/compute.expected.values.pl --pathGOCategories=${pathGO}/GOCategories.txt --pathGOAnnotations=${pathGO}/${sp}.gene.annotation.txt --pathRegulatoryRegions=${pathResults}/${sp}/${method}/regulatory_regions_Ensembl${ensrelease}_${space}.txt --pathGenomeSequence=${pathGenomes}/${sp}/genome_Ensembl${ensrelease}.fa --pathOutput=${pathResults}/${sp}/${method}/expected_values_Ensembl${ensrelease}_${space}.txt " >>  ${pathScripts}/bsub_script_expected 
+echo "perl ${pathScripts}/compute.expected.values.pl --pathGOCategories=${pathGO}/GOCategories.txt --pathGOAnnotations=${pathGO}/${sp}.simplified.gene.annotation.${space}.txt --pathRegulatoryRegions=${pathResults}/${sp}/${method}/regulatory_regions_Ensembl${ensrelease}_${space}.txt --pathGenomeSequence=${pathGenomes}/${sp}/genome_Ensembl${ensrelease}.fa --pathOutput=${pathResults}/${sp}/${method}/expected_values_Ensembl${ensrelease}_${space}.txt " >>  ${pathScripts}/bsub_script_expected 
 
 sbatch ${pathScripts}/bsub_script_expected
 
