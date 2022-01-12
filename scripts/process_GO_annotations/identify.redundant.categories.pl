@@ -7,7 +7,9 @@ use strict;
 
 sub readGOCategories{
     my $pathin=$_[0];
-    my $gocat=$_[1];
+    my $spacego=$_[1];
+    my $gospace=$_[2];
+    my $godesc=$_[3];
 
     open(my $input, $pathin);
 
@@ -28,13 +30,23 @@ sub readGOCategories{
 
 	my $id=$s[$header{"ID"}];
 	my $space=$s[$header{"GOSpace"}];
+	my $name=$s[$header{"Name"}];
 
-	if(exists $gocat->{$space}){
-	    push(@{$gocat->{$space}}, $id);
+	if(exists $spacego->{$space}){
+	    push(@{$spacego->{$space}}, $id);
 	} else{
-	    $gocat->{$space}=[$id];
+	    $spacego->{$space}=[$id];
 	}
 
+	if(exists $gospace->{$id}){
+	    print "Weird! already saw ".$id." for ".$gospace->{$id}." and ".$space."\n";
+	    exit(1);
+	} else{
+	    $gospace->{$id}=$space;
+	}
+
+	$godesc->{$id}=$name;
+	
 	$line=<$input>;
     }
 
@@ -45,8 +57,10 @@ sub readGOCategories{
 
 sub readGOAnnotations{
     my $pathin=$_[0];
-    my $genego=$_[1];
-    my $gogene=$_[2];
+    my $gospace=$_[1];
+    my $space=$_[2];
+    my $genego=$_[3];
+    my $gogene=$_[4];
 
     open(my $input, $pathin);
 
@@ -68,16 +82,24 @@ sub readGOAnnotations{
 	my $gene=$s[$header{"GeneName"}];
 	my $go=$s[$header{"GOID"}];
 
-	if(exists $genego->{$gene}){
-	    push(@{$genego->{$gene}}, $go);
+	if(exists $gospace->{$go}){
+	    if($gospace->{$go} eq $space){
+		
+		if(exists $genego->{$gene}){
+		    push(@{$genego->{$gene}}, $go);
+		} else{
+		    $genego->{$gene}=[$go];
+		}
+		
+		if(exists $gogene->{$go}){
+		    push(@{$gogene->{$go}}, $gene);
+		} else{
+		    $gogene->{$go}=[$gene];
+		}
+	    }
 	} else{
-	    $genego->{$gene}=[$go];
-	}
-
-	if(exists $gogene->{$go}){
-	    push(@{$gogene->{$go}}, $gene);
-	} else{
-	    $gogene->{$go}=[$gene];
+	    print "Weird! ".$go." doesn't belong to any GO space.\n";
+	    exit(1);
 	}
 
 	$line=<$input>;
@@ -250,10 +272,11 @@ my %parameters;
 
 $parameters{"pathGOCategories"}="NA";
 $parameters{"pathGOAnnotations"}="NA";
+$parameters{"GOSpace"}="NA";
 $parameters{"pathOutputSimplifiedAnnotations"}="NA";
 $parameters{"pathOutputGOClusters"}="NA";
 
-my @defaultpars=("pathGOCategories", "pathGOAnnotations", "pathOutputSimplifiedAnnotations", "pathOutputGOClusters");
+my @defaultpars=("pathGOCategories", "pathGOAnnotations", "GOSpace", "pathOutputSimplifiedAnnotations", "pathOutputGOClusters");
 
 my %defaultvalues;
 
@@ -300,6 +323,19 @@ print "\n";
 
 print "Reading GO categories...\n";
 
+my %spacego;
+my %gospace;
+my %godesc;
+
+readGOCategories($parameters{"pathGOCategories"}, \%spacego, \%gospace, \%godesc);
+
+my $nbspace=keys %spacego;
+my $nbgo=keys %gospace;
+
+print "There are ".$nbgo." categories in ".$nbspace." GO spaces.\n";
+
+print "Done.\n";
+
 ####################################################################################
 
 print "Reading GO annotations...\n";
@@ -307,7 +343,11 @@ print "Reading GO annotations...\n";
 my %genego;
 my %gogene;
 
-readGOAnnotations($parameters{"pathGOAnnotations"}, \%genego, \%gogene);
+my $space=$parameters{"GOSpace"};
+
+print "GO space: ".$space."\n";
+
+readGOAnnotations($parameters{"pathGOAnnotations"}, \%gospace, $space, \%genego, \%gogene);
 
 my $nbgenes=keys %genego;
 my $nbgo=keys %gogene;
@@ -347,7 +387,7 @@ print "Done.\n";
 print "Writing output...\n";
 
 open(my $outclust, ">".$parameters{"pathOutputGOClusters"});
-open(my $outannot, ">".$parameters{"pathOutputGOSimplifiedAnnotations"});
+open(my $outannot, ">".$parameters{"pathOutputSimplifiedAnnotations"});
 
 print $outannot "GeneName\tGOID\n";
 
@@ -359,7 +399,7 @@ foreach my $idclust (keys %clusters){
     my $written=0;
     
     foreach my $go (keys %{$clusters{$idclust}}){
-	print $outclust "GOCluster".$idclust."\t".$go."\n";
+	print $outclust "GOCluster".$idclust."\t".$go."\t".$godesc{$go}."\n";
 
 	$inclusters{$go}=$idclust;
 
