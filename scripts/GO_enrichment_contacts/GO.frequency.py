@@ -12,13 +12,15 @@ parser.add_argument("Enhancers", help="species")
 
 # Options
 parser.add_argument("--EnhancerContact", action="store_true", help="Get contacts at bait-enhancer scale (default = False)")
-parser.add_argument("--BackgroundEnhancers", action="store_true", help="Consider the background set as annotated with enhancers")
+parser.add_argument("--BackgroundEnhancers", action="store_true", help="Consider the background set as annotated with enhancers (default = False)")
+parser.add_argument("--UniqueGO", action="store_true",
+                    help="Get unique list of GO term associated to genes for each bait (default=complete)")
+parser.add_argument("--EnhancerCountOnce", action="store_true", help="Enhancer can contribute only once for a given GOTerm (default = False)")
 parser.add_argument("--WithoutPropagation", action="store_true", help="Get gene annotation without GO propagation")
 parser.add_argument("--KeepBaitedEnhancers", action="store_true", help="Keep contacts where Enhancers are in baits (default = False)")
 parser.add_argument("--KeepTransContact", action="store_true", help="Keep inter-chromosome contacts (default = False)")
 parser.add_argument("--KeepBaitBait", action="store_true", help="Keep inter-chromosome contacts (default = False)")
-parser.add_argument("--UniqueGO", action="store_true",
-                    help="Get unique list of GO term associated to genes for each bait (default=complete)")
+
 args = parser.parse_args()
 
 ######################################################################
@@ -35,18 +37,20 @@ if args.WithoutPropagation:
 else:
     AnnotatedBaits = pathResults + "/" + AnnotationType + ".GO.annotated.baits.txt"
 
-EnhancerContact = ".EnhancerContact" if args.EnhancerContact else ""
-BackgroundEnhancer = ".BackgroundEnhancers" if args.BackgroundEnhancers else ""
+# Define output files names according to options
+EnhancerContact = ".EnhancerScale" if args.EnhancerContact else ""
+BackgroundType = "Background.EnhancersContacts" if args.BackgroundEnhancers else "Background.AllContacts"
+EnhancerContribution = ".EnhancerCountOnce" if args.EnhancerCountOnce else ""
 Baited = ".BaitedEnh" if args.KeepBaitedEnhancers else ""
 Trans = ".Trans" if args.KeepTransContact else ""
 Bait2Bait = ".bait2bait" if args.KeepBaitBait else ""
 WithoutPropagation = ".WithoutPropagation" if args.WithoutPropagation else ""
 
-ForegroundContacts = pathResults + "/" + Prefix + "/foreground.contacts" + BackgroundEnhancer + Baited + Trans + Bait2Bait + ".txt"
-BackgroundContacts = pathResults + "/" + Prefix + "/background.contacts" + BackgroundEnhancer + Baited + Trans + Bait2Bait + ".txt"
+ForegroundContacts = pathResults + "/" + Prefix + "/Foreground.Contacts" + Baited + Trans + Bait2Bait + ".txt"
+BackgroundContacts = pathResults + "/" + Prefix + "/" + BackgroundType + Baited + Trans + Bait2Bait + ".txt"
 
-OutputFile = pathResults + "/" + Prefix + "/" + AnnotationType + ".GO.frequency" + EnhancerContact \
-             + BackgroundEnhancer + Baited + Trans + Bait2Bait + WithoutPropagation + ".txt"
+OutputFile = pathResults + "/" + Prefix + "/" + AnnotationType + ".GO.frequency." + BackgroundType + EnhancerContact \
+             + EnhancerContribution + Baited + Trans + Bait2Bait + WithoutPropagation + ".txt"
 
 ######################################################################
 # Dictionary of GO Description
@@ -98,7 +102,7 @@ def GOTerm_Frequency(InputContacts, type):
     print("Found", len(GOFrequency.keys()), "associated GOTerm.")
 
     # Contacts between baits and enhancers
-    if args.EnhancerContact and type == "foreground":
+    if (type == "foreground" and args.EnhancerContact) or (type == "background" and args.BackgroundEnhancers):
         ContactByEnhancer = {}
         N = 0
         for x in range(len(Contacts)):
@@ -120,8 +124,11 @@ def GOTerm_Frequency(InputContacts, type):
                 for GOID in Baits2GO[BaitID]:
                     GOFrequency.setdefault(GOID, [])
                     for enhancerID in ContactByEnhancer[BaitID]:
-                        #if enhancerID not in GOFrequency[GOID]:     # enhancer can only count once for a given GOTerm
-                        GOFrequency[GOID].append(enhancerID)
+                        # Enhancer contribution can be binary or not
+                        if args.EnhancerCountOnce and enhancerID not in GOFrequency[GOID]:
+                            GOFrequency[GOID].append(enhancerID)
+                        else:
+                            GOFrequency[GOID].append(enhancerID)
 
     return GOFrequency, N
 
@@ -146,8 +153,12 @@ for GOTerm in BackgroundFrequency.keys():
                 ForegroundFrequency[GOTerm] = len(ForegroundFrequency[GOTerm])
             FreqForeground = str(ForegroundFrequency[GOTerm])
 
+        if args.BackgroundEnhancers:
+            BackgroundFrequency[GOTerm] = len(BackgroundFrequency[GOTerm])
+        FreqBackground = str(BackgroundFrequency[GOTerm])
+
         Output.write(GOInfos[GOTerm][0] + "\t" + GOInfos[GOTerm][1] + "\t" + str(GOTerm) + "\t" +
-                     FreqForeground + "\t" + str(BackgroundFrequency[GOTerm]) + "\n")
+                     FreqForeground + "\t" + FreqBackground + "\n")
 
 Output.close()
 print("Done!")
