@@ -16,6 +16,7 @@ export ensrelease=94
 
 ####################################################################################
 
+echo "#!/bin/bash" > ${pathScripts}/bsub_script_expected
 echo "#SBATCH --job-name=exp_${sp}_${method}_${space}" >>  ${pathScripts}/bsub_script_expected
 echo "#SBATCH --partition=normal" >>  ${pathScripts}/bsub_script_expected
 echo "#SBATCH --output=${pathScripts}/std_out_exp_${sp}_${method}_${space}" >>  ${pathScripts}/bsub_script_expected
