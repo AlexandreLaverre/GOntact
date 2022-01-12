@@ -35,7 +35,7 @@ echo "#SBATCH --cpus-per-task=1" >>  ${pathScripts}/bsub_script_observed ## 1 CP
 echo "#SBATCH --time=3:00:00" >>  ${pathScripts}/bsub_script_observed ## 3 hours
 echo "#SBATCH --mem=20G" >>  ${pathScripts}/bsub_script_observed ## 20g per CPU
 
-echo "perl ${pathScripts}/compute.observed.values.pl --pathInputElements=${pathEnhancers}/${sp}/${dataset}.bed --pathBackgroundElements=${pathEnhancers}/${sp}/${background}.bed --pathGOCategories=${pathGO}/GOCategories.txt --pathGOAnnotations=${pathGO}/${sp}.simplified.gene.annotation.${space}.txt --pathRegulatoryRegions=${pathResults}/${sp}/${method}/regulatory_regions_Ensembl${ensrelease}_${space}.txt --pathOutput=${pathResults}/${sp}/${method}/${dataset}/observed_values_Ensembl${ensrelease}_background${background}_${space}.txt " >>  ${pathScripts}/bsub_script_observed
+echo "perl ${pathScripts}/compute.observed.values.pl --pathInputElements=${pathEnhancers}/${sp}/${dataset}.bed --pathBackgroundElements=${pathEnhancers}/${sp}/${background}.bed --pathGOCategories=${pathGO}/GOCategories.txt --pathGOAnnotations=${pathGO}/${sp}.simplified.gene.annotation.${space}.txt --pathRegulatoryRegions=${pathResults}/${sp}/${method}/regulatory_regions_Ensembl${ensrelease}_${space}.txt --pathOutput=${pathResults}/${sp}/${method}/${dataset}/observed_values_Ensembl${ensrelease}_background${background}_${space}.txt  --pathOutputAssociation=${pathResults}/${sp}/${method}/${dataset}/enhancer_GO_association_Ensembl${ensrelease}_${space}.txt " >>  ${pathScripts}/bsub_script_observed
 
 ####################################################################################
 

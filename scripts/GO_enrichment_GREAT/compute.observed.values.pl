@@ -344,8 +344,9 @@ $parameters{"pathGOCategories"}="NA";
 $parameters{"pathGOAnnotations"}="NA";
 $parameters{"pathRegulatoryRegions"}="NA";
 $parameters{"pathOutput"}="NA";
+$parameters{"pathOutputAssociation"}="NA";
 
-my @defaultpars=("pathInputElements", "pathBackgroundElements", "pathGOCategories", "pathGOAnnotations", "pathRegulatoryRegions", "pathOutput");
+my @defaultpars=("pathInputElements", "pathBackgroundElements", "pathGOCategories", "pathGOAnnotations", "pathRegulatoryRegions", "pathOutput", "pathOutputAssociation");
 
 my %defaultvalues;
 
@@ -559,6 +560,7 @@ print "Done.\n";
 
 print "Writing output...\n";
 
+open(my $outputassoc, ">".$parameters{"pathOutputAssociation"});
 open(my $output, ">".$parameters{"pathOutput"});
 
 print $output "#NbTotalInputElements\t".$nbel."\n";
@@ -579,6 +581,10 @@ foreach my $space (keys %gocat){
 	
 	if(exists $elgo{$go}){
 	    $nbinputel=keys %{$elgo{$go}};
+
+	    foreach my $e (keys %{$elgo{$go}}){
+		print $outputassoc $go."\t".$e."\n";
+	    }
 	}
 
 	if($usingbg==1){
@@ -597,6 +603,7 @@ foreach my $space (keys %gocat){
 }
 
 close($output);
+close($outputassoc);
 
 print "Done.\n";
 
