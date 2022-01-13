@@ -1,54 +1,50 @@
-path="/home/laverre/GOntact/results/"
+#!/usr/bin/env Rscript
+args = commandArgs(trailingOnly=TRUE)
 
-sp = "human"
-GOtype = "complete"
-Trans =  "" #".Trans"
-bait2bait = "" # ".bait2bait"
-propagation = ".WithoutPropagation"
+library(data.table)
 
-samples = c("kidney", "neuron", "liver", "heart")
+path="/beegfs/data/necsulea/GOntact/results/GO_enrichment_contacts/human/"
+dist = args[1]
+file = args[2]
 
-GOEnrichment.list <- list()
+GOFile = paste0(path, dist, "/FANTOM5.first1000.kidney.enhancers.hg38/GOFrequency/", file)
 
-for (sample in samples){
-  print(sample)
-  enh=paste("FANTOM5.first1000", sample, "enhancers.hg38", sep=".")
-  
-  GOFile = paste0(path, sp, "/", enh, "/", GOtype, ".GO.frequency", bait2bait, Trans, propagation, ".txt")
-  
-  ## Get the total Foreground & Background count in the header
-  HeadFile <- file(GOFile,"r")
-  ForegroundCount = as.numeric(sub(".*= ", "",  readLines(HeadFile,n=1)))
-  BackgroundCount = as.numeric(sub(".*= ", "",  readLines(HeadFile,n=1)))
-  close(HeadFile)
-  
+## Get the total Foreground & Background count in the header
+HeadFile <- file(GOFile,"r")
+ForegroundCount = as.numeric(sub(".*= ", "",  readLines(HeadFile,n=1)))
+BackgroundCount = as.numeric(sub(".*= ", "",  readLines(HeadFile,n=1)))
+close(HeadFile)
 
-  GOEnrichment = read.table(GOFile, h=T, quote="", sep="\t")
-  
-  # Hypergeometric test
-  GOEnrichment$Pval = apply(GOEnrichment, 1, function(x) phyper(as.numeric(x["ForegroundFrequency"])-1, as.numeric(x["BackgroundFrequency"]), 
-                                                                BackgroundCount-as.numeric(x["BackgroundFrequency"]), ForegroundCount, lower.tail=FALSE))
-  # FDR                   
-  GOEnrichment$FDR = p.adjust(GOEnrichment$Pval, method = "fdr")
-  GOEnrichment = GOEnrichment[which(GOEnrichment$FDR < 10e-3),]
+GOEnrichment = fread(GOFile, h=T, quote="", sep="\t", select = c(1:4))
 
-  GOEnrichment.list[[sample]][["bio.process"]] = GOEnrichment[which(GOEnrichment$GONamespace == "biological_process"),]
-  GOEnrichment.list[[sample]][["cell.compo"]] = GOEnrichment[which(GOEnrichment$GONamespace == "cellular_component"),]
-  GOEnrichment.list[[sample]][["mol.funct"]] = GOEnrichment[which(GOEnrichment$GONamespace == "molecular_function"),]
+# Hypergeometric test
+GOEnrichment$HyperPval = apply(GOEnrichment, 1, function(x) phyper(as.numeric(x["ForegroundFrequency"])-1, as.numeric(x["BackgroundFrequency"]), 
+                                                              BackgroundCount-as.numeric(x["BackgroundFrequency"]), ForegroundCount, lower.tail=FALSE))
 
-}
+#GOEnrichment$BinomPval = apply(GOEnrichment, 1, function(x) phyper(as.numeric(x["ForegroundFrequency"])-1, as.numeric(x["BackgroundFrequency"]), 
+#                                                                   BackgroundCount-as.numeric(x["BackgroundFrequency"]), ForegroundCount, lower.tail=FALSE))
 
-#######################################################################################################
-# Distance distribution between fragments
+# FDR                   
+GOEnrichment$FDR = p.adjust(GOEnrichment$HyperPval, method = "fdr")
 
-par(mfrow=c(2,2))
-for (sample in samples){
-  enh=paste("FANTOM5.first1000", sample, "enhancers.hg38", sep=".")
-  
-  ForegroundContact = read.table(paste0(path, sp, "/", enh, "/foreground.contacts.txt"), h=T, sep="\t")
-  hist(ForegroundContact$Distance, breaks=50, main=sample, xlab="Distance")
-  med = median(ForegroundContact$Distance)
-  abline(v=med, col="red")
-  mtext(paste0("med.dist=", med, "\n", "N=", nrow(ForegroundContact)), line = -1)
-  
-}
+# Output
+
+GOEnrichment <- GOEnrichment[order(GOEnrichment$FDR),]
+write.table(GOEnrichment, file = paste0(path, dist, "/FANTOM5.first1000.kidney.enhancers.hg38/GOEnrichment/", file),
+            quote=FALSE, sep = '\t', dec = '.', row.names = F, col.names = T)
+
+
+# #######################################################################################################
+# # Distance distribution between fragments
+# 
+# par(mfrow=c(2,2))
+# for (sample in samples){
+#   enh=paste("FANTOM5.first1000", sample, "enhancers.hg38", sep=".")
+#   
+#   ForegroundContact = read.table(paste0(path, sp, "/", enh, "/foreground.contacts.txt"), h=T, sep="\t")
+#   hist(ForegroundContact$Distance, breaks=50, main=sample, xlab="Distance")
+#   med = median(ForegroundContact$Distance)
+#   abline(v=med, col="red")
+#   mtext(paste0("med.dist=", med, "\n", "N=", nrow(ForegroundContact)), line = -1)
+#   
+# }
