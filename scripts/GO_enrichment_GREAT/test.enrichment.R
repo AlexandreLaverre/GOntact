@@ -23,7 +23,7 @@ print(paste("space=",space)) ## e.g. "biological_process
 
 ###########################################################################
 
-go=read.table(paste(pathGO,"GOCategories.txt",sep=""),h=T, stringsAsFactors=F,sep="\t", quote="\"")
+go=read.table(paste(pathGO,"GOCategories.",sp,".",space,".txt",sep=""),h=T, stringsAsFactors=F,sep="\t", quote="\"")
 rownames(go)=go$ID
 
 ###########################################################################
