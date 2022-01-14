@@ -11,6 +11,7 @@ chromo=c(as.character(1:22), "X", "Y")
 #######################################################################
 
 pars=list()
+pars[["classical_upstream5kb_downstream1kb_extend100kb"]]=list("basal5"=5e3, "basal3"=1e3, "max.extend"=1e5, "min.dist"=0)
 pars[["classical_upstream5kb_downstream1kb_extend1Mb"]]=list("basal5"=5e3, "basal3"=1e3, "max.extend"=1e6, "min.dist"=0)
 pars[["classical_upstream0kb_downstream0kb_extend1Mb"]]=list("basal5"=0, "basal3"=0, "max.extend"=1e6, "min.dist"=0)
 pars[["classical_mindist25kb_extend1Mb"]]=list("basal5"=0, "basal3"=0, "max.extend"=1e6, "min.dist"=25000)
