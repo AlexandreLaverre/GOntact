@@ -28,7 +28,14 @@ sub readElementCoordinates{
 	if(exists $okchromo->{$chr}){
 	    my $start=$s[1]+0;
 	    my $end=$s[2]+0;
-	    my $id=$s[3];
+
+	    my $id="NA";
+
+	    if(@s>=4){
+		$id=$s[3];
+	    } else{
+		$id=$chr.":".$start."-".$end;
+	    }
 
 	    my $midpos=floor (($start+$end)/2); ## lower median position
 
