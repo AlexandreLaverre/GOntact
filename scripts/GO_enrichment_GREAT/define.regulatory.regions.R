@@ -43,7 +43,7 @@ for(space in c("biological_process", "molecular_function", "cellular_component")
       pathOut=paste(pathResults, sp, "/",outputdir,"/regulatory_regions_Ensembl",ensrelease,"_",space,".txt",sep="")
       
       if(file.exists(pathOut)){
-        print(paste("already done", method, sp,))
+        print(paste("already done", method, sp))
       } else{
         dirOut=paste(pathResults, sp, "/",outputdir,sep="")
         
