@@ -39,7 +39,7 @@ if [ ${cluster} = "pbil" ]; then
     echo "#SBATCH --mem=10G" >>  ${pathScripts}/bsub_script_observed ## 10g per CPU
 fi
 
-echo "perl ${pathScripts}/compute.observed.values.pl --pathInputElements=${pathEnhancers}/${sp}/${dataset}.bed --pathBackgroundElements=${pathEnhancers}/${sp}/${background}.bed --pathGOCategories=${pathGO}/GOCategories.txt --pathGOAnnotations=${pathGO}/${sp}.simplified.gene.annotation.${space}.txt --pathRegulatoryRegions=${pathResults}/${sp}/${method}/regulatory_regions_Ensembl${ensrelease}_${space}.txt --pathOutput=${pathResults}/${sp}/${method}/${dataset}/observed_values_Ensembl${ensrelease}_background${background}_${space}.txt  --pathOutputAssociation=${pathResults}/${sp}/${method}/${dataset}/enhancer_GO_association_Ensembl${ensrelease}_${space}.txt " >>  ${pathScripts}/bsub_script_observed
+echo "perl ${pathScripts}/compute.observed.values.pl --pathInputElements=${pathEnhancers}/${sp}/${dataset}.bed --pathBackgroundElements=${pathEnhancers}/${sp}/${background}.bed --pathGOCategories=${pathGO}/GOCategories.${sp}.${space}.txt --pathGOAnnotations=${pathGO}/${sp}.simplified.gene.annotation.${space}.txt --pathRegulatoryRegions=${pathResults}/${sp}/${method}/regulatory_regions_Ensembl${ensrelease}_${space}.txt --pathOutput=${pathResults}/${sp}/${method}/${dataset}/observed_values_Ensembl${ensrelease}_background${background}_${space}.txt  --pathOutputAssociation=${pathResults}/${sp}/${method}/${dataset}/enhancer_GO_association_Ensembl${ensrelease}_${space}.txt " >>  ${pathScripts}/bsub_script_observed
 
 ####################################################################################
 
