@@ -27,6 +27,34 @@ fi
 
 ####################################################################################
 
+if [ -e ${pathEnhancers}/${sp}/${dataset}.bed ]; then
+    export pathInputElements=${pathEnhancers}/${sp}/${dataset}.bed
+    echo "bed format for input"
+else
+    if [ -e ${pathEnhancers}/${sp}/${dataset}.txt ]; then
+	 export pathInputElements=${pathEnhancers}/${sp}/${dataset}.txt
+	echo "txt format for input"
+    else
+	echo "cannot find input elements"
+    fi
+fi
+
+####################################################################################
+
+if [ -e ${pathEnhancers}/${sp}/${background}.bed ]; then
+    export pathBackgroundElements=${pathEnhancers}/${sp}/${background}.bed
+    echo "bed format for background"
+else
+    if [ -e ${pathEnhancers}/${sp}/${background}.txt ]; then
+	 export pathBackgroundElements=${pathEnhancers}/${sp}/${background}.txt
+	echo "txt format for background"
+    else
+	echo "cannot find background elements"
+    fi
+fi
+
+####################################################################################
+
 echo "#!/bin/bash" > ${pathScripts}/bsub_script_observed
 
 if [ ${cluster} = "pbil" ]; then
@@ -39,7 +67,7 @@ if [ ${cluster} = "pbil" ]; then
     echo "#SBATCH --mem=10G" >>  ${pathScripts}/bsub_script_observed ## 10g per CPU
 fi
 
-echo "perl ${pathScripts}/compute.observed.values.pl --pathInputElements=${pathEnhancers}/${sp}/${dataset}.bed --pathBackgroundElements=${pathEnhancers}/${sp}/${background}.bed --pathGOCategories=${pathGO}/GOCategories.${sp}.${space}.txt --pathGOAnnotations=${pathGO}/${sp}.simplified.gene.annotation.${space}.txt --pathRegulatoryRegions=${pathResults}/${sp}/${method}/regulatory_regions_Ensembl${ensrelease}_${space}.txt --pathOutput=${pathResults}/${sp}/${method}/${dataset}/observed_values_Ensembl${ensrelease}_background${background}_${space}.txt  --pathOutputAssociation=${pathResults}/${sp}/${method}/${dataset}/enhancer_GO_association_Ensembl${ensrelease}_${space}.txt " >>  ${pathScripts}/bsub_script_observed
+echo "perl ${pathScripts}/compute.observed.values.pl --pathInputElements=${pathInputElements} --pathBackgroundElements=${pathBackgroundElements} --pathGOCategories=${pathGO}/GOCategories.${sp}.${space}.txt --pathGOAnnotations=${pathGO}/${sp}.simplified.gene.annotation.${space}.txt --pathRegulatoryRegions=${pathResults}/${sp}/${method}/regulatory_regions_Ensembl${ensrelease}_${space}.txt --pathOutput=${pathResults}/${sp}/${method}/${dataset}/observed_values_Ensembl${ensrelease}_background${background}_${space}.txt  --pathOutputAssociation=${pathResults}/${sp}/${method}/${dataset}/enhancer_GO_association_Ensembl${ensrelease}_${space}.txt " >>  ${pathScripts}/bsub_script_observed
 
 ####################################################################################
 
