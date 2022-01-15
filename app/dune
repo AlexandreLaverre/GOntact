@@ -1,0 +1,3 @@
+(executable
+  (name gontact_app)
+  (public_name gontact))
