@@ -1,0 +1,5 @@
+(library
+  (name gontact)
+  (public_name gontact)
+  (libraries core))
+  
