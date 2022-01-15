@@ -6,4 +6,6 @@ data
 results
 _build
 scripts/GO_enrichment_GREAT
+**/.merlin
+
 
