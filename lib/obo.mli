@@ -4,8 +4,9 @@ type term = {
   namespace : string ;
   is_a : string list ;
 }
+[@@deriving show]
 
 type t = term list
-    
-(*val from_file : string -> t*)
-  
+[@@deriving show]
+
+val from_file : string -> (t, string) result

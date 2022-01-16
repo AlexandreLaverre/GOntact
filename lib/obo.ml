@@ -6,8 +6,10 @@ type term = {
   namespace : string ;
   is_a : string list ;
 }
+[@@deriving show]
 
 type t = term list
+[@@deriving show]
 
 type stanza_type =
   | Term
@@ -18,67 +20,76 @@ type parsed_line =
   | Pair of (string * string)
   | Header of stanza_type
   | Empty_line
-
                    
-let rec skip_until_term get_next_line =
-  match get_next_line () with
-  | None ->  `End_of_file
-  | Some "[Term]" -> `Next_term
-  | Some _ ->  skip_until_term get_next_line
-
-
 let remove_comment s =
-  match String.lsplit2 s ~on:'!' with
-  | Some (x, _) -> x (* we should trim string *)
-  | None -> s
+  Stdlib.String.trim (
+    match String.lsplit2 s ~on:'!' with
+    | Some (x, _) -> x
+    | None -> s
+  )
     
 let parsed_line_of_string s =
   match remove_comment s with
   | "" -> Ok Empty_line
-    | "[Term]" -> Ok (Header Term)
-    | "[Typedef]" -> Ok (Header Typedef)
-    | "[Instance]" -> Ok (Header Instance)
-    | _  ->
-      match String.lsplit2 s ~on:':' with
-      | Some (x, y) -> Ok (Pair (x, y))
-      | None -> Error "not an obo file"
-        
-let rec parse_lines l =
+  | "[Term]" -> Ok (Header Term)
+  | "[Typedef]" -> Ok (Header Typedef)
+  | "[Instance]" -> Ok (Header Instance)
+  | uc  -> 
+    match String.lsplit2 uc ~on:':' with
+    | Some (x, y) -> Ok (Pair (x, Stdlib.String.trim y))
+    | None -> Error "not an obo file"
+                
+let parse_lines l =
   Result.all (List.map l ~f:parsed_line_of_string)
 
 let get_field l k =
   List.filter_map l ~f:(fun (x, y) -> if String.equal x k then Some y else None)
 
+(*
 let get_at_most_one_field l k =
   match get_field l k with
   | [] -> Ok None
   | [x] -> Ok (Some x)
   | _ -> Error "more than one"
+*)
 
 let get_exactly_one_field l k =
   match get_field l k with
   | [x] -> Ok x
   | [] -> Error "nothing found"
   | _ -> Error "more than one"
-
   
 let term_of_list l =
-  let* id = get_exactly_one_field l "id"
+  let open Let_syntax.Result in 
+  let* id = get_exactly_one_field l "id" in
+  let* name = get_exactly_one_field l "name" in
+  let+ namespace = get_exactly_one_field l "namespace" in
+  let  is_a = get_field l "is_a" in
+  {id ; name ; namespace ; is_a } 
 
+let break_between_lines l1 l2 =
+  match (l1, l2) with
+  | (_, Header _) -> true
+  | _ -> false
 
-    with  
-      {id = ;  name = ; namespace = ; is_a = } 
+let process_pair p =
+  match p with
+  | Pair (x, y) -> Some (x,y)
+  | _ -> None
 
-(* let parse_term get_next_line =  *)
-  
-  
-let parse get_next_line =
-  match skip_until_term get_next_line with
-  | `End_of_file -> []   (* file does not contain any GO term, empty list *)
-  | `Next_term -> parse_term get_next_line
-  | _ -> print_endline "weird"
-    
-    
-(* let from_file path = *)
+let process_block_of_lines l =
+  match l with
+  | Header Term :: t -> Some (term_of_list (List.filter_map t ~f:process_pair))
+  | _  -> None
+   
+let process_list l = 
+  List.group l ~break:break_between_lines
+  |> List.filter_map ~f:process_block_of_lines
+  |> Result.all
+ 
+let from_file path =
+  let open Let_syntax.Result in
+  let* l = In_channel.read_lines path |> parse_lines
+  in process_list l
              
   
