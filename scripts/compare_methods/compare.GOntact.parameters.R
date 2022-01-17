@@ -15,7 +15,8 @@ space="biological_process"
 
 method1=args[1] # i.e "mindist0Kb_maxdist2Mb_extendOverlap5Kb"
 method2=args[2] # i.e : "mindist0Kb_maxdist1Mb_extendOverlap5Kb"
-background=args[3] # i.e : FANTOM5.Laverre2022 or FANTOM5.selection
+background1=args[3] # i.e : FANTOM5.Laverre2022 or FANTOM5.selection
+background2=args[4] # i.e : FANTOM5.Laverre2022 or FANTOM5.selection
 
 maxFDR=0.05
 
@@ -23,12 +24,12 @@ maxFDR=0.05
 ## GO enrichment tests
 
 res1=read.table(paste0(pathResults, sp,"/",method1,"/",dataset,"/GOEnrichment/uniqueGO.",space,".Background.EnhancersContacts",
-                      background, ".EnhancerScale.EnhancerCountOnce.txt"), h=T, stringsAsFactors=F, sep="\t", quote="\"")
+                      background1, ".EnhancerScale.EnhancerCountOnce.txt"), h=T, stringsAsFactors=F, sep="\t", quote="\"")
 
 rownames(res1)=res1$GOTerm
 
 res2=read.table(paste0(pathResults, sp,"/",method2,"/",dataset,"/GOEnrichment/uniqueGO.",space,".Background.EnhancersContacts",
-                       background, ".EnhancerScale.EnhancerCountOnce.txt"), h=T, stringsAsFactors=F, sep="\t", quote="\"")
+                       background2, ".EnhancerScale.EnhancerCountOnce.txt"), h=T, stringsAsFactors=F, sep="\t", quote="\"")
 rownames(res2)=res2$GOTerm
 
 ##################################################################################
@@ -49,7 +50,7 @@ res2$Enrichment=res2$PropObserved/res2$PropExpected
 
 lim=range(c(res1[any, "Enrichment"],res2[any, "Enrichment"]))
 
-pdf(paste(pathFigures, "GOntact_enrichment_",method1,"_vs_",method2,"_backgound_",background, ".pdf",sep=""))
+pdf(paste(pathFigures, "GOntact_enrichment_",method1,"_backgound_",background1, "_vs_",method2,"_backgound_",background2, ".pdf",sep=""))
 
 plot(res1[any, "Enrichment"], res2[any, "Enrichment"], pch=20, xlab="", ylab="", axes=F, main="", xlim=lim, ylim=lim)
 points(res1[common, "Enrichment"], res2[common, "Enrichment"], pch=20, col="blue")
@@ -59,10 +60,10 @@ points(res1[only2, "Enrichment"], res2[only2, "Enrichment"], pch=20, col="orange
 abline(0,1)
 
 axis(side=1, mgp=c(3, 0.5, 0))
-mtext(method1, side=1, line=2)
+mtext(paste(method1,background1), side=1, line=2)
 
 axis(side=2, mgp=c(3, 0.75, 0))
-mtext(method2, side=2, line=2)
+mtext(paste(method2,background2), side=2, line=2)
 
 dev.off()
 
