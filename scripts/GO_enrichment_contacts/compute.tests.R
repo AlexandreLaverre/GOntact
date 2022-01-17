@@ -4,11 +4,14 @@ library(data.table)
 
 args = commandArgs(trailingOnly=TRUE)
 
-dist = args[1]
-file = args[2]
+sp= args[1]
+enhancer= args[2]
+dist = args[3]
+file = args[4]
 
-pathResult = "/beegfs/data/necsulea/GOntact/results/GO_enrichment_contacts/human/"
-GOFile = paste0(pathResult, dist, "/FANTOM5.first1000.kidney.enhancers.hg38/GOFrequency/", file)
+message("### Perform GOEnrichment test ###")
+pathResult = "/beegfs/data/necsulea/GOntact/results/GO_enrichment_contacts/"
+GOFile = paste(pathResult, sp, dist, enhancer, "GOFrequency", file, sep="/")
 
 ##################################################################################
 ## Get the total Foreground & Background count in the header
@@ -22,6 +25,7 @@ close(HeadFile)
 GOEnrichment = fread(GOFile, h=T, quote="", sep="\t", select = c(1:4), stringsAsFactors=F)
 GOEnrichment$PropObserved = GOEnrichment$ForegroundFrequency/ForegroundCount
 GOEnrichment$PropExpected = GOEnrichment$BackgroundFrequency/BackgroundCount
+GOEnrichment$Enrichment=GOEnrichment$PropObserved/GOEnrichment$PropExpected
 
 # Hypergeometric test
 GOEnrichment$HyperPval = apply(GOEnrichment, 1, function(x) phyper(as.numeric(x["ForegroundFrequency"])-1, as.numeric(x["BackgroundFrequency"]), 
@@ -33,13 +37,13 @@ GOEnrichment$BinomPval = apply(GOEnrichment, 1, function(x) binom.test(as.numeri
                                                                        alternative = "greater")$p.value)
 
 # FDR                   
-GOEnrichment$FDR = p.adjust(GOEnrichment$HyperPval, method = "fdr")
+GOEnrichment$HyperFDR = p.adjust(GOEnrichment$HyperPval, method = "fdr")
 GOEnrichment$BinomFDR = p.adjust(GOEnrichment$BinomPval, method = "fdr")
 
 ##################################################################################
 # Output
-GOEnrichment <- GOEnrichment[order(GOEnrichment$FDR),]
-write.table(GOEnrichment, file = paste0(pathResult, dist, "/FANTOM5.first1000.kidney.enhancers.hg38/GOEnrichment/", file),
+GOEnrichment <- GOEnrichment[order(GOEnrichment$HyperFDR),]
+write.table(GOEnrichment, file=paste(pathResult, sp, dist, enhancer, "GOEnrichment", file, sep="/"),
             quote=FALSE, sep = '\t', dec = '.', row.names = F, col.names = T)
 
 ##################################################################################

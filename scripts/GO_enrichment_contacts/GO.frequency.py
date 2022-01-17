@@ -18,17 +18,20 @@ parser.add_argument("--minDistance", nargs="?", default=0, const=0, type=int,
                     help="minimum distance (in bp) between bait and contacted region (default = 0bp)")
 parser.add_argument("--maxDistance", nargs="?", default=2000000, const=0, type=int,
                     help="maximum distance (in bp) between bait and contacted region (default = 2Mb)")
+
 parser.add_argument("--EnhancerContact", action="store_true", help="Get contacts at bait-enhancer scale (default = False)")
+parser.add_argument("--EnhancerCountOnce", action="store_true", help="Enhancer can contribute only once for a given GOTerm (default = False)")
 parser.add_argument("--BackgroundEnhancers", nargs="?", help="Input file of background enhancers coordinates in BED format")
+
 parser.add_argument("--UniqueGO", action="store_true",
                     help="Get unique list of GO term associated to genes for each bait (default=complete)")
-parser.add_argument("--EnhancerCountOnce", action="store_true", help="Enhancer can contribute only once for a given GOTerm (default = False)")
 parser.add_argument("--KeepBaitedEnhancers", action="store_true", help="Keep contacts where Enhancers are in baits (default = False)")
 parser.add_argument("--KeepTransContact", action="store_true", help="Keep inter-chromosome contacts (default = False)")
 parser.add_argument("--KeepBaitBait", action="store_true", help="Keep inter-chromosome contacts (default = False)")
 
 args = parser.parse_args()
-print(args)
+print("### Estimate GOTerm frequency ###")
+print("Running with following options:", args)
 
 ######################################################################
 Prefix = os.path.basename(args.Enhancers).strip('.bed')
@@ -39,8 +42,6 @@ extendOverlap = "_extendOverlap" + str(int(args.ExtendOverlap/1000)) + "Kb"
 
 Prefix = minDistance + maxDistance + extendOverlap + "/" + Prefix
 
-AnnotationType = "unique" if args.UniqueGO else "complete"
-
 path = "/beegfs/data/necsulea/GOntact/"
 pathResults = path + "/results/GO_enrichment_contacts/" + args.species
 pathOutput = pathResults + "/" + Prefix + "/GOFrequency/"
@@ -48,21 +49,22 @@ if not os.path.exists(pathOutput):
     os.makedirs(pathOutput)
 
 GODescription = path + "/data/GeneOntology/GODescription.txt"
-AnnotatedBaits = pathResults + "/" + AnnotationType + ".GO.annotated.baits." + args.GONameSpace + ".txt"
+AnnotationType = "complete." if not args.UniqueGO else ""
+AnnotatedBaits = pathResults + "/" + AnnotationType + "GO.annotated.baits." + args.GONameSpace + ".txt"
 
 # Define output files names according to options
-EnhancerContact = ".EnhancerScale" if args.EnhancerContact else ""
-BackgroundType = "Background.EnhancersContacts" + args.BackgroundEnhancers.strip('.bed') if args.BackgroundEnhancers else "Background.AllContacts"
-EnhancerContribution = ".EnhancerCountOnce" if args.EnhancerCountOnce else ""
+EnhancerContact = ".ContactScale" if not args.EnhancerContact else ""
+BackgroundType = args.BackgroundEnhancers.strip('.bed') if args.BackgroundEnhancers else "AllContacts"
+EnhancerContribution = ".EnhAllCount" if not args.EnhancerCountOnce else ""
 Baited = ".BaitedEnh" if args.KeepBaitedEnhancers else ""
 Trans = ".Trans" if args.KeepTransContact else ""
 Bait2Bait = ".bait2bait" if args.KeepBaitBait else ""
 
 ForegroundContacts = pathResults + "/" + Prefix + "/ContactsSets/Foreground.Contacts" + Baited + Trans + Bait2Bait + ".txt"
-BackgroundContacts = pathResults + "/" + Prefix + "/ContactsSets/" + BackgroundType + Baited + Trans + Bait2Bait + ".txt"
+BackgroundContacts = pathResults + "/" + Prefix + "/ContactsSets/Background." + BackgroundType + Baited + Trans + Bait2Bait + ".txt"
 
-OutputFile = pathOutput + AnnotationType + "GO." + args.GONameSpace + "." + \
-             BackgroundType + EnhancerContact + EnhancerContribution + Baited + Trans + Bait2Bait + ".txt"
+OutputFile = pathOutput + AnnotationType + args.GONameSpace + ".Background." + BackgroundType +\
+             EnhancerContact + EnhancerContribution + Baited + Trans + Bait2Bait + ".txt"
 
 ######################################################################
 # Dictionary of GO Description

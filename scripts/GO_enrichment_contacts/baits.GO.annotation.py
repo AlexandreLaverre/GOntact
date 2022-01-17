@@ -11,16 +11,18 @@ parser.add_argument("--UniqueGO", action="store_true",
                     help="Get unique list of GO term associated to genes for each bait (default=complete)")
 args = parser.parse_args()
 
+print("### GOTerm annotation of baits ###")
+
 ######################################################################
 
 GenomeAssembly = "hg38" if args.species == "human" else "mm10"
-Prefix = "unique" if args.UniqueGO else "complete"
+Prefix = "complete." if not args.UniqueGO else ""
 
 path = "/beegfs/data/necsulea/GOntact/"
 Baits = path + "/data/PCHi-C/" + args.species + "/bait_coords_" + GenomeAssembly + ".txt"
 EnsemblAnnotation = path + "/data/ensembl_annotations/" + args.species + "/GeneNames_Ensembl94.txt"
 AnnotatedGenes = path + "/data/GeneOntology/" + args.species + ".simplified.gene.annotation." + args.GONameSpace + ".txt"
-OutputFile = path + "/results/GO_enrichment_contacts/" + args.species + "/" + Prefix + ".GO.annotated.baits." + args.GONameSpace + ".txt"
+OutputFile = path + "/results/GO_enrichment_contacts/" + args.species + "/" + Prefix + "GO.annotated.baits." + args.GONameSpace + ".txt"
 
 ######################################################################
 ## Correspondence between EnsemblID and GeneName

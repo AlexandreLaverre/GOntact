@@ -31,7 +31,8 @@ parser.add_argument("--KeepTransContact", action="store_true",
 parser.add_argument("--KeepBaitBait", action="store_true", help="Keep bait-bait contacts (default = False)")
 
 args = parser.parse_args()
-print(args)
+print("### Selection of background and foreground contacts ###")
+print("Running with following options:", args)
 
 ########################################################################################################################
 ### Define path and files ###
@@ -44,9 +45,9 @@ Baits = path + "/data/PCHi-C/" + args.species + "/bait_coords_" + GenomeAssembly
 Fragments = path + "/data/PCHi-C/" + args.species + "/frag_coords_" + GenomeAssembly + ".txt"
 Contacts = path + "/data/PCHi-C/" + args.species + "/all_interactions_simplified.txt"
 
-InputEnhancers = path + "data/enhancers/" + args.species + "/" + args.Enhancers
+InputEnhancers = path + "data/enhancers/" + args.species + "/" + args.Enhancers.strip('.bed') + ".bed"
 if args.BackgroundEnhancers:
-    BackgroundEnhancers = path + "data/enhancers/" + args.species + "/" + args.BackgroundEnhancers
+    BackgroundEnhancers = path + "data/enhancers/" + args.species + "/" + args.BackgroundEnhancers.strip('.bed') + ".bed"
 
 minDistance = "mindist" + str(int(args.minDistance/1000)) + "Kb"
 maxDistance = "_maxdist" + str(int(args.maxDistance/1000000)) + "Mb"
@@ -57,13 +58,13 @@ PathOutput = path + "/results/GO_enrichment_contacts/" + args.species + "/" +\
 if not os.path.exists(PathOutput):
     os.makedirs(PathOutput)
 
-BackgroundType = "Background.EnhancersContacts" + args.BackgroundEnhancers.strip('.bed') if args.BackgroundEnhancers else "Background.AllContacts"
+BackgroundType = args.BackgroundEnhancers.strip('.bed') if args.BackgroundEnhancers else "AllContacts"
 Baited = ".BaitedEnh" if args.KeepBaitedEnhancers else ""
 Trans = ".Trans" if args.KeepTransContact else ""
 Bait2Bait = ".bait2bait" if args.KeepBaitBait else ""
 
 ForegroundOutput = PathOutput + "/Foreground.Contacts" + Baited + Trans + Bait2Bait + ".txt"
-BackgroundOutput = PathOutput + "/" + BackgroundType + Baited + Trans + Bait2Bait + ".txt"
+BackgroundOutput = PathOutput + "/Background." + BackgroundType + Baited + Trans + Bait2Bait + ".txt"
 
 ########################################################################################################################
 ### Overlap between input enhancers and restriction fragments ###
@@ -157,6 +158,8 @@ if args.BackgroundEnhancers:
 
 # Get all contacts
 AllContacts = pandas.read_csv(Contacts, sep='\t')
+
+print("Found", len(AllContacts.index), "contacts.")
 
 # Drop contacts outside of specified distance range
 AllContacts = AllContacts.drop(AllContacts[(AllContacts.Synteny == "cis") & (AllContacts.Distance > args.maxDistance)].index)
