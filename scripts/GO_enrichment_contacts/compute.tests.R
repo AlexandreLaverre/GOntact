@@ -1,6 +1,5 @@
 ##################################################################################
 #!/usr/bin/env Rscript
-library(data.table)
 
 args = commandArgs(trailingOnly=TRUE)
 
@@ -22,7 +21,7 @@ close(HeadFile)
 
 ##################################################################################
 # GOEnrichment
-GOEnrichment = fread(GOFile, h=T, quote="", sep="\t", select = c(1:4), stringsAsFactors=F)
+GOEnrichment = read.table(GOFile, h=T, quote="", sep="\t", select = c(1:4), stringsAsFactors=F)
 GOEnrichment$PropObserved = GOEnrichment$ForegroundFrequency/ForegroundCount
 GOEnrichment$PropExpected = GOEnrichment$BackgroundFrequency/BackgroundCount
 GOEnrichment$Enrichment=GOEnrichment$PropObserved/GOEnrichment$PropExpected
