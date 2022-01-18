@@ -30,8 +30,8 @@ parser.add_argument("--KeepTransContact", action="store_true", help="Keep inter-
 parser.add_argument("--KeepBaitBait", action="store_true", help="Keep inter-chromosome contacts (default = False)")
 
 args = parser.parse_args()
-print("### Estimate GOTerm frequency ###")
-print("Running with following options:", args)
+print("###### Estimate GOTerm frequency ######")
+print("Running with following parameters:", args)
 
 ######################################################################
 Prefix = os.path.basename(args.Enhancers).strip('.bed')
@@ -143,7 +143,7 @@ def GOTerm_Frequency(InputContacts, type):
 
 print("## Running Foreground:")
 ForegroundFrequency, NbForeground = GOTerm_Frequency(ForegroundContacts, "foreground")
-print("## Running Background:")
+print("## Running Background: this can takes a few minutes...")
 BackgroundFrequency, NbBackground = GOTerm_Frequency(BackgroundContacts, "background")
 
 ######################################################################

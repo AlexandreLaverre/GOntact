@@ -31,8 +31,8 @@ parser.add_argument("--KeepTransContact", action="store_true",
 parser.add_argument("--KeepBaitBait", action="store_true", help="Keep bait-bait contacts (default = False)")
 
 args = parser.parse_args()
-print("### Selection of background and foreground contacts ###")
-print("Running with following options:", args)
+print("###### Selection of background and foreground contacts ######")
+print("Running with following parameters:", args)
 
 ########################################################################################################################
 ### Define path and files ###
@@ -166,7 +166,7 @@ if args.BackgroundEnhancers:
 # Get all contacts
 AllContacts = pandas.read_csv(Contacts, sep='\t')
 
-print("Found", len(AllContacts.index), "contacts.")
+print("Found", len(AllContacts.index), "total contacts.")
 
 # Drop contacts outside of specified distance range
 AllContacts = AllContacts.drop(AllContacts[(AllContacts.Synteny == "cis") & (AllContacts.Distance > args.maxDistance)].index)
@@ -179,7 +179,7 @@ if not args.KeepBaitBait:
 if not args.KeepTransContact:
     AllContacts = AllContacts.drop(AllContacts[(AllContacts.Synteny == "trans")].index)
 
-print("Found", len(AllContacts.index), "contacts.")
+print("Found", len(AllContacts.index), "filtered contacts.")
 
 # Get all interactions involving selected fragments
 ForegroundContacts = AllContacts.loc[AllContacts['FragmentID'].isin(SelectedFragments)]
