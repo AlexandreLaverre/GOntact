@@ -82,11 +82,16 @@ def Coord_Dict(Coordinates, type):
             i = i.strip("\n")
             i = i.split("\t")
 
-            # coord = (start, end, ID)
-            coord = (int(i[2]), int(i[3]), str(i[0])) if type == "RestrictionFragments" else (int(i[1]), int(i[2]), str(i[3]))
-            chr = str(i[1]) if type == "RestrictionFragments" else str(i[0])
+            if type == "RestrictionFragments":
+                chr, start, end = str(i[1]), int(i[2]), int(i[3])
+            else:
+                chr, start, end = str(i[0]), int(i[1]), int(i[2])
 
+            ID = str(chr + ':' + str(start) + ':' + str(end))
+
+            coord = (start, end, ID)
             dic[chr].append(coord)
+            
             N += 1
 
     # Sorting coordinates for each chromosome
