@@ -96,7 +96,6 @@ print("Found", len(Baits2GO), "baits with GO terms")
 
 def GOTerm_Frequency(InputContacts, type):
     scale = "enhancer" if (type == "foreground" and args.EnhancerContact) or (type == "background" and args.BackgroundEnhancers) else "fragment"
-    print(scale)
 
     # Get list of interested baits
     if type == "foreground" or args.BackgroundEnhancers:
@@ -129,8 +128,8 @@ def GOTerm_Frequency(InputContacts, type):
                     GOFrequency[GOID].append(ContactedID)
 
     # Count total number of GOTerm-ContactedID contact
-    for GOID in GOFrequency.keys():
-        if args.EnhancerCountOnce:
+    if args.EnhancerCountOnce:
+        for GOID in GOFrequency.keys():
             GOFrequency[GOID] = list(set(GOFrequency[GOID]))
 
     NbTotalContactedID = len(set(list(itertools.chain(*GOFrequency.values()))))
