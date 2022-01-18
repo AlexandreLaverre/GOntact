@@ -91,7 +91,7 @@ def Coord_Dict(Coordinates, type):
 
             coord = (start, end, ID)
             dic[chr].append(coord)
-            
+
             N += 1
 
     # Sorting coordinates for each chromosome
@@ -124,6 +124,7 @@ def OverlapEnhToFrag(EnhancersCoord, type):
             start = Enhancer[0]
             end = Enhancer[1]
             EnhancerID = str(Enhancer[2])
+            notoverlap = True
 
             if chr in FragmentsDict.keys():
                 # Initialization of first possible overlapping interest position
@@ -136,9 +137,10 @@ def OverlapEnhToFrag(EnhancersCoord, type):
                 while i < len(FragmentsDict[chr]) and FragmentsDict[chr][i][0] <= (end + args.ExtendOverlap):
                     OverlapEnh.append(EnhancerID)
                     OverlapDict[FragmentsDict[chr][i][2]].append(EnhancerID)
+                    notoverlap = False
                     i += 1
 
-            if EnhancerID not in OverlapEnh:
+            if notoverlap:
                 MissingEnhancers.append(EnhancerID)
 
     if len(MissingEnhancers) != 0:
