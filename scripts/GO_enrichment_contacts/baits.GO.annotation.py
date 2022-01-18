@@ -77,4 +77,4 @@ with open(Baits, 'r') as f:
             Output.write(BaitID + "\t" + str(BaitGenesID) + "\t" + ",".join(GenesNames) + "\t" + ",".join(GenesGOTerm) + '\n')
 
 Output.close()
-print("Done!")
+print("GO annotation: Done!")

@@ -169,6 +169,6 @@ for GOTerm in BackgroundFrequency.keys():
         Output.write(GOName + "\t" + str(GOTerm) + "\t" + FreqForeground + "\t" + FreqBackground + "\t" + EnhancersForeground + "\n")
 
 Output.close()
-print("Done!")
+print("GOFrequency: Done!")
 
 ######################################################################

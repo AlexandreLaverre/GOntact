@@ -226,6 +226,6 @@ print("Writing output...")
 AllContacts.to_csv(BackgroundOutput, sep="\t", index=False)
 ForegroundContacts.to_csv(ForegroundOutput, sep="\t", index=False)
 
-print("Done!")
+print("Contacts selection: Done!")
 
 ##############################################################################
