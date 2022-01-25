@@ -1,0 +1,24 @@
+type t
+
+module Term : sig
+  type t = {
+    id : string ;
+    name : string ;
+    namespace : string ;
+    is_a : string list ;
+  }
+  [@@deriving show]
+  
+  val from_obo_term :  Obo.term -> t
+    
+  val get_parents : t -> string list
+      
+  val compare : t -> t -> int
+end
+
+val find_term : t -> string -> Term.t option
+                            
+val expand_term_list : t -> Term.t list -> Term.t list
+
+val from_obo : Obo.t -> [ `Biological_process | `Molecular_function | `Cellular_component ] -> (t, string) result
+

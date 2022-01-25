@@ -2,5 +2,5 @@
   (name gontact)
   (public_name gontact)
   (libraries core)
-  (preprocess (pps ppx_deriving.show ppx_deriving.ord)))
+  (preprocess (pps ppx_deriving.show ppx_deriving.ord ppx_sexp_conv)))
   
