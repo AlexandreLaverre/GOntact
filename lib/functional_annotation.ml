@@ -1,23 +1,10 @@
 open Core
-(*
-type go_association = {
-  go_id : string ;
-  qualifier : string ;
-}
-*)
     
 type gene = {
   id : string ;
   symbol : string ;
 }
-[@@deriving ord]
-
-(*
-type gene_annotation = {
-  gene : gene ;
-  go_associations : go_association list ;
-}
-*)
+[@@deriving ord,show]
 
 type t = {
   gene_symbol_to_go : string list String.Map.t ;
@@ -42,7 +29,6 @@ let extract_genes ga ~go_id:go i =
   in 
   Option.map (String.Map.find d go) ~f:(List.map ~f:proj)
 
-
 let from_gaf (gaf:Gaf.t) =
   let filtered_gaf = List.filter gaf ~f:(fun ga -> not (String.is_prefix ga.qualifier ~prefix:"NOT")) in 
   let make_dict f compare =
@@ -53,3 +39,12 @@ let from_gaf (gaf:Gaf.t) =
   let gene_id_to_go = make_dict (fun ga -> (ga.gene_id, ga.go_id)) String.compare in
   let go_to_gene = make_dict (fun ga -> (ga.go_id, {id = ga.gene_id ; symbol = ga.gene_symbol})) compare_gene in
   {gene_symbol_to_go ; gene_id_to_go ; go_to_gene }
+
+
+let show fa d =
+  match d with
+    | `Gene_id_to_go -> String.Map.to_alist fa.gene_id_to_go |> [%show: (string * string list) list] 
+    | `Gene_symbol_to_go -> String.Map.to_alist fa.gene_symbol_to_go |>  [%show: (string * string list) list] 
+    | `Go_to_gene -> String.Map.to_alist fa.go_to_gene |>  [%show: (string * gene list) list] 
+    
+

@@ -1,5 +1,7 @@
 type t 
 
+val show : t -> [ `Gene_id_to_go | `Gene_symbol_to_go | `Go_to_gene ] -> string 
+
 val extract_terms : t -> [ `Id of string | `Symbol of string ] -> string list option
 
 val extract_genes : t -> go_id:string -> [ `Id | `Symbol ] -> string list option
