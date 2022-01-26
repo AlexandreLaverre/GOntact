@@ -18,14 +18,27 @@ let test_gaf () =
     let nb = List.length gl in Printf.printf "%d gene-GO associations in file\n" nb ;
     print_endline (Gaf.show gl)
 
-let test_func_annot () =
-  let g = Gaf.from_file "/home/ubuntu/data/mydatalocal/GOntact/data/GeneOntology/test_human.gaf" in
+(*let test_func_annot () =
+  let g = Gaf.from_file "/home/ubuntu/data/mydatalocal/GOntact/data/GeneOntology/goa_human.gaf" in
   match g with
   | Error e -> print_endline e
   | Ok gl ->
     let fa = Functional_annotation.from_gaf gl in
-    print_endline (Functional_annotation.show fa `Gene_id_to_go) ;
-    print_endline (Functional_annotation.show fa `Gene_symbol_to_go) ;
-    print_endline (Functional_annotation.show fa `Go_to_gene) 
+    print_endline (Functional_annotation.show fa `Gene_symbol_to_go) 
+*)    
 
-let () = test_func_annot ()
+let test_annot_propagation () =
+  let open Let_syntax.Result in
+  let* obo = Obo.from_file "/home/ubuntu/data/mydatalocal/GOntact/data/GeneOntology/go-basic.obo" in 
+  let* bp = Ontology.from_obo obo `Biological_process in 
+  let+ gaf =  Gaf.from_file "/home/ubuntu/data/mydatalocal/GOntact/data/GeneOntology/goa_human.gaf" in
+  let fa = Functional_annotation.from_gaf_and_ontology gaf bp in
+  let fap = Functional_annotation.propagate_annotations fa bp in 
+  (*let gl = Functional_annotation.extract_genes fa ~go_id:"GO:0000151" `Symbol in
+    print_endline ([%show: string list option] gl) *) 
+  Functional_annotation.write_annotations fa "original_annot.txt" ;
+  Functional_annotation.write_annotations fap "propagated_annot.txt" ;
+  Printf.printf "%d obo elements \n" (List.length obo) ;
+  Printf.printf "%d gaf elements \n" (List.length gaf)
+    
+let res  = test_annot_propagation () ;

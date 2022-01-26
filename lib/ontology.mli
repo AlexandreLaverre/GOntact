@@ -20,5 +20,9 @@ val find_term : t -> string -> Term.t option
                             
 val expand_term_list : t -> Term.t list -> Term.t list
 
+val expand_id_list : t -> string list -> string list
+
+val filter_terms : t -> string list -> string list
+  
 val from_obo : Obo.t -> [ `Biological_process | `Molecular_function | `Cellular_component ] -> (t, string) result
 

@@ -68,4 +68,12 @@ let expand_term_list o tl =
   List.fold tl ~init:Term.Set.empty ~f:(fun ts t -> add_term_to_closure ts t)   
   |> Term.Set.to_list
        
- 
+
+let expand_id_list o il =
+  let tl = List.filter_map il ~f:(fun i -> find_term o i) in
+  let et = expand_term_list o tl in
+  List.map et ~f:(fun t -> t.id)
+
+
+let filter_terms o sl =
+  List.filter sl ~f:(fun x -> not (Option.is_none (find_term o x)))
