@@ -47,5 +47,9 @@ let test_merge_coordinates () =
   let merged = Genomic_interval_collection.merge_coordinates cc in
   print_endline (Genomic_interval_collection.show merged)
 
-
-let res  = test_merge_coordinates () ;
+let test_genomic_annot () =
+  let open Let_syntax.Result in
+  let+ annot = Genomic_annotation.from_ensembl_biomart_file "/home/ubuntu/data/mydatalocal/GOntact/data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt" in  
+  print_endline (Genomic_annotation.show_transcripts annot) 
+  
+let res  = test_genomic_annot () ;
