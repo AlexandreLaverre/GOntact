@@ -40,5 +40,12 @@ let test_annot_propagation () =
   Functional_annotation.write_annotations fap "propagated_annot.txt" ;
   Printf.printf "%d obo elements \n" (List.length obo) ;
   Printf.printf "%d gaf elements \n" (List.length gaf)
-    
-let res  = test_annot_propagation () ;
+
+
+let test_merge_coordinates () =
+  let cc = Genomic_interval_collection.from_bed_file "test.bed" in
+  let merged = Genomic_interval_collection.merge_coordinates cc in
+  print_endline (Genomic_interval_collection.show merged)
+
+
+let res  = test_merge_coordinates () ;
