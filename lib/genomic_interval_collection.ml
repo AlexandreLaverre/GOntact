@@ -26,25 +26,22 @@ let from_bed_file path =
   let sl = sort_by_coordinate il in
   {int_list = sl}
 
-let rec fold_merge current_list (current_interval:Genomic_interval.t) (next_interval:Genomic_interval.t) next_list = 
-  match Genomic_interval.merge current_interval next_interval with
-  | None -> (
-      match next_list with
-      | [] -> (List.append current_list [current_interval; next_interval])
-      | h :: t -> fold_merge (List.append current_list [current_interval]) next_interval h t
-    )
-  | Some merged_int -> (
-      match next_list with
-      | [] -> List.append current_list [merged_int]
-      | h :: t -> fold_merge current_list merged_int h t
-    )
-    
-let merge_coordinates c =
-  let l = c.int_list in
+let fold_merge l ~init ~f = 
+  let rec aux_merge acc current_interval next_list =
+    match next_list with
+    | h :: t -> (
+        match Genomic_interval.merge current_interval h with
+        | None -> aux_merge (f acc current_interval) h t 
+        | Some merged_int -> aux_merge acc merged_int t
+      )
+    | [] -> f acc current_interval
+  in
   match l with
-  | first :: second :: t -> (
-      let merged_list = (fold_merge [] first second t) in
-      {int_list = merged_list}
-    )
-  | _ -> {int_list = l}
+  | h :: t ->  aux_merge init h t
+  | [] -> [] 
+  
+let merge_coordinates c =
+  let merged_list = fold_merge c.int_list ~init:[] ~f:(fun l i -> i :: l) in
+  let reordered = List.rev merged_list in
+  {int_list = reordered}
 
