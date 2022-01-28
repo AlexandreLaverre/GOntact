@@ -26,6 +26,22 @@ let from_bed_file path =
   let sl = sort_by_coordinate il in
   {int_list = sl}
 
+let from_chr_size_file path =
+  let split_chr_line line =
+    match String.split line ~on:'\t' with
+    | chr :: size :: _ ->  Genomic_interval.make ~id:chr chr 1 (int_of_string size)
+    | _ -> invalid_arg "chr size file must have at least two fields: chr_name chr_size " 
+  in
+  let l = In_channel.read_lines path in
+  let il = List.map l ~f:split_chr_line in
+  let sl = sort_by_coordinate il in
+  {int_list = sl}
+
+let chr_set (t:t) = 
+  let l = t.int_list in
+  let chr_list = List.map l ~f:(fun x -> Genomic_interval.chr x) in
+  String.Set.of_list chr_list
+
 let fold_merge l ~init ~f = 
   let rec aux_merge acc current_interval next_list =
     match next_list with

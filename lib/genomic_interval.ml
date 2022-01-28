@@ -45,4 +45,5 @@ let merge i j =
 let compare i j =
   if (not (String.equal i.chr j.chr)) then String.compare i.chr j.chr
   else compare i.start_pos j.start_pos
-      
+
+let chr t = t.chr
