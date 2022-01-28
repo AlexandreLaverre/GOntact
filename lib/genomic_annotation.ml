@@ -124,7 +124,53 @@ let filter_gene_symbols ga symbol_set =
   let filtered_isoforms = String.Map.filter_keys ga.isoforms ~f:(fun gid -> String.Set.mem gene_set gid) in
   {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
 
+let filter_chromosomes ga chr_set =
+  let filtered_genes = String.Map.filter ga.genes ~f:(fun g -> String.Set.mem chr_set g.chr) in (*we keep genes that are on these chromosomes*)
+  let gene_set = String.Set.of_list (String.Map.keys filtered_genes) in
+  let filtered_transcripts = String.Map.filter ga.transcripts ~f:(fun tx -> String.Set.mem gene_set tx.gene_id) in
+  let filtered_isoforms = String.Map.filter_keys ga.isoforms ~f:(fun gid -> String.Set.mem gene_set gid) in
+  {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
+  
 
+let compare_isoforms txinfo t1 t2 =
+  (*two isoforms from the same gene *)
+  let info1 = String.Map.find_exn txinfo t1 in (*t1 and t2 are necessarily in the transcript dictionary*)
+  let info2 = String.Map.find_exn txinfo t2 in
+  let appris1 = info1.appris_class in
+  let appris2 = info2.appris_class in
+  if String.equal appris1 appris2 then (
+    let (len1, len2) = (info1.length, info2.length) in
+    compare len1 len2
+  )
+  else (
+    match (appris1, appris2) with
+    | ("principal1", _) -> 1
+    | (_, "principal1") -> -1
+    | ("principal2", _) -> 1
+    | (_, "principal2") -> -1
+    | ("principal3", _) -> 1
+    | (_, "principal3") -> -1
+    | ("principal4", _) -> 1
+    | (_, "principal4") -> -1
+    | ("principal5", _) -> 1
+    | (_, "principal5") -> -1
+    | ("alternative1", _) -> 1
+    | (_, "alternative1") -> -1
+    | ("alternative2", _) -> 1
+    | (_, "alternative2") -> -1
+    | _ -> 0
+  )
+
+
+let identify_major_isoforms ga =
+  let gene_list = String.Map.keys ga.genes in
+  let isoforms = ga.isoforms in
+  let transcripts = ga.transcripts in
+  let find_major_isoform isolist =
+    Option.value_exn (List.max_elt isolist ~compare:(compare_isoforms transcripts))
+  in
+  let major_list = List.map gene_list ~f:(fun g -> (g, find_major_isoform (String.Map.find_exn isoforms g))) in
+  String.Map.of_alist_exn major_list
 
 (*
 let show_genes annot =

@@ -9,7 +9,11 @@ val filter_transcript_biotypes : t -> string -> t
 val filter_gene_symbols : t -> String.Set.t -> t 
 
 val filter_gene_biotypes : t -> string -> t
-  
+
+val filter_chromosomes : t -> String.Set.t -> t
+
+val identify_major_isoforms : t -> string String.Map.t
+                                     
 (*
 val show_genes : t -> string
 
