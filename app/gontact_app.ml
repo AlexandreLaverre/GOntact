@@ -50,8 +50,11 @@ let test_merge_coordinates () =
 
 let test_genomic_annot () =
   let open Let_syntax.Result in
-  let+ _ = Genomic_annotation.from_ensembl_biomart_file "/home/ubuntu/data/mydatalocal/GOntact/data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt" in  
-  print_endline "read biomart file ok" 
+  let+ ga = Genomic_annotation.from_ensembl_biomart_file "/home/ubuntu/data/mydatalocal/GOntact/data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt" in
+  let filtered1 = Genomic_annotation.filter_gene_biotypes ga "protein_coding" in
+  let filtered2 = Genomic_annotation.filter_transcript_biotypes filtered1 "protein_coding" in
+  let major_isoforms = Genomic_annotation.identify_major_isoforms filtered2 in
+  String.Map.iteri major_isoforms ~f:(fun ~key:k ~data:d -> Printf.printf "gene %s major isoform %s\n" k d)
   
     
 let res  = test_genomic_annot () ;
