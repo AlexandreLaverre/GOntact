@@ -37,7 +37,7 @@ let from_chr_size_file path =
   let sl = sort_by_coordinate il in
   {int_list = sl}
 
-let chr_set (t:t) = 
+let chr_set t = 
   let l = t.int_list in
   let chr_list = List.map l ~f:(fun x -> Genomic_interval.chr x) in
   String.Set.of_list chr_list
