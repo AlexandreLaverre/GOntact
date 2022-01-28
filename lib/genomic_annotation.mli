@@ -1,8 +1,14 @@
+open Core
+    
 type t
 
 val from_ensembl_biomart_file : string -> (t, string) result
 
 val filter_transcript_biotypes : t -> string -> t
+
+val filter_gene_symbols : t -> String.Set.t -> t 
+
+val filter_gene_biotypes : t -> string -> t
   
 (*
 val show_genes : t -> string

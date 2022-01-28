@@ -17,7 +17,8 @@ type transcript_annot = {
 
 type t = {
   genes : gene_annot String.Map.t ;
-  transcripts : transcript_annot String.Map.t ; 
+  transcripts : transcript_annot String.Map.t ;
+  isoforms : string list String.Map.t ;
 }
 
 type biomart_header = {
@@ -68,6 +69,12 @@ let transcript_annot_from_line line header =
     tss_pos = int_of_string (al.(header.tss_pos_index)) ;
     length = int_of_string (al.(header.transcript_length_index))})
 
+let isoforms_from_transcripts tx =
+  String.Map.map tx ~f:(fun t -> t.gene_id) (*simplify dictionary - tx id - gene id *)  
+  |> String.Map.to_alist (*transform to list of tuples*)
+  |> List.map ~f:(fun (x, y) -> (y, x)) (*reverse tuple ordre to create dictionary *)
+  |> String.Map.of_alist_multi  (*dictionary has gene ids as keys, values are list of transcript ids *)
+                                              
 let compare_gene_tuples g1 g2 =
   let (g1id, _) = g1 in
   let (g2id, _) = g2 in
@@ -84,7 +91,8 @@ let from_ensembl_biomart_file path =
       let transcript_list = List.map t ~f:(fun line -> transcript_annot_from_line line header) in
       let genes = String.Map.of_alist_exn dedup_gene_list in
       let transcripts = String.Map.of_alist_exn transcript_list in
-      {genes ; transcripts}
+      let isoforms = isoforms_from_transcripts transcripts in
+      {genes ; transcripts; isoforms}
     )
   | [] -> Error "File is empty."
 
@@ -92,12 +100,31 @@ let from_ensembl_biomart_file path =
 let filter_transcript_biotypes ga biotype =
   let genes = ga.genes in 
   let transcripts = ga.transcripts in
-  let filtered_transcripts = String.Map.filter transcripts ~f:(fun x -> String.equal x.transcript_type biotype) in
-  let tx_info_list = String.Map.data filtered_transcripts in
-  let gene_id_list = List.map tx_info_list ~f:(fun x -> x.gene_id) in 
-  let gene_tuple_list = List.map gene_id_list ~f:(fun g -> (g, String.Map.find_exn genes g)) in
-  let filtered_genes = String.Map.of_alist_exn gene_tuple_list in
-  {genes = filtered_genes ; transcripts = filtered_transcripts}
+  let filtered_transcripts = String.Map.filter transcripts ~f:(fun x -> String.equal x.transcript_type biotype) in (*select transcripts with the good biotype*)
+  let filtered_gene_set = String.Map.fold filtered_transcripts ~init:String.Set.empty ~f:(fun ~key:_ ~data:tx acc -> String.Set.add acc tx.gene_id) in  
+  let filtered_genes = String.Map.filter_keys genes ~f:(String.Set.mem filtered_gene_set) in
+  let filtered_isoforms = isoforms_from_transcripts filtered_transcripts in
+  {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
+
+let filter_gene_biotypes ga biotype =
+  let genes = ga.genes in 
+  let transcripts = ga.transcripts in
+  let filtered_genes = String.Map.filter genes ~f:(fun x -> String.equal x.gene_type biotype) in (*select genes with the good biotype*)
+  let filtered_gene_set = String.Set.of_list (String.Map.keys filtered_genes) in
+  let filtered_transcripts = String.Map.filter transcripts ~f:(fun x -> String.Set.mem filtered_gene_set x.gene_id) in
+  let filtered_isoforms = isoforms_from_transcripts filtered_transcripts in
+  {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
+
+  
+let filter_gene_symbols ga symbol_set =
+  (*symbol set is a set of strings = gene symbols*)
+  let filtered_genes = String.Map.filter ga.genes ~f:(fun g -> String.Set.mem symbol_set g.gene_symbol) in (*we keep genes that have these symbols*)
+  let gene_set = String.Set.of_list (String.Map.keys filtered_genes) in
+  let filtered_transcripts = String.Map.filter ga.transcripts ~f:(fun tx -> String.Set.mem gene_set tx.gene_id) in
+  let filtered_isoforms = String.Map.filter_keys ga.isoforms ~f:(fun gid -> String.Set.mem gene_set gid) in
+  {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
+
+
 
 (*
 let show_genes annot =
