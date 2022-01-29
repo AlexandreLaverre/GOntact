@@ -61,3 +61,23 @@ let merge_coordinates c =
   let reordered = List.rev merged_list in
   {int_list = reordered}
 
+
+let rec intersect_lists l1 l2 = (* will return a list of (id1, id2) tuples for the interecting intervals *)
+  match (l1, l2) with
+  | ([], _) -> []
+  | (_, []) -> []
+  | (h1 :: t1, h2 :: t2) -> (
+      let comp = Genomic_interval.compare h1 h2 in
+      match comp with
+      | -3 -> intersect_lists t1 l2 (* chr1 < chr2, there cannot be any more chr1 in the 2nd list, no intersection for h1 *)
+      | 3 -> intersect_lists l1 t2 (* chr1 > chr2, there can be intersection for h1, but not with h2*)
+      | -2 -> intersect_lists t1 l2 (*same chr, end1 < start2, there cannot be intersection for h1*)
+      | 2 -> intersect_lists l1 t2  (*same chr, start1 > end2, there cannot be intersection for anything with h2 *)
+      | 1 | -1  -> (Genomic_interval.id h1, Genomic_interval.id h2) :: intersect_lists l1 t2 (*there is intersection, but h1 can overlap with other elements as well*)
+      | _ -> invalid_arg "weird, interval comparison should only be -3, -2, -1, 0, 1, 2 3 "
+    )
+    
+let intersect c1 c2 =
+  let (l1, l2) = (c1.int_list, c2.int_list) in (*collections of genomic intervals are necessarily ordered *)
+  let tuple_list = intersect_lists l1 l2 in
+  String.Map.of_alist_multi tuple_list

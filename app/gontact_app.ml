@@ -55,6 +55,11 @@ let test_genomic_annot () =
   let filtered2 = Genomic_annotation.filter_transcript_biotypes filtered1 "protein_coding" in
   let major_isoforms = Genomic_annotation.identify_major_isoforms filtered2 in
   String.Map.iteri major_isoforms ~f:(fun ~key:k ~data:d -> Printf.printf "gene %s major isoform %s\n" k d)
+
+let test_interval_intersection () =
+  let cc1 = Genomic_interval_collection.from_bed_file "test1.bed" in
+  let cc2 = Genomic_interval_collection.from_bed_file "test2.bed" in
+  let int = Genomic_interval_collection.intersect cc1 cc2 in
+  String.Map.iteri int ~f:(fun ~key:k ~data:d -> (List.iter d ~f:(fun x -> Printf.printf "%s intersects with %s\n" k x)))
   
-    
-let res  = test_genomic_annot () ;
+  let res  = test_interval_intersection () ;

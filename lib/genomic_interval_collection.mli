@@ -11,6 +11,5 @@ val chr_set :  t -> String.Set.t
 
 val merge_coordinates : t -> t
 
-(*
-  val extract_intersection : t -> t -> t 
-*)
+val intersect : t -> t -> string list String.Map.t 
+ 
