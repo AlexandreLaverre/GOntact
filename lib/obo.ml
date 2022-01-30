@@ -87,7 +87,7 @@ let process_list l =
   |> List.filter_map ~f:process_block_of_lines
   |> Result.all
  
-let from_file path =
+let of_obo_file path =
   let open Let_syntax.Result in
   let* l = In_channel.read_lines path |> parse_lines
   in process_list l

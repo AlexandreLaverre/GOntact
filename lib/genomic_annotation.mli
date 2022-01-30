@@ -2,7 +2,7 @@ open Core
     
 type t
 
-val from_ensembl_biomart_file : string -> (t, string) result
+val of_ensembl_biomart_file : string -> (t, string) result
 
 val filter_transcript_biotypes : t -> string -> t
 
@@ -13,7 +13,9 @@ val filter_gene_biotypes : t -> string -> t
 val filter_chromosomes : t -> String.Set.t -> t
 
 val identify_major_isoforms : t -> string String.Map.t
-                                     
+
+val major_tss : t -> major_isoforms: string String.Map.t -> Genomic_interval_collection.t 
+
 (*
 val show_genes : t -> string
 

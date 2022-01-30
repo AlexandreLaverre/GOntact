@@ -25,7 +25,7 @@ let parse_line l =
     | [_ ;  gene_id ; gene_symbol ; qualifier ; go_id ; _ ; _ ; _ ; _ ; _ ; _ ; _ ; _ ; _ ; _ ; _ ; _ ] -> Ok (Some {gene_id; gene_symbol; qualifier; go_id})
     | _ -> Error "not a GAF file"
         
-let from_file path = 
+let of_gaf_file path = 
   In_channel.read_lines path
   |> List.map ~f:parse_line
   |> Result.all

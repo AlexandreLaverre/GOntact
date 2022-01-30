@@ -11,6 +11,6 @@ type gene_annotation = {
 type t = gene_annotation list
 [@@deriving show]
 
-val from_file : string -> (t, string) result
+val of_gaf_file : string -> (t, string) result
 
 

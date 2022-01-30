@@ -15,7 +15,7 @@ module Term = struct
 
   include X
       
-  let from_obo_term (ot:Obo.term) = {id = ot.id; name = ot.name ; namespace = ot.namespace ; is_a = ot.is_a}
+  let of_obo_term (ot:Obo.term) = {id = ot.id; name = ot.name ; namespace = ot.namespace ; is_a = ot.is_a}
   
   let get_parents t = t.is_a
 
@@ -36,7 +36,7 @@ let has_absent_parents sm =
   in
   String.Map.exists sm ~f:(fun t -> absent_parents_for_term sm t)
 
-let from_obo (obo:Obo.t) ns =
+let of_obo (obo:Obo.t) ns =
   let nso =
     match ns with
     | `Biological_process -> "biological_process"
@@ -45,7 +45,7 @@ let from_obo (obo:Obo.t) ns =
   in
   let itt =
     List.filter obo ~f:(fun ot -> String.equal ot.namespace nso) (*take only this namespace*)
-    |> List.map ~f:(fun ot -> Term.from_obo_term ot) (* transform Obo.term in Term.t*)
+    |> List.map ~f:(fun ot -> Term.of_obo_term ot) (* transform Obo.term in Term.t*)
     |> List.dedup_and_sort ~compare:Term.compare (* remove duplicate terms if any *)
     |> List.map ~f:(fun (tt:Term.t) -> (tt.id, tt)) (*transform term list in list of tuples (id, term)*)
     |> String.Map.of_alist_exn (*create string.map, throw exception but safe because of earlier dedup and Term comparison function*)

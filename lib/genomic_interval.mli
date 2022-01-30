@@ -9,10 +9,12 @@ val start_pos : t -> int
 
 val end_pos : t -> int 
 
-val make : ?id:string -> string -> int -> int -> t
+val strand : t -> string
+  
+val make : ?id:string -> string -> int -> int -> string ->  t
 
 val compare : t -> t -> int
 
 val merge : t -> t -> t option
     
-val intersect : t -> t -> bool
+val intersect : t -> t -> [ `Stranded | `Unstranded ]-> bool

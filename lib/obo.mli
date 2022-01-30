@@ -9,4 +9,4 @@ type term = {
 type t = term list
 [@@deriving show]
 
-val from_file : string -> (t, string) result
+val of_obo_file : string -> (t, string) result

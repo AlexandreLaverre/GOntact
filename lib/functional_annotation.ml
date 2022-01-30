@@ -22,7 +22,7 @@ let extract_genes ga ~go_id:go i =
   in
   String.Map.find d go
 
-let from_gaf_and_ontology (gaf:Gaf.t) (ont:Ontology.t) =
+let of_gaf_and_ontology (gaf:Gaf.t) (ont:Ontology.t) =
   let only_this_namespace = List.filter gaf ~f:(fun ga -> not (Option.is_none (Ontology.find_term ont ga.go_id))) in
   let gaf_without_no = List.filter only_this_namespace ~f:(fun ga -> not (String.is_prefix ga.qualifier ~prefix:"NOT")) in
   let no_empty_symbols = List.filter gaf_without_no ~f:(fun ga -> not (String.equal ga.gene_symbol "")) in
@@ -74,3 +74,6 @@ let write_annotations fa path =
   String.Map.iteri s_to_go ~f:(fun ~key:k ~data:l -> write_entry k l) ; 
   Out_channel.close output 
   
+let gene_symbols ga =
+  String.Map.keys ga.gene_symbol_to_go
+  |> String.Set.of_list

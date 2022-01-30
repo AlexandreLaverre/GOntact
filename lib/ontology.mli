@@ -9,7 +9,7 @@ module Term : sig
   }
   [@@deriving show]
   
-  val from_obo_term :  Obo.term -> t
+  val of_obo_term :  Obo.term -> t
     
   val get_parents : t -> string list
       
@@ -24,5 +24,5 @@ val expand_id_list : t -> string list -> string list
 
 val filter_terms : t -> string list -> string list
   
-val from_obo : Obo.t -> [ `Biological_process | `Molecular_function | `Cellular_component ] -> (t, string) result
+val of_obo : Obo.t -> [ `Biological_process | `Molecular_function | `Cellular_component ] -> (t, string) result
 
