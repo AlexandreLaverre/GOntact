@@ -74,6 +74,13 @@ let write_annotations fa path =
   String.Map.iteri s_to_go ~f:(fun ~key:k ~data:l -> write_entry k l) ; 
   Out_channel.close output 
   
-let gene_symbols ga =
-  String.Map.keys ga.gene_symbol_to_go
+let gene_symbols fa =
+  String.Map.keys fa.gene_symbol_to_go
   |> String.Set.of_list
+
+let go_list_of_gene_symbol fa gs =
+  let symbol2go = fa.gene_symbol_to_go in
+  match String.Map.find symbol2go gs with
+  | Some l -> l
+  | None -> [] 
+            

@@ -54,16 +54,26 @@ let merge i j =
     
 (* we will sort intervals by start position only - intervals may be overlapping*)
 (* strand does not intervene in comparison! *)
+
+type interval_comparison = Smaller_chr | Larger_chr | Smaller_no_overlap | Smaller_overlap | Equal | Larger_overlap | Larger_no_overlap
+                  
 let compare i j =
   let cmp1 = String.compare i.chr j.chr in
-  if cmp1 < 0 then -3 else ( 
-    if cmp1 > 0 then 3 else (
-      if i.end_pos < j.start_pos then -2 else ( (*smaller, there cannot be intersection*)
-        if i.start_pos < j.start_pos then -1 else ( (* smaller, but there is intersection*)
-          if i.start_pos = j.start_pos then 0 else (
-            if i.start_pos <= j.end_pos then 1 else ( (*larger, but there is intersection *)
-              2 )))))) (*larger, no intersection possible *)
+  if cmp1 < 0 then Smaller_chr else ( 
+    if cmp1 > 0 then Larger_chr else (
+      if i.end_pos < j.start_pos then Smaller_no_overlap else ( (*smaller, there cannot be intersection*)
+        if i.start_pos < j.start_pos then Smaller_overlap else ( (* smaller, but there is intersection*)
+          if i.start_pos = j.start_pos then Equal else (
+            if i.start_pos <= j.end_pos then Larger_overlap else ( (*larger, but there is intersection *)
+              Larger_no_overlap )))))) (*larger, no intersection possible *)
 
+
+let compare_int i j =
+  match compare i j with
+  | Smaller_chr | Smaller_no_overlap | Smaller_overlap -> -1
+  | Equal -> 0
+  | Larger_chr | Larger_no_overlap | Larger_overlap -> 1
+          
 let chr t = t.chr
 
 let id t = t.id

@@ -34,6 +34,15 @@ type biomart_header = {
   transcript_length_index : int ;
 }
 
+let gene_symbol ga id =
+  match String.Map.find ga.genes id with
+  | Some g -> Some g.gene_symbol
+  | None -> None
+
+let gene_symbol_exn ga id =
+  let g = Option.value_exn (String.Map.find ga.genes id) in
+  g.gene_symbol
+
 let extract_ensembl_biomart_header h =
   let sh = String.split h ~on:'\t' in
   let index str =
@@ -172,7 +181,7 @@ let identify_major_isoforms ga =
   let major_list = List.map gene_list ~f:(fun g -> (g, find_major_isoform (String.Map.find_exn isoforms g))) in
   String.Map.of_alist_exn major_list
 
-let major_tss ga ~major_isoforms:iso =
+let major_isoform_tss ga ~major_isoforms:iso =
   let ginfo = ga.genes in 
   let txinfo = ga.transcripts in
   let tss_pos = String.Map.map iso ~f:(fun tx -> (let ti = String.Map.find_exn txinfo tx in ti.tss_pos)) in  

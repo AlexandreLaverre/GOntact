@@ -16,3 +16,4 @@ val write_annotations : t -> string -> unit
 
 val gene_symbols : t -> String.Set.t 
 
+val go_list_of_gene_symbol : t -> string -> string list 

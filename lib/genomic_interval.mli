@@ -1,6 +1,8 @@
 type t
 [@@deriving show]
 
+type interval_comparison = Smaller_chr | Larger_chr | Smaller_no_overlap | Smaller_overlap | Equal | Larger_overlap | Larger_no_overlap
+
 val chr : t -> string
 
 val id : t -> string 
@@ -13,7 +15,9 @@ val strand : t -> string
   
 val make : ?id:string -> string -> int -> int -> string ->  t
 
-val compare : t -> t -> int
+val compare : t -> t -> interval_comparison
+
+val compare_int : t -> t -> int 
 
 val merge : t -> t -> t option
     
