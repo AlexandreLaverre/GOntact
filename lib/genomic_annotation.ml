@@ -4,7 +4,7 @@ type gene_annot = {
   gene_symbol : string ;
   gene_type : string ;
   chr : string ;
-  strand : string ; 
+  strand : Genomic_interval.strand ; 
 }
 
 type transcript_annot = {
@@ -60,12 +60,19 @@ let extract_ensembl_biomart_header h =
 let gene_annot_of_line line header =
   let sl = String.split line ~on:'\t' in
   let al = Array.of_list sl in
+  let s = al.(header.strand_index) in
+  let strand = (
+    match s with
+    | "+" | "1" -> Genomic_interval.Forward
+    | "-" | "-1" -> Genomic_interval.Reverse
+    | _ -> invalid_arg "wrong strand for gene"
+  ) in  
   let gene_id = al.(header.gene_id_index) in
-  (gene_id , 
+  (gene_id, 
   {gene_symbol = al.(header.gene_symbol_index) ;
    gene_type = al.(header.gene_type_index) ;
    chr = al.(header.chr_index) ;
-   strand = al.(header.strand_index)})
+   strand})
   
 let transcript_annot_of_line line header =
   let sl = String.split line ~on:'\t' in

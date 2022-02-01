@@ -79,7 +79,7 @@ let test_regulatory_domains () =
   Genomic_interval_collection.iter chr_sizes ~f:(fun i -> (
         let chr = Genomic_interval.id i in
         let size = Genomic_interval.end_pos i in 
-        let domains = Great.basal_plus_extension_domains ~chr:chr ~chr_size:size ~genomic_annot:filtered_annot ~upstream:5000 ~downstream:1000 ~extend:1000000 in
+        let domains = Great.basal_plus_extension_domains ~chr:chr ~chromosome_size:size ~genomic_annot:filtered_annot ~upstream:5000 ~downstream:1000 ~extend:1000000 in
         Genomic_interval_collection.write_output domains "basal_plus_extension_domains.txt" ~append:true)) 
             
 let res  = test_regulatory_domains () ;

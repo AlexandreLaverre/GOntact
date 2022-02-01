@@ -3,84 +3,54 @@ open Core
 let basal_domain_of_tss (gi:Genomic_interval.t) ~upstream:u ~downstream:d ~chromosome_size:cs =
   let (id, chr, start_pos, strand) = (Genomic_interval.id gi, Genomic_interval.chr gi, Genomic_interval.start_pos gi,  Genomic_interval.strand gi) in  (* start_pos is tss *)
   match strand with
-  | "+" | "1" ->
+  | Genomic_interval.Forward ->
     let new_start = max 1 (start_pos - u) in
     let new_end = min (start_pos + d - 1) cs in
-    Genomic_interval.make ~id chr new_start new_end strand
-  | "-" | "-1" ->
+    Genomic_interval.make ~id chr new_start new_end Genomic_interval.Unstranded
+  | Genomic_interval.Reverse ->
     let new_start = max 1 (start_pos - d + 1) in
     let new_end = min (start_pos + u) cs in  
-    Genomic_interval.make ~id chr new_start new_end  strand
-  | _  -> invalid_arg "gene strand should be one of +, -, 1, or -1"
+    Genomic_interval.make ~id chr new_start new_end Genomic_interval.Unstranded
+  | Genomic_interval.Unstranded -> invalid_arg "this gene is unstranded!"
+    
+let extend_one_domain (d:Genomic_interval.t) ~left_boundary ~right_boundary ~extend ~upstream ~downstream ~chromosome_size  =
+  (*d is a tss interval*)
+  let tss = Genomic_interval.start_pos d in
+  let chr = Genomic_interval.chr d in
+  let id = Genomic_interval.id d in
+  let basal_domain = basal_domain_of_tss d ~upstream ~downstream ~chromosome_size in  
+  let current_start = Genomic_interval.start_pos basal_domain in 
+  let current_end = Genomic_interval.end_pos basal_domain in
+  let new_start = min current_start (max (tss - extend) (left_boundary + 1)) in
+  let new_end = max current_end (min (tss + extend-1) (right_boundary - 1)) in
+  Genomic_interval.make ~id  chr new_start new_end Genomic_interval.Unstranded
 
-let rec extend_domains_right ~ordered_tss ~init ~upstream ~downstream ~extend ~chromosome_size =
-  (*tss are sorted by start position*)
+let extend_domains ~ordered_tss ~extend ~upstream ~downstream ~chromosome_size =
+  let extend_one_domain = extend_one_domain ~extend ~upstream ~downstream ~chromosome_size in
+  let basal_domain_of_tss = basal_domain_of_tss ~upstream ~downstream ~chromosome_size in
+  let rec rec_extend tss_list ~acc ~previous =
+    match tss_list with
+    | [] -> assert false
+    | [ h ]  ->  extend_one_domain h ~left_boundary:(Genomic_interval.end_pos previous) ~right_boundary:chromosome_size :: acc  
+    | i1 :: (i2 :: _ as t) ->
+      let b1 = basal_domain_of_tss i1 in 
+      let b2 = basal_domain_of_tss i2 in 
+      let ext = extend_one_domain i1 ~left_boundary:(Genomic_interval.end_pos previous) ~right_boundary:(Genomic_interval.start_pos b2) in 
+      rec_extend t ~acc:(ext :: acc) ~previous:b1 
+  in
   match ordered_tss with
-  | [] -> init
-  | h :: t  -> 
-    match t with
-    | [] ->  (* last interval on the chromosome *)
-      let id = Genomic_interval.id h in
-      let tss = Genomic_interval.start_pos h in (*tss pos*)
-      let basal_domain = basal_domain_of_tss h ~upstream ~downstream ~chromosome_size in 
-      let this_end = Genomic_interval.end_pos basal_domain in 
-      let extended_end = min (tss + extend - 1) chromosome_size in
-      let new_end = max this_end extended_end in 
-      (id, new_end) :: init
-    | n :: _ ->
-      let id = Genomic_interval.id h in
-      let tss = Genomic_interval.start_pos h in (*tss pos*)
-      let basal_domain = basal_domain_of_tss h ~upstream ~downstream ~chromosome_size in 
-      let this_end =  Genomic_interval.end_pos basal_domain in
-      let next_basal_domain = basal_domain_of_tss n ~upstream ~downstream ~chromosome_size in 
-      let next_start =  Genomic_interval.start_pos next_basal_domain in
-      let extended_end = min (tss + extend - 1) (next_start - 1) in
-      let new_end = max this_end extended_end in 
-      let acc = (id, new_end) :: init in
-      extend_domains_right ~ordered_tss:t ~init:acc ~upstream ~downstream ~extend ~chromosome_size
+  | [] -> []
+  | [ d ] -> [ extend_one_domain d ~left_boundary:1 ~right_boundary:chromosome_size ]
+  | i1 :: (i2 :: _ as t) ->
+    let b1 = basal_domain_of_tss i1 in
+    let b2 = basal_domain_of_tss i2 in
+    extend_one_domain i1 ~left_boundary:1 ~right_boundary:(Genomic_interval.start_pos b2) :: (rec_extend t ~acc:[] ~previous:b1)
 
-let rec extend_domains_left  ~reverse_ordered_tss  ~init ~upstream ~downstream ~extend ~chromosome_size =
-  (*tss are reverse sorted by start position*)
-  match reverse_ordered_tss with
-  | [] -> init
-  | h :: t  -> 
-    match t with
-    | [] -> (*first interval on the chromosome*)
-      let id = Genomic_interval.id h in
-      let tss = Genomic_interval.start_pos h in (*tss pos*)
-      let basal_domain = basal_domain_of_tss h ~upstream ~downstream ~chromosome_size in 
-      let this_start = Genomic_interval.start_pos basal_domain in
-      let extended_start = max (tss - extend) 1 in
-      let new_start = min this_start extended_start in 
-      (id, new_start) :: init
-    | p :: _ ->
-      let id = Genomic_interval.id h in
-      let tss = Genomic_interval.start_pos h in (*tss pos*)
-      let basal_domain = basal_domain_of_tss h ~upstream ~downstream ~chromosome_size in 
-      let this_start =  Genomic_interval.start_pos basal_domain in
-      let previous_basal_domain = basal_domain_of_tss p ~upstream ~downstream ~chromosome_size in 
-      let previous_end =  Genomic_interval.end_pos previous_basal_domain in
-      let extended_start = max (tss - extend) (previous_end + 1) in
-      let new_start = min this_start extended_start in 
-      let acc = (id, new_start) :: init in
-      extend_domains_left ~reverse_ordered_tss:t ~init:acc ~upstream ~downstream ~extend ~chromosome_size
-
-(* optimise *)
-
-
-let basal_plus_extension_domains  ~chr:chr ~chr_size:cs ~genomic_annot:ga ~upstream:u ~downstream:d ~extend:e =
+let basal_plus_extension_domains  ~chr:chr ~chromosome_size ~genomic_annot:ga ~upstream ~downstream ~extend =
   let chr_set = String.Set.singleton chr in 
   let filtered_annot_chr = Genomic_annotation.filter_chromosomes ga chr_set in (*take only genes on only one chromosome *)
   let major_isoforms = Genomic_annotation.identify_major_isoforms filtered_annot_chr in      (*canonical isoform for each gene*)
   let major_tss = Genomic_annotation.major_isoform_tss filtered_annot_chr ~major_isoforms in         (*genomic_interval collection TSS coordinates, they are ordered*)
-  let reverse_ordered_tss = Genomic_interval_collection.reverse_sort_by_coordinate major_tss in
-  let domains_right = extend_domains_right ~ordered_tss:(Genomic_interval_collection.interval_list major_tss) ~init:[] ~upstream:u ~downstream:d ~extend:e ~chromosome_size:cs in
-  let domains_left = extend_domains_left ~reverse_ordered_tss:(Genomic_interval_collection.interval_list reverse_ordered_tss) ~init:[] ~upstream:u ~downstream:d ~extend:e ~chromosome_size:cs in
-  let domains_right_map = String.Map.of_alist_exn domains_right in
-  let domains_left_map = String.Map.of_alist_exn domains_left in
-  let domains_list = List.map (String.Map.keys domains_left_map) ~f:(fun id -> Genomic_interval.make ~id:(Genomic_annotation.gene_symbol_exn ga id) chr (String.Map.find_exn domains_left_map id) (String.Map.find_exn domains_right_map id) ".") in 
+  let domains_list = extend_domains ~ordered_tss:(Genomic_interval_collection.interval_list major_tss) ~extend ~upstream ~downstream ~chromosome_size in
   Genomic_interval_collection.of_interval_list domains_list
-
-(*
-let go_frequencies ~elements:(e:Genomic_interval_collection.t) ~domains:(d:Genomic_interval_collection.t) ~func_annot:(fa:Functional_annotation.t) =
-  *)
+    

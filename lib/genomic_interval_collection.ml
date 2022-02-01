@@ -26,7 +26,13 @@ let split_bed_line line =
     in
     let start_1based = (int_of_string start_pos) + 1 in   (*bed format: 0-based, not included*)
     let end_1based = (int_of_string end_pos)  in   (*we transform coordinates to 1-based, included*)
-    Genomic_interval.make ~id chr start_1based end_1based strand
+    let new_strand = (match strand with
+      | "+" -> Genomic_interval.Forward
+      | "-" -> Genomic_interval.Reverse
+      | "." -> Genomic_interval.Unstranded
+      | _ -> invalid_arg "strand should be one of +, - or ."
+      ) in
+    Genomic_interval.make ~id chr start_1based end_1based new_strand
   | _ -> invalid_arg "bed file must have at least three fields " 
     
 let of_bed_file path =
@@ -38,7 +44,7 @@ let of_bed_file path =
 let of_chr_size_file path =
   let split_chr_line line =
     match String.split line ~on:'\t' with
-    | chr :: size :: _ ->  Genomic_interval.make ~id:chr chr 1 (int_of_string size) "."
+    | chr :: size :: _ ->  Genomic_interval.make ~id:chr chr 1 (int_of_string size) Genomic_interval.Unstranded
     | _ -> invalid_arg "chr size file must have at least two fields: chr_name chr_size " 
   in
   let l = In_channel.read_lines path in
@@ -104,9 +110,9 @@ let map c ~f =
 let iter c ~f =
   let int_list = c.int_list in
   List.iter int_list ~f
-      
+
 let write_output c path ~append =
   let il = c.int_list in
   Out_channel.with_file path ~append ~f:(fun output -> 
-      List.iter il  ~f:(fun i -> Printf.fprintf output "%s\t%s\t%d\t%d\t%s\n" (Genomic_interval.id i) (Genomic_interval.chr i) (Genomic_interval.start_pos i) (Genomic_interval.end_pos i) (Genomic_interval.strand i)))
+      List.iter il  ~f:(fun i -> Printf.fprintf output "%s\t%s\t%d\t%d\t%s\n" (Genomic_interval.id i) (Genomic_interval.chr i) (Genomic_interval.start_pos i) (Genomic_interval.end_pos i) Genomic_interval.(string_of_strand (strand i))))
         

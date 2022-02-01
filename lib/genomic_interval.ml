@@ -1,26 +1,32 @@
 open Core
     
+type strand = Forward | Reverse | Unstranded
+[@@deriving show]
+              
 type t = {
   id : string ;
   chr : string ;
   start_pos : int ;
   end_pos : int ;
-  strand : string ; 
+  strand : strand ; 
 }
 [@@deriving show]
 
+let string_of_strand s =
+  match s with
+  | Forward -> "+"
+  | Reverse -> "-"
+  | Unstranded -> "."
+
 let make ?id chr start_pos end_pos strand =
   if start_pos > end_pos then  invalid_arg "end pos should be larger than start pos " ;
-  match strand with
-  | "1" | "-1" | "+" | "-" | "." -> (
-      let id = 
-        match id with
-        | Some "" | None -> Printf.sprintf "%s:%d:%d" chr start_pos end_pos
-        | Some i -> i
-      in
-      {id ; chr ; start_pos ; end_pos; strand}
-    )
-  | _ -> invalid_arg "strand should be one of 1, -1, +, -, ."
+  let id = 
+    match id with
+    | Some "" | None -> Printf.sprintf "%s:%d:%d" chr start_pos end_pos
+    | Some i -> i
+  in
+  {id ; chr ; start_pos ; end_pos; strand}
+  
     
 let intersect i j s  =
   match (String.equal i.chr j.chr) with
@@ -29,14 +35,14 @@ let intersect i j s  =
     let max_pos = max i.start_pos j.start_pos in
     let min_pos = min i.end_pos j.end_pos in
     match s with
-    | `Stranded -> (String.equal i.strand j.strand) && (max_pos <= min_pos)
+    | `Stranded -> Poly.(i.strand = j.strand) && (max_pos <= min_pos)
     | `Unstranded -> max_pos <= min_pos
 
 let merge i j = 
   match (String.equal i.chr j.chr) with
   | false -> None
   | true ->
-    match (String.equal i.strand j.strand) with
+    match Poly.(i.strand = j.strand) with
     | false -> None
     | true -> 
       let max_pos = max i.start_pos j.start_pos in
