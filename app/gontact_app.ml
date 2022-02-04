@@ -63,7 +63,7 @@ let test_interval_intersection () =
 
 let test_regulatory_domains () = 
   let open Let_syntax.Result in
-  let* ga = Genomic_annotation.of_ensembl_biomart_file "/home/ubuntu/data/mydatalocal/GOntact/human_annot_gene.txt" in
+  let* ga = Genomic_annotation.of_ensembl_biomart_file "/home/ubuntu/data/mydatalocal/GOntact/data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt" in
   let* obo = Obo.of_obo_file "/home/ubuntu/data/mydatalocal/GOntact/data/GeneOntology/go-basic.obo" in 
   let* bp = Ontology.of_obo obo `Biological_process in 
   let+ gaf =  Gaf.of_gaf_file "/home/ubuntu/data/mydatalocal/GOntact/data/GeneOntology/goa_human.gaf" in
@@ -76,11 +76,9 @@ let test_regulatory_domains () =
   let filtered_annot_bio_gene = Genomic_annotation.filter_gene_biotypes filtered_annot_chr "protein_coding" in (*take only protein_coding genes*)
   let filtered_annot_bio_tx = Genomic_annotation.filter_transcript_biotypes filtered_annot_bio_gene "protein_coding" in (*take only protein_coding transcripts*)
   let filtered_annot = Genomic_annotation.filter_gene_symbols filtered_annot_bio_tx gene_symbols in  (*take only genes whose symbols are in functional (GO) annotations*)
-  Genomic_interval_collection.iter chr_sizes ~f:(fun i -> (
-        let chr = Genomic_interval.id i in
-        let size = Genomic_interval.end_pos i in 
-        let domains = Great.basal_plus_extension_domains ~chr:chr ~chromosome_size:size ~genomic_annot:filtered_annot ~upstream:5000 ~downstream:1000 ~extend:1000000 in
-        Genomic_interval_collection.write_output domains "basal_plus_extension_domains.txt" ~append:true)) 
+  let domains = Great.basal_plus_extension_domains ~chromosome_sizes:chr_sizes ~genomic_annotation:filtered_annot ~upstream:5000 ~downstream:1000 ~extend:1000000 in
+  let int_domains = Great.genomic_interval_collection domains in
+  Genomic_interval_collection.write_output int_domains "basal_plus_extension_domains.txt" ~append:false 
             
 let res  = test_regulatory_domains () ;
   

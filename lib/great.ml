@@ -9,6 +9,14 @@ type regulatory_domain = {
   end_pos : int ;
 }
 
+let genomic_interval_collection rdl =
+  let interval_of_domain rd =
+    Genomic_interval.make ~id:rd.gene_symbol rd.chr rd.start_pos rd.end_pos Genomic_interval.Unstranded
+  in
+  let il = List.map rdl ~f:interval_of_domain in
+  Genomic_interval_collection.of_interval_list il
+  
+
 let basal_domain_of_tss (tss:Genomic_interval.t) ~(genomic_annotation:Genomic_annotation.t)  ~upstream:u ~downstream:d ~chromosome_size:cs =
   let (id, chr, tss_pos, strand) = (Genomic_interval.id tss, Genomic_interval.chr tss, Genomic_interval.start_pos tss,  Genomic_interval.strand tss) in  (* start_pos is tss *)
   let gene_symbol = Genomic_annotation.gene_symbol_exn genomic_annotation id in 
@@ -57,11 +65,15 @@ let extend_domains ~genomic_annotation ~ordered_tss ~extend ~upstream ~downstrea
     let b2 = basal_domain_of_tss i2 in
     extend_one_domain i1 ~left_boundary:0 ~right_boundary:(b2.start_pos) :: (rec_extend t ~acc:[] ~previous:b1)
 
-let basal_plus_extension_domains  ~chr:chr ~chromosome_size ~genomic_annotation:ga ~upstream ~downstream ~extend =
+let basal_plus_extension_domains_one_chr  ~chr ~chromosome_size ~genomic_annotation:ga ~upstream ~downstream ~extend =
   let chr_set = String.Set.singleton chr in 
   let filtered_annot_chr = Genomic_annotation.filter_chromosomes ga chr_set in (*take only genes on only one chromosome *)
   let major_isoforms = Genomic_annotation.identify_major_isoforms filtered_annot_chr in      (*canonical isoform for each gene*)
   let major_tss = Genomic_annotation.major_isoform_tss filtered_annot_chr ~major_isoforms in         (*genomic_interval collection TSS coordinates, they are ordered*)
   let domains_list = extend_domains ~genomic_annotation:ga ~ordered_tss:(Genomic_interval_collection.interval_list major_tss) ~extend ~upstream ~downstream ~chromosome_size in
   domains_list
-    
+
+
+let basal_plus_extension_domains ~(chromosome_sizes:Genomic_interval_collection.t) ~genomic_annotation ~upstream ~downstream ~extend =
+  let cl = Genomic_interval_collection.interval_list chromosome_sizes in
+  List.concat_map cl ~f:(fun i -> basal_plus_extension_domains_one_chr ~chr:(Genomic_interval.chr i) ~chromosome_size:(Genomic_interval.end_pos i) ~genomic_annotation ~upstream ~downstream ~extend)
