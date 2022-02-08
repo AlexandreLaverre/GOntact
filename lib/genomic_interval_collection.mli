@@ -3,9 +3,9 @@ open Core
 type t
 [@@deriving show]
 
-val of_bed_file : string -> t
+val of_bed_file : string -> strip_chr:bool -> t
 
-val of_chr_size_file : string -> t
+val of_chr_size_file : string -> strip_chr:bool -> t
 
 val of_interval_list : Genomic_interval.t list -> t
 

@@ -83,6 +83,7 @@ let go_frequencies ~(element_coordinates:Genomic_interval_collection.t) ~(regula
   (*regulatory domains were constructed for genes that have at least one GO annotation*)
   (*all their IDs should be in the functional annotation*)
   let intersection = Genomic_interval_collection.intersect element_coordinates regulatory_domains in (*dictionary, element ids -> list of gene symbols*)
+  (*String.Map.iteri intersection ~f:(fun ~key ~data -> Printf.printf "key %s nb intersect %d \n" key (List.length data)) ; *)
   let gocat_by_element = String.Map.map intersection ~f:(fun l -> List.concat_map l ~f:(fun s -> Option.value_exn (Functional_annotation.extract_terms functional_annot (`Symbol s)))) in  
   let unique_gocat_by_element = String.Map.map gocat_by_element ~f:(fun l -> List.dedup_and_sort ~compare:String.compare l) in
   let tuple_gocat_element = String.Map.fold unique_gocat_by_element ~init:[] ~f:(fun ~key ~data acc -> List.append (List.map data ~f:(fun x -> (x, key))) acc) in
@@ -92,8 +93,6 @@ let go_frequencies ~(element_coordinates:Genomic_interval_collection.t) ~(regula
 
 let write_go_frequencies ~go_frequencies path = 
   Out_channel.with_file path ~append:false ~f:(fun output ->
-     Out_channel.output_string output "GOID\tNbElements\n" ; 
-     String.Map.iteri go_frequencies  ~f:(fun ~key ~data -> Printf.fprintf output "%s\t%d\n" key data))
-
-
-      
+      Out_channel.output_string output "GOID\tNbElements\n" ; 
+      String.Map.iteri go_frequencies  ~f:(fun ~key ~data -> Printf.fprintf output "%s\t%d\n" key data))
+          

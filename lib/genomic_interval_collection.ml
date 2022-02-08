@@ -13,7 +13,7 @@ let reverse_sort_by_coordinate c =
   let rl =  List.rev il in
   {int_list = rl}
   
-let split_bed_line line =
+let split_bed_line line ~strip_chr =
   match String.split line ~on:'\t' with
   | chr :: start_pos :: end_pos :: tl ->
     let (id, strand) = match tl with
@@ -32,19 +32,22 @@ let split_bed_line line =
       | "." -> Genomic_interval.Unstranded
       | _ -> invalid_arg "strand should be one of +, - or ."
       ) in
-    Genomic_interval.make ~id chr start_1based end_1based new_strand
+    let new_chr = (if strip_chr && (String.is_prefix chr ~prefix:"chr") then String.drop_prefix chr 3 else chr) in
+    Genomic_interval.make ~id new_chr start_1based end_1based new_strand
   | _ -> invalid_arg "bed file must have at least three fields " 
     
-let of_bed_file path =
+let of_bed_file path ~strip_chr =
   let l = In_channel.read_lines path in 
-  let il = List.map l ~f:split_bed_line in
+  let il = List.map l ~f:(split_bed_line ~strip_chr) in
   let sl = sort_by_coordinate il in
   {int_list = sl}
 
-let of_chr_size_file path =
+let of_chr_size_file path ~strip_chr =
   let split_chr_line line =
     match String.split line ~on:'\t' with
-    | chr :: size :: _ ->  Genomic_interval.make ~id:chr chr 1 (int_of_string size) Genomic_interval.Unstranded
+    | chr :: size :: _ ->
+      let new_chr = (if strip_chr && (String.is_prefix chr ~prefix:"chr") then String.drop_prefix chr 3 else chr) in
+      Genomic_interval.make ~id:chr new_chr 1 (int_of_string size) Genomic_interval.Unstranded
     | _ -> invalid_arg "chr size file must have at least two fields: chr_name chr_size " 
   in
   let l = In_channel.read_lines path in

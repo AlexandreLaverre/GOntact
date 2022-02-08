@@ -1,6 +1,6 @@
 (library
   (name gontact)
   (public_name gontact)
-  (libraries core)
+  (libraries core ocaml-r)
   (preprocess (pps ppx_deriving.show ppx_deriving.ord ppx_sexp_conv)))
   
