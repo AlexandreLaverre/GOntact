@@ -73,7 +73,7 @@ echo "perl ${pathScripts}/compute.observed.values.pl --pathInputElements=${pathI
 
 ## do the test
 
-echo "Rscript ${pathScripts}/test.enrichment.R ${sp} ${dataset} ${background} ${method} ${space} > ${pathScripts}/log/test.enrichment.${sp}.${dataset}.${method}.${space}.Rout " >>  ${pathScripts}/bsub_script_observed
+echo "Rscript ${pathScripts}/test.enrichment.bgonly.R ${sp} ${dataset} ${background} ${method} ${space} > ${pathScripts}/log/test.enrichment.${sp}.${dataset}.${method}.${space}.Rout " >>  ${pathScripts}/bsub_script_observed
 
 ####################################################################################
 
