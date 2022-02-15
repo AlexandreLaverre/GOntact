@@ -6,7 +6,8 @@ export method1=$3
 export submethod1=$4
 export method2=$5
 export submethod2=$6
-export space=$7
+export background=$7
+export space=$8
 
 ####################################################################################
 
@@ -29,21 +30,21 @@ fi
 ####################################################################################
 
 if [ ${method1} = "GREAT" ]; then
-    export path1=${pathGREAT}/${submethod1}/${dataset}/enhancer_GO_association_Ensembl${ensrelease}_biological_process.txt 
+    export path1=${pathGREAT}/${submethod1}/${dataset}/enhancer_GO_association_Ensembl${ensrelease}_${space}.txt 
 fi
 
 if [ ${method1} = "GOntact" ]; then
-    export path1=${pathGOntact}/${submethod1}/${dataset}/GOFrequency/uniqueGO.biological_process.Background.EnhancersContactsFANTOM5.Laverre2022.EnhancerScale.EnhancerCountOnce.txt
+    export path1=${pathGOntact}/${submethod1}/${dataset}/GOFrequency/${space}.Background.${background}.txt
 fi
 
 ####################################################################################
 
 if [ ${method2} = "GREAT" ]; then
-    export path2=${pathGREAT}/${submethod2}/${dataset}/enhancer_GO_association_Ensembl${ensrelease}_biological_process.txt 
+    export path2=${pathGREAT}/${submethod2}/${dataset}/enhancer_GO_association_Ensembl${ensrelease}_${space}.txt 
 fi
 
-if [ ${method1} = "GOntact" ]; then
-    export path2=${pathGOntact}/${submethod2}/${dataset}/GOFrequency/uniqueGO.biological_process.Background.EnhancersContactsFANTOM5.Laverre2022.EnhancerScale.EnhancerCountOnce.txt
+if [ ${method2} = "GOntact" ]; then
+    export path2=${pathGOntact}/${submethod2}/${dataset}/GOFrequency/${space}.Background.${background}.txt
 fi
 
 ####################################################################################

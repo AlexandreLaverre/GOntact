@@ -38,6 +38,17 @@ sub readGOEnhancers{
 	$goenh->{$term}={};
 
 	foreach my $e (@enh){
+	    my $prefix=substr $e, 0, 3;
+	    if($prefix eq "chr"){
+		$e=substr $e, 3;
+	    }
+
+	    my @t=split(":", $e);
+
+	    if(@t==3){
+		$e=$t[0].":".$t[1]."-".$t[2];
+	    }
+	    
 	    $goenh->{$term}{$e}=1;
 	}
 	
