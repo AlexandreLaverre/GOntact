@@ -1,7 +1,3 @@
-(*open Core*)
-
-open OCamlR_stats
-
 type enrichment_result = {
   observed : float ;
   expected : float ;
