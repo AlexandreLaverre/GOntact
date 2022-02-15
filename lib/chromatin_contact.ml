@@ -31,3 +31,28 @@ let of_ibed_file path ~strip_chr =
   let l = In_channel.read_lines path in 
   List.filter_map l ~f:(split_ibed_line ~strip_chr) 
   
+let select_min_score l ~min_score =
+  List.filter l ~f:Float.(fun cc -> cc.score >= min_score)
+
+let select_cis l =
+  List.filter l ~f:(fun cc -> String.equal cc.chr1 cc.chr2)
+
+let compute_distance cc =
+  match String.equal cc.chr1 cc.chr2 with
+  | true -> (
+      let midpos1 = ((float_of_int cc.start1) +. (float_of_int cc.end1)) /. 2. in
+      let midpos2 = ((float_of_int cc.start2) +. (float_of_int cc.end2)) /. 2. in
+      let dist = Float.abs (midpos1 -. midpos2) in
+      Some dist
+    )
+  | false -> None
+
+let select_distance l ~min_dist ~max_dist =
+  let verify_distance cc =
+    let d = compute_distance cc in
+    match d with
+    | None -> false
+    | Some dist -> Float.(dist >= min_dist && dist <= max_dist) 
+  in      
+  List.filter l ~f:verify_distance
+
