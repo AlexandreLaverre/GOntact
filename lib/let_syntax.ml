@@ -8,3 +8,7 @@ module Option = struct
   let (let+) x f = Option.map f x
 end
 
+module Cmdliner_term = struct
+  let (let+) x f = Cmdliner.Term.(const f $ x)
+  let (and+) x y = Cmdliner.Term.(const (fun x y -> x, y) $ x $ y)
+end

@@ -1,3 +1,4 @@
+open Cmdliner
 open Core
 open Gontact
 
@@ -103,7 +104,14 @@ let test_go_frequencies () =
   let go_freq_fg = Great.go_frequencies ~element_coordinates:fg ~regulatory_domains:domains_int ~functional_annot:fap in
   let go_freq_bg = Great.go_frequencies ~element_coordinates:bg ~regulatory_domains:domains_int ~functional_annot:fap in
   Great.write_go_frequencies ~go_frequencies:go_freq_fg "GOFrequencies_BiologicalProcess_Foreground.txt" ;
-  Great.write_go_frequencies ~go_frequencies:go_freq_bg "GOFrequencies_BiologicalProcess_Background.txt" 
+  Great.write_go_frequencies ~go_frequencies:go_freq_bg "GOFrequencies_BiologicalProcess_Background.txt"
 
-let res = test_go_frequencies () ;
-  
+(* let res = test_go_frequencies () ; *)
+
+let cmds = [Annotate_baits_cmd.command]
+let root_term = Term.ret (Term.const (`Help (`Auto, None)))
+let root_doc = "GOntact does a lot of things but no coffee."
+let root_info = Cmd.info ~doc:root_doc "GOntact"
+let root_cmd = Cmd.group root_info cmds
+
+let () = exit @@ Cmd.eval root_cmd
