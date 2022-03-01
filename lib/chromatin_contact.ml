@@ -56,3 +56,23 @@ let select_distance l ~min_dist ~max_dist =
   in      
   List.filter l ~f:verify_distance
 
+let contacted_fragment i =
+  let (chr, start_pos, end_pos) = (i.chr2, i.start2, i.end2) in
+  Genomic_interval.make chr start_pos end_pos Unstranded
+
+(*
+let get_id_bait i =
+  let (chr, start_pos, end_pos) = (i.chr1, i.start1, i.end1) in
+  Printf.sprintf "%s:%d:%d" chr start_pos end_pos
+*)
+
+let get_id_frag i =
+  let (chr, start_pos, end_pos) = (i.chr2, i.start2, i.end2) in
+  Printf.sprintf "%s:%d:%d" chr start_pos end_pos
+  
+let select_unbaited l ~bait_collection = 
+  let contacted_frag_list = List.map l ~f:contacted_fragment in
+  let contacted_frag_collection = Genomic_interval_collection.of_interval_list contacted_frag_list in
+  let intersection = Genomic_interval_collection.intersect contacted_frag_collection bait_collection in (* String.Map -> string list *)
+  List.filter l ~f:(fun x -> not (String.Map.mem intersection (get_id_frag x)))
+    

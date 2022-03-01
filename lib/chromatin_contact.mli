@@ -16,3 +16,5 @@ val select_min_score : t list -> min_score:float -> t list
 val select_cis : t list -> t list
 
 val select_distance : t list -> min_dist:float -> max_dist:float -> t list
+
+val select_unbaited : t list -> bait_collection:Genomic_interval_collection.t -> t list
