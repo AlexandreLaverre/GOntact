@@ -26,7 +26,7 @@ for(sp in c("human", "mouse")){
     coords=coords[,c("bait_chr", "bait_start", "bait_end", "bait_name", "chr", "start", "end", "otherEnd_name", "N_reads", "score")]
     colnames(coords)=c("bait_chr", "bait_start", "bait_end", "bait_name", "otherEnd_chr", "otherEnd_start", "otherEnd_end", "otherEnd_name", "N_reads", "score")
 
-    write.table(coords, file=paste(path, sp, "/original_ibed_files/",sample,".ibed",sep=""), row.names=F, col.names=T, sep="\t", quote=F)
+    write.table(coords, file=paste(path, sp, "/ibed_files/",sample,".ibed",sep=""), row.names=F, col.names=T, sep="\t", quote=F)
 
   }
 }
