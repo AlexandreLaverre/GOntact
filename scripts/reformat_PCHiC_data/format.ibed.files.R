@@ -11,13 +11,14 @@ for(sp in c("human", "mouse")){
   samples=unlist(lapply(files, function(x) unlist(strsplit(x,split="\\."))[1]))
 
   for(sample in samples){
+    print(sample)
     coords=read.table(paste(path, sp, "/processed_ibed_files/",sample,".ibed",sep=""),h=T, stringsAsFactors=F, sep="\t")
 
     coords$bait_chr=unlist(lapply(coords$bait_chr, function(x) substr(x,4, nchar(x))))
     coords$chr=unlist(lapply(coords$chr, function(x) substr(x,4, nchar(x))))
 
     ## only standard chromosomes
-    coords=coords[which(coords$bait_chr%in%c(as.character(1:22), "X", "Y") & coords$otherEnd_chr%in%c(as.character(1:22), "X", "Y")),]
+    coords=coords[which(coords$bait_chr%in%c(as.character(1:22), "X", "Y") & coords$chr%in%c(as.character(1:22), "X", "Y")),]
 
     coords$bait_name=paste(coords$bait_chr, ":",coords$bait_start, "-", coords$bait_end,sep="")
     coords$otherEnd_name=paste(coords$chr, ":",coords$start, "-", coords$end,sep="")
