@@ -5,6 +5,8 @@ type t = {
 }
 [@@deriving show]
 
+type format = Base1 | Base0
+
 let sort_by_coordinate l =
   List.sort l ~compare:Genomic_interval.compare_int  
 
@@ -13,19 +15,25 @@ let reverse_sort_by_coordinate c =
   let rl =  List.rev il in
   {int_list = rl}
   
-let split_bed_line line ~strip_chr =
+let split_bed_line line ~strip_chr ~format =
+  (*typical bed format: 0-based, not included*)
+  (*if needed we transform coordinates to 1-based, included*)
+  let shift = match format with
+    | Base1 -> 0
+    | Base0 -> 1
+  in      
   match String.split line ~on:'\t' with
   | chr :: start_pos :: end_pos :: tl ->
     let (id, strand) = match tl with
-      | [] -> (String.concat ~sep:":" [chr ; start_pos ; end_pos ], ".")
+      | [] -> ((Printf.sprintf "%s:%s-%s" chr start_pos end_pos), ".")
       | [ id ] -> (id, ".")
       | id :: t ->
         match t with
         | _ :: strand :: _ -> (id, strand)
         | _ -> (id, ".")
     in
-    let start_1based = (int_of_string start_pos) + 1 in   (*bed format: 0-based, not included*)
-    let end_1based = (int_of_string end_pos)  in   (*we transform coordinates to 1-based, included*)
+    let start_1based = (int_of_string start_pos) + shift in  
+    let end_1based = (int_of_string end_pos)  in   
     let new_strand = (match strand with
       | "+" -> Genomic_interval.Forward
       | "-" -> Genomic_interval.Reverse
@@ -36,9 +44,9 @@ let split_bed_line line ~strip_chr =
     Genomic_interval.make ~id new_chr start_1based end_1based new_strand
   | _ -> invalid_arg "bed file must have at least three fields " 
     
-let of_bed_file path ~strip_chr =
+let of_bed_file path ~strip_chr ~format =
   let l = In_channel.read_lines path in 
-  let il = List.map l ~f:(split_bed_line ~strip_chr) in
+  let il = List.map l ~f:(split_bed_line ~strip_chr ~format) in
   let sl = sort_by_coordinate il in
   {int_list = sl}
 

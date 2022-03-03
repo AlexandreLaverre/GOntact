@@ -200,6 +200,24 @@ let major_isoform_tss ga ~major_isoforms:iso =
   let int_list = List.map (String.Map.keys iso) ~f:interval_of_gene in
   Genomic_interval_collection.of_interval_list int_list
 
+let all_tss_intervals ga extend = 
+  let ginfo = ga.genes in 
+  let txinfo = ga.transcripts in
+  let tss_pos = String.Map.map txinfo ~f:(fun tx -> tx.tss_pos) in  
+  let interval_of_transcript tx  =
+    let ti = String.Map.find_exn txinfo tx in
+    let g = ti.gene_id in 
+    let gi = String.Map.find_exn ginfo g in
+    let gs = gi.gene_symbol in
+    let new_id = Printf.sprintf "%s:%s" g gs in
+    let tss = String.Map.find_exn tss_pos tx in
+    let max_extend = max extend 1 in 
+    Genomic_interval.make ~id:new_id gi.chr (tss - max_extend) (tss + max_extend - 1) gi.strand
+  in
+  let int_list = List.map (String.Map.keys txinfo) ~f:interval_of_transcript in
+  Genomic_interval_collection.of_interval_list int_list
+  
+
 (*
 let show_genes annot =
   [%show: gene_annot list] annot.genes

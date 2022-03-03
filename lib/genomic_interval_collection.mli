@@ -3,7 +3,9 @@ open Core
 type t
 [@@deriving show]
 
-val of_bed_file : string -> strip_chr:bool -> t
+type format = Base1 | Base0 
+
+val of_bed_file : string -> strip_chr:bool -> format:format -> t
 
 val of_chr_size_file : string -> strip_chr:bool -> t
 

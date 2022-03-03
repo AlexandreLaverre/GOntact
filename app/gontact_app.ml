@@ -44,7 +44,7 @@ let test_annot_propagation () =
 
 
 let test_merge_coordinates () =
-  let cc = Genomic_interval_collection.of_bed_file "test.bed" ~strip_chr:false in
+  let cc = Genomic_interval_collection.of_bed_file "test.bed" ~strip_chr:false ~format:Base0 in
   let merged = Genomic_interval_collection.merge_coordinates cc in
   print_endline (Genomic_interval_collection.show merged)
 
@@ -57,8 +57,8 @@ let test_genomic_annot () =
   String.Map.iteri major_isoforms ~f:(fun ~key:k ~data:d -> Printf.printf "gene %s major isoform %s\n" k d)
 
 let test_interval_intersection () =
-  let cc1 = Genomic_interval_collection.of_bed_file "test1.bed" ~strip_chr:false in
-  let cc2 = Genomic_interval_collection.of_bed_file "test2.bed" ~strip_chr:false in
+  let cc1 = Genomic_interval_collection.of_bed_file "test1.bed" ~strip_chr:false ~format:Base1 in
+  let cc2 = Genomic_interval_collection.of_bed_file "test2.bed" ~strip_chr:false ~format:Base1 in
   let int = Genomic_interval_collection.intersect cc1 cc2 in
   String.Map.iteri int ~f:(fun ~key:k ~data:d -> (List.iter d ~f:(fun x -> Printf.printf "%s intersects with %s\n" k x)))
 
@@ -99,8 +99,8 @@ let test_go_frequencies () =
   let filtered_annot = Genomic_annotation.filter_gene_symbols filtered_annot_bio_tx gene_symbols in  (*take only genes whose symbols are in functional (GO) annotations*)
   let domains = Great.basal_plus_extension_domains ~chromosome_sizes:chr_sizes ~genomic_annotation:filtered_annot ~upstream:5000 ~downstream:1000 ~extend:1000000 in
   let domains_int = Great.genomic_interval_collection domains in
-  let fg = Genomic_interval_collection.of_bed_file "/home/ubuntu/data/mydatalocal/GOntact/data/enhancers/human/FANTOM5.first1000.kidney.enhancers.hg38.bed" ~strip_chr:true in
-  let bg = Genomic_interval_collection.of_bed_file "/home/ubuntu/data/mydatalocal/GOntact/data/enhancers/human/FANTOM5.Laverre2022.bed" ~strip_chr:true in
+  let fg = Genomic_interval_collection.of_bed_file "/home/ubuntu/data/mydatalocal/GOntact/data/enhancers/human/FANTOM5.first1000.kidney.enhancers.hg38.bed" ~strip_chr:true ~format:Base0 in
+  let bg = Genomic_interval_collection.of_bed_file "/home/ubuntu/data/mydatalocal/GOntact/data/enhancers/human/FANTOM5.Laverre2022.bed" ~strip_chr:true ~format:Base0 in
   let go_freq_fg = Great.go_frequencies ~element_coordinates:fg ~regulatory_domains:domains_int ~functional_annot:fap in
   let go_freq_bg = Great.go_frequencies ~element_coordinates:bg ~regulatory_domains:domains_int ~functional_annot:fap in
   Great.write_go_frequencies ~go_frequencies:go_freq_fg "GOFrequencies_BiologicalProcess_Foreground.txt" ;
