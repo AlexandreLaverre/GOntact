@@ -20,9 +20,9 @@ val strand : t -> strand
   
 val make : ?id:string -> string -> int -> int -> strand ->  t
 
-val compare : t -> t -> interval_comparison
+val check_overlap : t -> t -> interval_comparison
 
-val compare_int : t -> t -> int 
+val compare_intervals : t -> t -> int 
 
 val merge : t -> t -> t option
     

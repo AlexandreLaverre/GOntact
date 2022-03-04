@@ -8,7 +8,7 @@ type t = {
 type format = Base1 | Base0
 
 let sort_by_coordinate l =
-  List.sort l ~compare:Genomic_interval.compare_int  
+  List.sort l ~compare:Genomic_interval.compare_intervals  
 
 let reverse_sort_by_coordinate c =
   let il = c.int_list in 
@@ -97,13 +97,17 @@ let rec intersect_lists l1 l2 = (* will return a list of (id1, id2) tuples for t
   | ([], _) -> []
   | (_, []) -> []
   | (h1 :: t1, h2 :: t2) -> (
-      let comp = Genomic_interval.compare h1 h2 in
+      let comp = Genomic_interval.check_overlap h1 h2 in
       match comp with
       | Smaller_chr -> intersect_lists t1 l2 (* chr1 < chr2, there cannot be any more chr1 in the 2nd list, no intersection for h1 *)
       | Larger_chr -> intersect_lists l1 t2 (* chr1 > chr2, there can be intersection for h1, but not with h2*)
       | Smaller_no_overlap -> intersect_lists t1 l2 (*same chr, end1 < start2, there cannot be intersection for h1*)
       | Larger_no_overlap -> intersect_lists l1 t2  (*same chr, start1 > end2, there cannot be intersection for anything with h2 *)
-      | Smaller_overlap | Larger_overlap | Equal  -> (Genomic_interval.id h1, Genomic_interval.id h2) :: intersect_lists l1 t2 (*there is intersection, but h1 can overlap with other elements as well*)                                                       
+      | Smaller_overlap | Larger_overlap | Equal  ->
+        let intersect1 = intersect_lists [ h1 ] t2 in
+        let intersect2 = intersect_lists t1 l2 in
+        let full_intersect = List.append intersect1 intersect2 in 
+        (Genomic_interval.id h1, Genomic_interval.id h2) :: full_intersect  (*there is intersection, h1 can overlap with other elements as well - but so can h2 !! *)
     )
     
 let intersect c1 c2 =

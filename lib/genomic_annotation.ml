@@ -212,16 +212,8 @@ let all_tss_intervals ga extend =
     let new_id = Printf.sprintf "%s:%s" g gs in
     let tss = String.Map.find_exn tss_pos tx in
     let max_extend = max extend 1 in 
-    Genomic_interval.make ~id:new_id gi.chr (tss - max_extend) (tss + max_extend - 1) gi.strand
+    Genomic_interval.make ~id:new_id gi.chr (tss - max_extend) (tss + max_extend) gi.strand
   in
   let int_list = List.map (String.Map.keys txinfo) ~f:interval_of_transcript in
   Genomic_interval_collection.of_interval_list int_list
   
-
-(*
-let show_genes annot =
-  [%show: gene_annot list] annot.genes
-
-let show_transcripts annot =
-  [%show: transcript_annot list] annot.transcripts
-  *)

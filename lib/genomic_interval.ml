@@ -63,7 +63,7 @@ let merge i j =
 
 type interval_comparison = Smaller_chr | Larger_chr | Smaller_no_overlap | Smaller_overlap | Equal | Larger_overlap | Larger_no_overlap
                   
-let compare i j =
+let check_overlap i j =
   let cmp1 = String.compare i.chr j.chr in
   if cmp1 < 0 then Smaller_chr else ( 
     if cmp1 > 0 then Larger_chr else (
@@ -74,12 +74,9 @@ let compare i j =
               Larger_no_overlap )))))) (*larger, no intersection possible *)
 
 
-let compare_int i j =
-  match compare i j with
-  | Smaller_chr | Smaller_no_overlap | Smaller_overlap -> -1
-  | Equal -> 0
-  | Larger_chr | Larger_no_overlap | Larger_overlap -> 1
-          
+let compare_intervals i j =
+  if String.equal i.chr j.chr then compare i.start_pos j.start_pos else String.compare i.chr j.chr
+            
 let chr t = t.chr
 
 let id t = t.id
