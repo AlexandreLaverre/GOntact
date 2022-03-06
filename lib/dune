@@ -1,5 +1,6 @@
 (library
   (name gontact)
   (public_name gontact)
-  (libraries cmdliner core ocaml-r)
-  (preprocess (pps ppx_deriving.show ppx_deriving.ord ppx_sexp_conv)))
+  (libraries cmdliner core gsl)
+  (inline_tests)
+  (preprocess (pps ppx_deriving.show ppx_deriving.ord ppx_sexp_conv ppx_expect)))
