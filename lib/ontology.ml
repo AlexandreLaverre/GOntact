@@ -28,6 +28,8 @@ type t = {
   id_to_term : Term.t String.Map.t ; 
 }
 
+type domain = Biological_process | Molecular_function | Cellular_component
+
 let find_term o id = String.Map.find o.id_to_term id 
 
 let has_absent_parents sm =
@@ -39,9 +41,9 @@ let has_absent_parents sm =
 let of_obo (obo:Obo.t) ns =
   let nso =
     match ns with
-    | `Biological_process -> "biological_process"
-    | `Cellular_component -> "cellular_component"
-    | `Molecular_function -> "molecular_function"
+    | Biological_process -> "biological_process"
+    | Cellular_component -> "cellular_component"
+    | Molecular_function -> "molecular_function"
   in
   let itt =
     List.filter obo ~f:(fun ot -> String.equal ot.namespace nso) (*take only this namespace*)
@@ -52,7 +54,13 @@ let of_obo (obo:Obo.t) ns =
   in
   if has_absent_parents itt then Error "obo file is incomplete!" else  Ok {id_to_term = itt} 
 
-
+let define_domain domain =
+  match domain with 
+  | "biological_process" -> Ok Biological_process
+  | "cellular_component" -> Ok Cellular_component
+  | "molecular_function" -> Ok Molecular_function
+  | _ -> Error (Printf.sprintf "Unknown GO domain %s, exiting.\n" domain)
+ 
 let expand_term_list o tl =
   let rec add_term_to_closure ts t =
     if Term.Set.mem ts t then ts

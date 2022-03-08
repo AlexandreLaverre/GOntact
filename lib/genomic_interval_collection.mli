@@ -27,3 +27,4 @@ val reverse_sort_by_coordinate : t -> t
 
 val write_output : t -> string -> append:bool  -> unit 
 
+val length : t -> int

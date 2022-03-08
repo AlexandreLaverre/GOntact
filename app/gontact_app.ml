@@ -22,7 +22,7 @@ let test_gaf () =
 let test_annot_propagation () =
   let open Let_syntax.Result in
   let* obo = Obo.of_obo_file "/home/ubuntu/data/mydatalocal/GOntact/data/GeneOntology/go-basic.obo" in
-  let* bp = Ontology.of_obo obo `Biological_process in
+  let* bp = Ontology.of_obo obo Biological_process in
   let+ gaf =  Gaf.of_gaf_file "/home/ubuntu/data/mydatalocal/GOntact/data/GeneOntology/goa_human.gaf" in
   let fa = Functional_annotation.of_gaf_and_ontology gaf bp in
   let fap = Functional_annotation.propagate_annotations fa bp in
@@ -62,7 +62,7 @@ let test_regulatory_domains () =
   let open Let_syntax.Result in
   let* ga = Genomic_annotation.of_ensembl_biomart_file "/home/ubuntu/data/mydatalocal/GOntact/data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt" in
   let* obo = Obo.of_obo_file "/home/ubuntu/data/mydatalocal/GOntact/data/GeneOntology/go-basic.obo" in
-  let* bp = Ontology.of_obo obo `Biological_process in
+  let* bp = Ontology.of_obo obo Biological_process in
   let+ gaf =  Gaf.of_gaf_file "/home/ubuntu/data/mydatalocal/GOntact/data/GeneOntology/goa_human.gaf" in
   let fa = Functional_annotation.of_gaf_and_ontology gaf bp in
   let fap = Functional_annotation.propagate_annotations fa bp in
@@ -82,7 +82,7 @@ let test_go_frequencies () =
   let open Let_syntax.Result in
   let* ga = Genomic_annotation.of_ensembl_biomart_file "/home/ubuntu/data/mydatalocal/GOntact/data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt" in
   let* obo = Obo.of_obo_file "/home/ubuntu/data/mydatalocal/GOntact/data/GeneOntology/go-basic.obo" in
-  let* bp = Ontology.of_obo obo `Biological_process in
+  let* bp = Ontology.of_obo obo Biological_process in
   let+ gaf =  Gaf.of_gaf_file "/home/ubuntu/data/mydatalocal/GOntact/data/GeneOntology/goa_human.gaf" in
   let fa = Functional_annotation.of_gaf_and_ontology gaf bp in
   let fap = Functional_annotation.propagate_annotations fa bp in

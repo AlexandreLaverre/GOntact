@@ -130,3 +130,5 @@ let write_output c path ~append =
   let il = c.int_list in
   Out_channel.with_file path ~append ~f:(fun output -> 
       List.iter il  ~f:(fun i -> Printf.fprintf output "%s\t%s\t%d\t%d\t%s\n" (Genomic_interval.id i) (Genomic_interval.chr i) (Genomic_interval.start_pos i) (Genomic_interval.end_pos i) Genomic_interval.(string_of_strand (strand i))))
+
+let length c = List.length c.int_list

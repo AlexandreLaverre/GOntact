@@ -92,4 +92,7 @@ let of_obo_file path =
   let* l = In_channel.read_lines path |> parse_lines
   in process_list l
              
-  
+let filter_namespace o ~namespace =
+  List.filter o ~f:(fun t -> String.equal t.namespace namespace)
+
+

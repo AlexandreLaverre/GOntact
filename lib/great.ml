@@ -89,7 +89,9 @@ let go_frequencies ~(element_coordinates:Genomic_interval_collection.t) ~(regula
   let tuple_gocat_element = String.Map.fold unique_gocat_by_element ~init:[] ~f:(fun ~key ~data acc -> List.append (List.map data ~f:(fun x -> (x, key))) acc) in
   let map_gocat_element = String.Map.of_alist_multi tuple_gocat_element in
   let gocat_counts = String.Map.map map_gocat_element ~f:List.length in
-  gocat_counts
+  let nb_elements = Genomic_interval_collection.length element_coordinates in 
+  let counts_with_total = String.Map.add_exn gocat_counts ~key:"total" ~data:nb_elements in
+  counts_with_total
 
 let write_go_frequencies ~go_frequencies path = 
   Out_channel.with_file path ~append:false ~f:(fun output ->
