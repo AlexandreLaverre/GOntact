@@ -105,12 +105,5 @@ let test_go_frequencies () =
 
 (* let () = test_overlap_coordinates () ; *)
 
-
-let cmds = [Annotate_baits_cmd.command]
-let root_term = Term.ret (Term.const (`Help (`Auto, None)))
-let root_doc = "GOntact does a lot of things but no coffee."
-let root_info = Cmd.info ~doc:root_doc "GOntact"
-let root_cmd = Cmd.group root_info cmds
-
-let () = exit @@ Cmd.eval root_cmd
+let () = exit @@ Cmd.eval CLI.command
 
