@@ -1,10 +1,9 @@
 open Core
 open Cmdliner
 
-let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path ~bait_coords ~max_dist_bait_TSS ~output_dir ~output_prefix =
-  Printf.printf "mode %s functional_annot %s obo_path %s domain %s gene_info %s fg_path %s bg_path %s bait_coords %s max_dist_bait_TSS %d output_dir %s output_prefix %s \n" mode functional_annot obo_path domain gene_info fg_path bg_path bait_coords max_dist_bait_TSS output_dir output_prefix 
-  
-  (*
+let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path ~chr_sizes ~upstream ~downstream ~extend ~bait_coords ~max_dist_bait_TSS ~output_dir ~output_prefix =
+  Printf.printf "mode %s functional_annot %s obo_path %s domain %s gene_info %s fg_path %s bg_path %s bait_coords %s max_dist_bait_TSS %d output_dir %s output_prefix %s \n" mode functional_annot obo_path domain gene_info fg_path bg_path bait_coords max_dist_bait_TSS output_dir output_prefix  ; 
+     
   let main_result =
     let open Let_syntax.Result in
     let* namespace = Ontology.define_domain domain in 
@@ -20,10 +19,33 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
     let filtered_annot = Genomic_annotation.filter_gene_symbols filtered_annot_bio_tx gene_symbols in  (*take only genes whose symbols are in functional (GO) annotations*) 
     let foreground = Genomic_interval_collection.of_bed_file fg_path ~strip_chr:true ~format:Base0 in
     let background = Genomic_interval_collection.of_bed_file bg_path ~strip_chr:true ~format:Base0 in
-
-
-    *)
-
+    match mode with
+    | "GREAT" -> (
+        match Sys.file_exists chr_sizes with
+        | `Yes -> (
+          let chr_collection = Genomic_interval_collection.of_chr_size_file chr_sizes ~strip_chr:true in
+          let chr_set = Genomic_interval_collection.chr_set chr_collection in
+          let filtered_annot_chr = Genomic_annotation.filter_chromosomes filtered_annot chr_set in (*take only genes on standard chromosomes*)
+          let domains = Great.basal_plus_extension_domains ~chromosome_sizes:chr_collection ~genomic_annotation:filtered_annot_chr ~upstream ~downstream ~extend in
+          let domains_int = Great.genomic_interval_collection domains in
+          let go_frequencies_foreground = Great.go_frequencies ~element_coordinates:foreground ~regulatory_domains:domains_int ~functional_annot:propagated_fa in
+          let go_frequencies_background = Great.go_frequencies ~element_coordinates:background ~regulatory_domains:domains_int ~functional_annot:propagated_fa in
+          let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in
+          let output_path = Printf.sprintf "%s/%s_GREAT_results.txt" output_dir output_prefix in
+          Go_enrichment.write_output enrichment_results output_path ;
+          Ok "GREAT computation finished successfully.";
+        )
+        | _ -> Error "Chromosome sizes are required in GREAT mode."
+      )
+  
+    | "contacts" -> Error (Printf.sprintf "mode %s not yet implemented.\n" mode) 
+    | _ -> Error (Printf.sprintf "mode %s not recognized.\n" mode)
+  in
+  match main_result with
+  | Ok m -> print_endline m
+  | Error e -> print_endline e
+                 
+  
 (*
   let output_path = Printf.sprintf "%s/%s.txt"
   let bait_collection = Genomic_interval_collection.of_bed_file bait_coords ~strip_chr:true ~format:Base1 in
@@ -73,20 +95,32 @@ let term =
   and+ gene_info =
     let doc = "Path to gene annotation file extracted from Ensembl BioMart." in
     Arg.(required & opt (some non_dir_file) None & info ["gene-annot"] ~doc ~docv:"PATH")
+  and+ chr_sizes =
+    let doc = "Path to chromosome size files (tab-separated, chr size)." in
+    Arg.(value & opt string "NA" & info ["chr-sizes"] ~doc ~docv:"PATH")
+  and+ upstream =
+    let doc = "Size of basal regulatory domain upstream of TSS. Used in GREAT mode." in
+    Arg.(value & opt int 5_000 & info ["upstream"] ~doc ~docv:"INT")
+  and+ downstream =
+    let doc = "Size of regulatory domain extension. Used in GREAT mode." in
+    Arg.(value & opt int 1_000 & info ["downstream"] ~doc ~docv:"INT")
+  and+ extend =
+    let doc = "Size of basal regulatory domain upstream of TSS. Used in GREAT mode." in
+    Arg.(value & opt int 1_000_000 & info ["extend"] ~doc ~docv:"INT")
   and+ bait_coords =
     let doc = "Path to bait coordinates file. " in
-    Arg.(required & opt (some non_dir_file) None & info ["bait-coords"] ~doc ~docv:"PATH")
+    Arg.(value & opt string "NA" & info ["bait-coords"] ~doc ~docv:"PATH")
   and+ max_dist_bait_TSS =
     let doc = "Maximum accepted distance (in base pairs) between gene TSS and bait coordinates." in
     Arg.(value & opt int 1_000 & info ["max-dist-bait-TSS"] ~doc ~docv:"INT")
   and+ output_dir =
     let doc = "Output directory." in
-    Arg.(required & opt (some string) None & info ["output-dir"] ~doc ~docv:"PATH")
+    Arg.(value & opt string "." & info ["output-dir"] ~doc ~docv:"PATH")
   and+ output_prefix =
     let doc = "Prefix for output files." in
-    Arg.(required & opt (some string) None & info ["output-prefix"] ~doc ~docv:"PATH")
+    Arg.(value & opt string "GOntact" & info ["output-prefix"] ~doc ~docv:"PATH")
    in
-  main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path ~bait_coords ~max_dist_bait_TSS ~output_dir ~output_prefix
+  main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path ~chr_sizes ~upstream ~downstream ~extend ~bait_coords ~max_dist_bait_TSS ~output_dir ~output_prefix
 
 let info = Cmd.info ~doc:"Compute GO enrichments." "GOntact"
 let command = Cmd.v info term

@@ -97,19 +97,18 @@ let test_go_frequencies () =
   let domains_int = Great.genomic_interval_collection domains in
   let fg = Genomic_interval_collection.of_bed_file "/home/ubuntu/data/mydatalocal/GOntact/data/enhancers/human/FANTOM5.first1000.kidney.enhancers.hg38.bed" ~strip_chr:true ~format:Base0 in
   let bg = Genomic_interval_collection.of_bed_file "/home/ubuntu/data/mydatalocal/GOntact/data/enhancers/human/FANTOM5.Laverre2022.bed" ~strip_chr:true ~format:Base0 in
-  let go_freq_fg = Great.go_frequencies ~element_coordinates:fg ~regulatory_domains:domains_int ~functional_annot:fap in
-  let go_freq_bg = Great.go_frequencies ~element_coordinates:bg ~regulatory_domains:domains_int ~functional_annot:fap in
-  Great.write_go_frequencies ~go_frequencies:go_freq_fg "GOFrequencies_BiologicalProcess_Foreground.txt" ;
-  Great.write_go_frequencies ~go_frequencies:go_freq_bg "GOFrequencies_BiologicalProcess_Background.txt"
-
+  let go_frequencies_foreground = Great.go_frequencies ~element_coordinates:fg ~regulatory_domains:domains_int ~functional_annot:fap in
+  let go_frequencies_background = Great.go_frequencies ~element_coordinates:bg ~regulatory_domains:domains_int ~functional_annot:fap in
+  let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in 
+  Go_enrichment.write_output enrichment_results "test_enrichment_great.txt"
 
 let test_fdr () =
   let pvalues = [ ("p1", 0.0015) ; ("p2", 0.3) ; ("p3", 0.1) ; ("p4", 0.05) ; ("p5", 0.005) ; ("p6", 0.001) ; ("p7", 0.005) ] in
   let fdr = Stats.false_discovery_rates pvalues in
   List.iter fdr ~f:(fun (id, pval) -> Printf.printf "id %s fdr %f\n" id pval) 
 
-(* let () = test_fdr () ; *) 
-
-
+(* let res = test_go_frequencies ()  *)
+    
 let () = exit @@ Cmd.eval CLI.command
+
 

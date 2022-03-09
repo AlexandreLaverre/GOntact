@@ -17,7 +17,7 @@ let foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequenci
   let total_fg = String.Map.find_exn go_frequencies_foreground "total" in
   let ids_bg = String.Map.keys go_frequencies_background in
   let go_ids_bg = String.Set.of_list (List.filter ids_bg ~f:(fun id -> not (String.equal id "total"))) in
-  let ids_fg = String.Map.keys go_frequencies_background in
+  let ids_fg = String.Map.keys go_frequencies_foreground in
   let go_ids_fg = String.Set.of_list (List.filter ids_fg ~f:(fun id -> not (String.equal id "total"))) in
   let shared_go_ids = String.Set.to_list (String.Set.inter go_ids_bg go_ids_fg) in
   let test_one_category id = (*by construction id has to be present for both fg and bg set *)
