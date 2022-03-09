@@ -104,9 +104,9 @@ let test_go_frequencies () =
 
 
 let test_fdr () =
-  let pvalues = [ {Stats.id = "p1" ; pval = 0.0015 } ; {id = "p2" ; pval = 0.3 } ; {id = "p3" ; pval = 0.1 } ; {id = "p4" ; pval = 0.05 } ; {id = "p5" ; pval = 0.005 } ; {id = "p6" ; pval = 0.001 } ; {id = "p7" ; pval = 0.005 } ] in
+  let pvalues = [ ("p1", 0.0015) ; ("p2", 0.3) ; ("p3", 0.1) ; ("p4", 0.05) ; ("p5", 0.005) ; ("p6", 0.001) ; ("p7", 0.005) ] in
   let fdr = Stats.false_discovery_rates pvalues in
-  List.iter fdr ~f:(fun p -> Printf.printf "id %s fdr %f\n" p.id p.pval) 
+  List.iter fdr ~f:(fun (id, pval) -> Printf.printf "id %s fdr %f\n" id pval) 
 
 (* let () = test_fdr () ; *) 
 

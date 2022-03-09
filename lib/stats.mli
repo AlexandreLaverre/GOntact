@@ -5,9 +5,4 @@ val binom_test :
   float
 
 
-type named_pval = {
-  id : string ;
-  pval : float ;
-}
-
-val false_discovery_rates : named_pval list -> named_pval list
+val false_discovery_rates : (string * float) list -> (string * float) list
