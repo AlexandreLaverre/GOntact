@@ -10,9 +10,9 @@ type enrichment_result = {
   pval : float ;
 }
 
-let binom_test ~count_foreground ~total_foreground ~count_background ~total_background =
+let enrichment_binom_test ~count_foreground ~total_foreground ~count_background ~total_background =
   let p = (float_of_int count_background) /. (float_of_int total_background) in
-  let pval =  1. -. Gsl.Cdf.binomial_P ~k:(count_foreground - 1) ~n:total_foreground ~p in
+  let pval = Stats.binom_test ~n_successes:count_foreground ~n_trials:total_foreground ~p in  
   let observed = (float_of_int count_foreground) /. (float_of_int total_foreground) in
   {observed ; expected = p ; count_foreground ; total_foreground ; count_background ; total_background ; pval}
 
@@ -28,7 +28,7 @@ let foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequenci
   let test_one_category id = (*by construction id has to be present for both fg and bg set *)
     let count_fg= String.Map.find_exn go_frequencies_foreground id in
     let count_bg = String.Map.find_exn go_frequencies_background id in
-    binom_test ~count_foreground:count_fg ~total_foreground:total_fg ~count_background:count_bg ~total_background:total_bg
+    enrichment_binom_test ~count_foreground:count_fg ~total_foreground:total_fg ~count_background:count_bg ~total_background:total_bg
   in
   let all_tests = List.map shared_go_ids ~f:(fun id -> (id, test_one_category id)) in
   String.Map.of_alist_exn all_tests

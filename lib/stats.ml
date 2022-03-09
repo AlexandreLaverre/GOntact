@@ -1,3 +1,5 @@
+open Core
+
 let binom_test ~n_successes ~n_trials ~p =
   1. -. Gsl.Cdf.binomial_P ~k:(n_successes - 1) ~n:n_trials ~p
 
@@ -32,3 +34,32 @@ probability of success
                        0.8
 
     pvalue = 0.006720 |}]
+
+
+type named_pval = {
+  id : string ;
+  pval : float ;
+}
+
+let compare_named_pvalues p1 p2 = Float.compare p1.pval p2.pval
+                
+let false_discovery_rates named_pvalues =
+  let sorted_pvalues = List.sort named_pvalues ~compare:compare_named_pvalues in
+  let reverse_sorted_pvalues = List.rev sorted_pvalues in
+  let pval_array = Array.of_list reverse_sorted_pvalues in
+  let n = Array.length pval_array in 
+  let nf = float_of_int n in 
+  let compute_fdr current_index current_fdr current_pval =
+    if current_index > 0 then
+      let possible_fdr = current_pval.pval *. nf /. (float_of_int current_index) in        
+      match current_fdr with
+      | last_fdr :: _ -> 
+        let cum_min = Float.min last_fdr.pval possible_fdr in
+        let this_fdr = Float.min cum_min 1.0 in
+        {id = current_pval.id ; pval = this_fdr } :: current_fdr
+      | [] ->
+        let this_fdr = Float.min possible_fdr 1.0 in
+        [ {id = current_pval.id ; pval = this_fdr } ]
+    else current_fdr
+  in
+  Array.foldi pval_array ~init:[] ~f:(fun i current_fdr current_pval -> compute_fdr (n-i) current_fdr current_pval)
