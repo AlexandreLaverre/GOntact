@@ -1,20 +1,53 @@
-type t = {
-  chr1 : string ; 
-  start1 : int ;
-  end1 : int ;
-  chr2 : string ;
-  start2 : int ; 
-  end2 : int ;
-  n_reads : int ;
-  score : float ;
-}
+open Core
+    
+type t
 
-val of_ibed_file : string -> strip_chr:bool -> t list 
+val of_ibed_file :
+  string ->
+  strip_chr:bool->
+  t list 
 
-val select_min_score : t list -> min_score:float -> t list
+val select_min_score :
+  t list ->
+  min_score:float ->
+  t list
 
-val select_cis : t list -> t list
+val select_cis :
+  t list ->
+  t list
 
-val select_distance : t list -> min_dist:float -> max_dist:float -> t list
+val select_distance :
+  t list ->
+  min_dist:float ->
+  max_dist:float ->
+  t list
 
-val select_unbaited : t list -> bait_collection:Genomic_interval_collection.t -> t list
+val select_unbaited :
+  t list ->
+  bait_collection:Genomic_interval_collection.t ->
+  t list
+
+val go_annotate_baits :
+  bait_collection:Genomic_interval_collection.t ->
+  genome_annotation:Genomic_annotation.t ->
+  max_dist:int ->
+  functional_annot:Functional_annotation.t ->
+  (string list) String.Map.t
+
+val compare : t -> t -> int
+
+val fragment_to_baits :
+  contacts:(t list) ->
+  (string list) String.Map.t
+    
+val contacted_fragment_collection :
+  contacts:(t list) ->
+  Genomic_interval_collection.t
+
+val go_frequencies :
+  element_coordinates:Genomic_interval_collection.t ->
+  fragments: Genomic_interval_collection.t ->
+  fragment_to_baits:(string list) String.Map.t ->
+  annotated_baits:(string list) String.Map.t ->
+  int String.Map.t
+      
