@@ -1,7 +1,7 @@
 open Core
 open Cmdliner
 
-let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path ~chr_sizes ~upstream ~downstream ~extend ~bait_coords ~ibed_path ~max_dist_bait_TSS ~output_dir ~output_prefix =
+let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path ~chr_sizes ~upstream ~downstream ~extend ~bait_coords ~ibed_path ~max_dist_bait_TSS ~max_dist_element_fragment ~min_dist_contacts ~max_dist_contacts ~min_score ~output_dir ~output_prefix =
   Printf.printf "mode %s functional_annot %s obo_path %s domain %s gene_info %s fg_path %s bg_path %s bait_coords %s ibed_paths %s max_dist_bait_TSS %d output_dir %s output_prefix %s \n" mode functional_annot obo_path domain gene_info fg_path bg_path bait_coords ibed_path max_dist_bait_TSS output_dir output_prefix  ; 
 
   let found_func_annot = Sys.file_exists functional_annot in
@@ -59,43 +59,40 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
         let go_frequencies_foreground = Great.go_frequencies ~element_coordinates:foreground ~regulatory_domains:domains_int ~functional_annot:propagated_fa in
         let go_frequencies_background = Great.go_frequencies ~element_coordinates:background ~regulatory_domains:domains_int ~functional_annot:propagated_fa in
         let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in
-          let output_path = Printf.sprintf "%s/%s_GREAT_results.txt" output_dir output_prefix in
+        let output_path = Printf.sprintf "%s/%s_GREAT_results.txt" output_dir output_prefix in
         Go_enrichment.write_output enrichment_results output_path ;
         Ok "GREAT computation finished successfully.";
       )
-    | "contacts" -> Error (Printf.sprintf "mode %s not yet implemented.\n" mode) 
+    | "contacts" -> (
+        let bait_collection = Genomic_interval_collection.of_bed_file bait_coords ~strip_chr:true ~format:Base1 in
+        let nb_baits = List.length (Genomic_interval_collection.interval_list bait_collection) in
+        Printf.printf "Found %d baits.\n" nb_baits ; 
+        let annotated_baits = Chromatin_contact.go_annotate_baits ~bait_collection ~genome_annotation:filtered_annot ~max_dist:max_dist_bait_TSS ~functional_annot:propagated_fa in
+        let output_path_baits = Printf.sprintf "%s/%s_bait_annotation.txt" output_dir output_prefix in
+        Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:annotated_baits ~path:output_path_baits ; 
+        let contact_list = List.map ibed_files ~f:(fun file -> Chromatin_contact.of_ibed_file file ~strip_chr:true) in
+        let cis_contacts = List.map contact_list ~f:(fun cc -> Chromatin_contact.select_cis cc) in
+        let range_contacts = List.map cis_contacts ~f:(fun cc -> Chromatin_contact.select_distance cc ~min_dist:(float_of_int min_dist_contacts) ~max_dist:(float_of_int max_dist_contacts)) in
+        let score_contacts = List.map range_contacts ~f:(fun cc -> Chromatin_contact.select_min_score cc ~min_score) in
+        let unbaited_contacts = List.map score_contacts ~f:(fun cc -> Chromatin_contact.select_unbaited cc ~bait_collection) in
+        let all_contacts = List.dedup_and_sort ~compare:Chromatin_contact.compare (List.join unbaited_contacts) in
+        let contacted_fragments = Chromatin_contact.extend_fragments ~contacts:all_contacts ~margin:max_dist_element_fragment in
+        let nb_contacted_fragments = List.length (Genomic_interval_collection.interval_list contacted_fragments) in
+        Printf.printf "Found %d contacted fragments.\n" nb_contacted_fragments;
+        let fragment_to_baits = Chromatin_contact.fragment_to_baits ~contacts:all_contacts in
+        let go_frequencies_foreground = Chromatin_contact.go_frequencies ~element_coordinates:foreground ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
+        let go_frequencies_background = Chromatin_contact.go_frequencies ~element_coordinates:background ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
+        let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in
+        let output_path = Printf.sprintf "%s/%s_contact_results.txt" output_dir output_prefix in
+        Go_enrichment.write_output enrichment_results output_path ;
+        Ok "GOntact computation finished successfully.";
+        )
     | _ -> Error (Printf.sprintf "mode %s not recognized.\n" mode)
   in
   match main_result with
   | Ok m -> print_endline m
   | Error e -> print_endline e
-                 
-  
-(*
-  let output_path = Printf.sprintf "%s/%s.txt"
-  let bait_collection = Genomic_interval_collection.of_bed_file bait_coords ~strip_chr:true ~format:Base1 in
-      let tss_int = Genomic_annotation.all_tss_intervals filtered_annot_bio_tx max_dist_bait_TSS
     
-  in
-  let intersection = Genomic_interval_collection.intersect bait_collection tss_int in
-  let bait_list = Genomic_interval_collection.interval_list bait_collection in
-  let output_one_bait b intersection output =
-    let id = Genomic_interval.id b in
-    let chr = Genomic_interval.chr b in
-    let start_pos = Genomic_interval.start_pos b in
-    let end_pos = Genomic_interval.end_pos b in
-    let itss = String.Map.find intersection id in
-    match itss with
-    | None -> Printf.fprintf output "%s\t%d\t%d\t%s\n" chr start_pos end_pos ""
-    | Some sl ->
-      let ul = List.dedup_and_sort ~compare:String.compare sl in
-      Printf.fprintf output "%s\t%d\t%d\t%s\n" chr start_pos end_pos (String.concat ~sep:"," ul)
-  in
-  Out_channel.with_file output_path ~append:false ~f:(fun output ->
-      List.iter bait_list ~f:(fun b -> output_one_bait b intersection output)
-    )
-
-*)
     
 let term =
   let open Let_syntax.Cmdliner_term in
@@ -141,6 +138,18 @@ let term =
   and+ max_dist_bait_TSS =
     let doc = "Maximum accepted distance (in base pairs) between gene TSS and bait coordinates." in
     Arg.(value & opt int 1_000 & info ["max-dist-bait-TSS"] ~doc ~docv:"INT")
+  and+ max_dist_element_fragment =
+    let doc = "Maximum accepted distance (in base pairs) between regulatory elements and contacted restriction fragments." in
+    Arg.(value & opt int 5_000 & info ["max-dist-element-fragment"] ~doc ~docv:"INT")
+  and+ min_dist_contacts =
+    let doc = "Minimum accepted distance (in base pairs) between baits and contacted fragments." in
+    Arg.(value & opt int 25_000 & info ["min-dist-contacts"] ~doc ~docv:"INT")
+  and+ max_dist_contacts =
+    let doc = "Maximum accepted distance (in base pairs) between baits and contacted fragments." in
+    Arg.(value & opt int 1_000_000 & info ["max-dist-contacts"] ~doc ~docv:"INT")
+  and+ min_score =
+    let doc = "Minimum score for fragments." in
+    Arg.(value & opt float 5.0 & info ["min-score"] ~doc ~docv:"FLOAT")
   and+ output_dir =
     let doc = "Output directory." in
     Arg.(value & opt string "." & info ["output-dir"] ~doc ~docv:"PATH")
@@ -148,7 +157,7 @@ let term =
     let doc = "Prefix for output files." in
     Arg.(value & opt string "GOntact" & info ["output-prefix"] ~doc ~docv:"PATH")
    in
-  main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path ~chr_sizes ~upstream ~downstream ~extend ~bait_coords ~ibed_path ~max_dist_bait_TSS ~output_dir ~output_prefix
+  main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path ~chr_sizes ~upstream ~downstream ~extend ~bait_coords ~ibed_path ~max_dist_bait_TSS ~max_dist_element_fragment ~min_dist_contacts ~max_dist_contacts ~min_score ~output_dir ~output_prefix
 
 let info = Cmd.info ~doc:"Compute GO enrichments." "GOntact"
 let command = Cmd.v info term

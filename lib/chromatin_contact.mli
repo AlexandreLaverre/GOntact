@@ -44,6 +44,11 @@ val contacted_fragment_collection :
   contacts:(t list) ->
   Genomic_interval_collection.t
 
+val extend_fragments :
+  contacts:(t list) ->
+  margin:int ->
+  Genomic_interval_collection.t
+
 val go_frequencies :
   element_coordinates:Genomic_interval_collection.t ->
   fragments: Genomic_interval_collection.t ->
@@ -51,3 +56,8 @@ val go_frequencies :
   annotated_baits:(string list) String.Map.t ->
   int String.Map.t
       
+val output_bait_annotation :
+  bait_collection:Genomic_interval_collection.t ->
+  bait_annotation:(string list) String.Map.t ->
+  path:string ->
+  unit

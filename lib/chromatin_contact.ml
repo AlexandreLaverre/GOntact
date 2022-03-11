@@ -34,9 +34,15 @@ let of_ibed_file path ~strip_chr =
   List.filter_map l ~f:(split_ibed_line ~strip_chr) 
   
 let select_min_score l ~min_score =
+  let nb_original = List.length l in
+  Printf.printf "Found %d contacts before filtering on minimum score %f.\n" nb_original min_score;
+
   List.filter l ~f:Float.(fun cc -> cc.score >= min_score)
 
 let select_cis l =
+  let nb_original = List.length l in
+  Printf.printf "Found %d contacts before filtering to keep only cis contacts.\n" nb_original;
+
   List.filter l ~f:(fun cc -> String.equal cc.bait_chr cc.otherEnd_chr)
 
 let compute_distance cc =
@@ -50,6 +56,9 @@ let compute_distance cc =
   | false -> None
 
 let select_distance l ~min_dist ~max_dist =
+  let nb_original = List.length l in
+  Printf.printf "Found %d contacts before filtering with minimum distance %f and maximum distance %f.\n" nb_original min_dist max_dist;
+  
   let verify_distance cc =
     let d = compute_distance cc in
     match d with
@@ -75,11 +84,17 @@ let compare i1 i2 =
   let id2 = Printf.sprintf "%s %s" (get_id_bait i2) (get_id_frag i2) in
   String.compare id1 id2
     
-let select_unbaited l ~bait_collection = 
+let select_unbaited l ~bait_collection =
+  let nb_original = List.length l in
+  Printf.printf "Found %d contacts before filtering out baited-baited contacts.\n" nb_original ;
   let contacted_frag_list = List.map l ~f:contacted_fragment in
   let contacted_frag_collection = Genomic_interval_collection.of_interval_list contacted_frag_list in
   let intersection = Genomic_interval_collection.intersect contacted_frag_collection bait_collection in (* String.Map -> string list *)
-  List.filter l ~f:(fun x -> not (String.Map.mem intersection (get_id_frag x)))
+  let unbaited =  List.filter l ~f:(fun x -> not (String.Map.mem intersection (get_id_frag x))) in 
+  let nb_filtered = List.length unbaited in
+  Printf.printf "Found %d contacts after filtering out baited-baited contacts.\n" nb_filtered ;
+  unbaited
+ 
     
 let go_annotate_baits ~bait_collection ~genome_annotation ~max_dist ~functional_annot =
   let tss_intervals = Genomic_annotation.all_tss_intervals genome_annotation max_dist in 
@@ -97,10 +112,29 @@ let go_annotate_baits ~bait_collection ~genome_annotation ~max_dist ~functional_
   let go_annot = String.Map.map intersection ~f:(fun l -> List.concat_map l ~f:get_terms_symbol) in
   String.Map.map go_annot ~f:(fun l -> List.dedup_and_sort ~compare:String.compare l)
 
+
+let output_bait_annotation ~bait_collection ~bait_annotation ~path =
+  let bait_list = Genomic_interval_collection.interval_list bait_collection in
+  let id_baits = List.map bait_list ~f:(fun b -> Genomic_interval.id b) in 
+  Out_channel.with_file path ~append:false ~f:(fun output ->
+      Out_channel.output_string output "BaitID\tGOID\n" ;
+      List.iter id_baits  ~f:(fun id ->
+          match (String.Map.find bait_annotation id) with
+          | None ->  Printf.fprintf output "%s\t\n" id
+          | Some l -> Printf.fprintf output "%s\t%s\n" id (String.concat ~sep:"," l)
+        )
+    )
+
 let contacted_fragment_collection ~contacts =
   let all_fragments = List.map contacts ~f:contacted_fragment in 
   let unique_fragments = List.dedup_and_sort ~compare:Genomic_interval.compare_intervals all_fragments in
   Genomic_interval_collection.of_interval_list unique_fragments
+
+let extend_fragments ~contacts ~margin =
+  let all_fragments = List.map contacts ~f:contacted_fragment in 
+  let unique_fragments = List.dedup_and_sort ~compare:Genomic_interval.compare_intervals all_fragments in
+  let extended_fragments = List.map unique_fragments ~f:(fun i -> Genomic_interval.make ~id:(Genomic_interval.id i) (Genomic_interval.chr i) ((Genomic_interval.start_pos i) - margin) ((Genomic_interval.end_pos i) + margin) (Genomic_interval.strand i)) in
+  Genomic_interval_collection.of_interval_list extended_fragments
 
 let fragment_to_baits ~contacts =
   let tuples = List.map contacts ~f:(fun c -> (get_id_frag c, get_id_bait c)) in

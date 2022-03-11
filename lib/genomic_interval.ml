@@ -22,7 +22,7 @@ let make ?id chr start_pos end_pos strand =
   if start_pos > end_pos then  invalid_arg "end pos should be larger than start pos " ;
   let id = 
     match id with
-    | Some "" | None -> Printf.sprintf "%s:%d:%d" chr start_pos end_pos
+    | Some "" | None -> Printf.sprintf "%s:%d-%d" chr start_pos end_pos
     | Some i -> i
   in
   {id ; chr ; start_pos ; end_pos; strand}
