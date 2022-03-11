@@ -125,6 +125,12 @@ let output_bait_annotation ~bait_collection ~bait_annotation ~path =
         )
     )
 
+let remove_unannotated_baits ~contacts ~bait_annotation =
+  let filtered = List.filter contacts ~f:(fun c -> String.Map.mem bait_annotation (get_id_bait c)) in
+  let nb = List.length filtered in
+  Printf.printf "There are %d contacts left after removing baits without GO annotation.\n" nb ;
+  filtered   
+
 let contacted_fragment_collection ~contacts =
   let all_fragments = List.map contacts ~f:contacted_fragment in 
   let unique_fragments = List.dedup_and_sort ~compare:Genomic_interval.compare_intervals all_fragments in

@@ -61,3 +61,8 @@ val output_bait_annotation :
   bait_annotation:(string list) String.Map.t ->
   path:string ->
   unit
+
+val remove_unannotated_baits :
+  contacts:(t list) ->
+  bait_annotation:(string list) String.Map.t ->
+  (t list)
