@@ -12,6 +12,35 @@ type enrichment_result = {
   fdr : float ; 
 }
 
+let combine_go_elements gomap1 gomap2 =
+  let goids1 = String.Map.keys gomap1 in
+  let goids2 = String.Map.keys gomap2 in
+  let goids = List.append goids1 goids2 in
+  let gotuples = List.map goids ~f:(fun goid ->
+      let olist1 = String.Map.find gomap1 goid in
+      let olist2 = String.Map.find gomap2 goid in
+      let l = (
+        match (olist1, olist2) with
+        | (Some l1, Some l2) -> List.append l1 l2
+        | (Some l1, _) -> l1
+        | (_, Some l2) -> l2
+        | (None, None) -> invalid_arg "id has to be in one of the lists!"
+      ) in
+      let ul = List.dedup_and_sort ~compare:String.compare l in 
+      (goid, ul)
+    ) in
+  let gomap = String.Map.of_alist_exn gotuples in
+  gomap
+
+let go_frequencies gomap =
+  let list_el = String.Map.data gomap in
+  let flatten_el = List.join list_el in
+  let unique_el = List.dedup_and_sort ~compare:String.compare flatten_el in
+  let nb_total = List.length unique_el in
+  let counts = String.Map.map gomap ~f:(fun data -> List.length data) in
+  let counts_with_total = String.Map.add_exn counts ~key:"total" ~data:nb_total in
+  counts_with_total
+
 let foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background =
   let total_bg = String.Map.find_exn go_frequencies_background "total" in
   let total_fg = String.Map.find_exn go_frequencies_foreground "total" in

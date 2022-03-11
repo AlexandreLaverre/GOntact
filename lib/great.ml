@@ -78,6 +78,17 @@ let basal_plus_extension_domains ~(chromosome_sizes:Genomic_interval_collection.
   let cl = Genomic_interval_collection.interval_list chromosome_sizes in
   List.concat_map cl ~f:(fun i -> basal_plus_extension_domains_one_chr ~chr:(Genomic_interval.chr i) ~chromosome_size:(Genomic_interval.end_pos i) ~genomic_annotation ~upstream ~downstream ~extend)
 
+let go_elements ~(element_coordinates:Genomic_interval_collection.t) ~(regulatory_domains:Genomic_interval_collection.t) ~(functional_annot:Functional_annotation.t) =
+  (*regulatory domains were constructed for genes that have at least one GO annotation*)
+  (*all their IDs should be in the functional annotation*)
+  let intersection = Genomic_interval_collection.intersect element_coordinates regulatory_domains in (*dictionary, element ids -> list of gene symbols*)
+  (*String.Map.iteri intersection ~f:(fun ~key ~data -> Printf.printf "key %s nb intersect %d \n" key (List.length data)) ; *)
+  let gocat_by_element = String.Map.map intersection ~f:(fun l -> List.concat_map l ~f:(fun s -> Option.value_exn (Functional_annotation.extract_terms functional_annot (`Symbol s)))) in  
+  let unique_gocat_by_element = String.Map.map gocat_by_element ~f:(fun l -> List.dedup_and_sort ~compare:String.compare l) in
+  let tuple_gocat_element = String.Map.fold unique_gocat_by_element ~init:[] ~f:(fun ~key ~data acc -> List.append (List.map data ~f:(fun x -> (x, key))) acc) in
+  let map_gocat_element = String.Map.of_alist_multi tuple_gocat_element in
+  map_gocat_element
+
 
 let go_frequencies ~(element_coordinates:Genomic_interval_collection.t) ~(regulatory_domains:Genomic_interval_collection.t) ~(functional_annot:Functional_annotation.t) =
   (*regulatory domains were constructed for genes that have at least one GO annotation*)
@@ -89,7 +100,7 @@ let go_frequencies ~(element_coordinates:Genomic_interval_collection.t) ~(regula
   let tuple_gocat_element = String.Map.fold unique_gocat_by_element ~init:[] ~f:(fun ~key ~data acc -> List.append (List.map data ~f:(fun x -> (x, key))) acc) in
   let map_gocat_element = String.Map.of_alist_multi tuple_gocat_element in
   let gocat_counts = String.Map.map map_gocat_element ~f:List.length in
-  let nb_elements = Genomic_interval_collection.length element_coordinates in 
+  let nb_elements = List.length (String.Map.keys intersection) in (* we take only elements that overlap with at least one regulatory domain*) 
   let counts_with_total = String.Map.add_exn gocat_counts ~key:"total" ~data:nb_elements in
   counts_with_total
 
