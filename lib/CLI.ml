@@ -88,7 +88,7 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
         let go_frequencies_foreground = Chromatin_contact.go_frequencies ~element_coordinates:foreground ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
         let go_frequencies_background = Chromatin_contact.go_frequencies ~element_coordinates:background ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
         let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in
-        let output_path = Printf.sprintf "%s/%s_contact_results.txt" output_dir output_prefix in
+        let output_path = Printf.sprintf "%s/%s_contacts_results.txt" output_dir output_prefix in
         Go_enrichment.write_output enrichment_results gonames output_path ;
         Ok "GOntact computation finished successfully.";
       )
