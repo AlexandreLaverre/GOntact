@@ -9,6 +9,7 @@ val foreground_vs_background_binom_test :
 
 val write_output :
   enrichment_result list ->
+  string String.Map.t -> 
   string ->
   unit
 

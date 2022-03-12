@@ -7,6 +7,15 @@ val of_ibed_file :
   strip_chr:bool->
   t list 
 
+val of_ibed_file_filtered :
+  string ->
+  strip_chr:bool ->
+  min_dist:float ->
+  max_dist:float ->
+  min_score:float ->
+  bait_map:(String.Set.t) ->
+  t list 
+
 val select_min_score :
   t list ->
   min_score:float ->

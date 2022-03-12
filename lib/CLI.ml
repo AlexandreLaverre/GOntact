@@ -2,7 +2,6 @@ open Core
 open Cmdliner
 
 let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path ~chr_sizes ~upstream ~downstream ~extend ~bait_coords ~ibed_path ~max_dist_bait_TSS ~max_dist_element_fragment ~min_dist_contacts ~max_dist_contacts ~min_score ~output_dir ~output_prefix =
-  Printf.printf "mode %s functional_annot %s obo_path %s domain %s gene_info %s fg_path %s bg_path %s bait_coords %s ibed_paths %s max_dist_bait_TSS %d output_dir %s output_prefix %s \n" mode functional_annot obo_path domain gene_info fg_path bg_path bait_coords ibed_path max_dist_bait_TSS output_dir output_prefix  ; 
 
   let found_func_annot = Sys.file_exists functional_annot in
   let found_obo = Sys.file_exists obo_path in
@@ -30,7 +29,11 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
         | (`Yes, `Yes, `Yes, `Yes, `Yes, `Yes, true) -> Ok "All required files were found."
         | _ -> Error "In contacts mode the following parameters are required: functional-annot, ontology, gene-annot, foreground, background, bait-coords, ibed-path."
       )
-    | "hybrid" -> Error (Printf.sprintf "Hybrid mode not implemented yet.") 
+    | "hybrid" -> (
+        match (found_func_annot, found_obo, found_gene_info, found_fg, found_bg, found_bait_coords, found_chr_sizes, found_ibed_files) with
+        | (`Yes, `Yes, `Yes, `Yes, `Yes, `Yes, `Yes, true) -> Ok "All required files were found."
+        | _ -> Error "In hybrid mode the following parameters are required: functional-annot, ontology, gene-annot, foreground, background, bait-coords, chr-sizes, ibed-path."
+      )
     | x -> Error (Printf.sprintf "Mode %s not recognized." x) 
   in
   let main_result =
@@ -41,6 +44,7 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
     let* ontology = Ontology.of_obo obo namespace in
     let* gaf = Gaf.of_gaf_file functional_annot in 
     let* gene_annot = Genomic_annotation.of_ensembl_biomart_file gene_info in
+    let gonames = Ontology.term_names ontology in 
     let fa = Functional_annotation.of_gaf_and_ontology gaf ontology in
     let propagated_fa = Functional_annotation.propagate_annotations fa ontology in
     let gene_symbols = Functional_annotation.gene_symbols propagated_fa in 
@@ -60,13 +64,13 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
         let go_frequencies_background = Great.go_frequencies ~element_coordinates:background ~regulatory_domains:domains_int ~functional_annot:propagated_fa in
         let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in
         let output_path = Printf.sprintf "%s/%s_GREAT_results.txt" output_dir output_prefix in
-        Go_enrichment.write_output enrichment_results output_path ;
+        Go_enrichment.write_output enrichment_results gonames output_path ;
         Ok "GREAT computation finished successfully.";
       )
     | "contacts" -> (
         let bait_collection = Genomic_interval_collection.of_bed_file bait_coords ~strip_chr:true ~format:Base1 in
-        let nb_baits = List.length (Genomic_interval_collection.interval_list bait_collection) in
-        Printf.printf "Found %d baits.\n" nb_baits ; 
+        (*let nb_baits = List.length (Genomic_interval_collection.interval_list bait_collection) in
+          Printf.printf "Found %d baits.\n" nb_baits ; *) 
         let annotated_baits = Chromatin_contact.go_annotate_baits ~bait_collection ~genome_annotation:filtered_annot ~max_dist:max_dist_bait_TSS ~functional_annot:propagated_fa in
         let output_path_baits = Printf.sprintf "%s/%s_bait_annotation.txt" output_dir output_prefix in
         Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:annotated_baits ~path:output_path_baits ; 
@@ -78,16 +82,50 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
         let unbaited_contacts = List.map score_contacts ~f:(fun cc -> Chromatin_contact.select_unbaited cc ~bait_collection) in
         let all_contacts = List.dedup_and_sort ~compare:Chromatin_contact.compare (List.join unbaited_contacts) in
         let contacted_fragments = Chromatin_contact.extend_fragments ~contacts:all_contacts ~margin:max_dist_element_fragment in
-        let nb_contacted_fragments = List.length (Genomic_interval_collection.interval_list contacted_fragments) in
-        Printf.printf "Found %d contacted fragments.\n" nb_contacted_fragments;
+        (* let nb_contacted_fragments = List.length (Genomic_interval_collection.interval_list contacted_fragments) in
+          Printf.printf "Found %d contacted fragments.\n" nb_contacted_fragments;*)
         let fragment_to_baits = Chromatin_contact.fragment_to_baits ~contacts:all_contacts in
         let go_frequencies_foreground = Chromatin_contact.go_frequencies ~element_coordinates:foreground ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
         let go_frequencies_background = Chromatin_contact.go_frequencies ~element_coordinates:background ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
         let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in
         let output_path = Printf.sprintf "%s/%s_contact_results.txt" output_dir output_prefix in
-        Go_enrichment.write_output enrichment_results output_path ;
+        Go_enrichment.write_output enrichment_results gonames output_path ;
         Ok "GOntact computation finished successfully.";
-        )
+      )
+    | "hybrid" -> (
+        let chr_collection = Genomic_interval_collection.of_chr_size_file chr_sizes ~strip_chr:true in
+        let chr_set = Genomic_interval_collection.chr_set chr_collection in
+        let filtered_annot_chr = Genomic_annotation.filter_chromosomes filtered_annot chr_set in (*take only genes on standard chromosomes*)
+        let domains = Great.basal_plus_extension_domains ~chromosome_sizes:chr_collection ~genomic_annotation:filtered_annot_chr ~upstream ~downstream ~extend:0 in
+        let domains_int = Great.genomic_interval_collection domains in
+        let go_elements_great_foreground = Great.go_elements ~element_coordinates:foreground ~regulatory_domains:domains_int ~functional_annot:propagated_fa in
+        let go_elements_great_background = Great.go_elements ~element_coordinates:background ~regulatory_domains:domains_int ~functional_annot:propagated_fa in
+        let bait_collection = Genomic_interval_collection.of_bed_file bait_coords ~strip_chr:true ~format:Base1 in
+        let annotated_baits = Chromatin_contact.go_annotate_baits ~bait_collection ~genome_annotation:filtered_annot ~max_dist:max_dist_bait_TSS ~functional_annot:propagated_fa in
+        let output_path_baits = Printf.sprintf "%s/%s_bait_annotation.txt" output_dir output_prefix in
+        Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:annotated_baits ~path:output_path_baits ; 
+        let contact_list = List.map ibed_files ~f:(fun file -> Chromatin_contact.of_ibed_file file ~strip_chr:true) in
+        let with_annotated_baits = List.map contact_list ~f:(fun cc -> Chromatin_contact.remove_unannotated_baits ~contacts:cc ~bait_annotation:annotated_baits) in 
+        let cis_contacts = List.map with_annotated_baits ~f:(fun cc -> Chromatin_contact.select_cis cc) in
+        let range_contacts = List.map cis_contacts ~f:(fun cc -> Chromatin_contact.select_distance cc ~min_dist:(float_of_int min_dist_contacts) ~max_dist:(float_of_int max_dist_contacts)) in
+        let score_contacts = List.map range_contacts ~f:(fun cc -> Chromatin_contact.select_min_score cc ~min_score) in
+        let unbaited_contacts = List.map score_contacts ~f:(fun cc -> Chromatin_contact.select_unbaited cc ~bait_collection) in
+        let all_contacts = List.dedup_and_sort ~compare:Chromatin_contact.compare (List.join unbaited_contacts) in
+        let contacted_fragments = Chromatin_contact.extend_fragments ~contacts:all_contacts ~margin:max_dist_element_fragment in
+        (*let nb_contacted_fragments = List.length (Genomic_interval_collection.interval_list contacted_fragments) in
+          Printf.printf "Found %d contacted fragments.\n" nb_contacted_fragments;*)
+        let fragment_to_baits = Chromatin_contact.fragment_to_baits ~contacts:all_contacts in
+        let go_elements_cc_foreground = Chromatin_contact.go_elements ~element_coordinates:foreground ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
+        let go_elements_cc_background = Chromatin_contact.go_elements ~element_coordinates:background ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
+        let go_elements_foreground = Go_enrichment.combine_go_elements go_elements_great_foreground go_elements_cc_foreground in
+        let go_elements_background = Go_enrichment.combine_go_elements go_elements_great_background go_elements_cc_background in 
+        let go_frequencies_foreground = Go_enrichment.go_frequencies go_elements_foreground in
+        let go_frequencies_background = Go_enrichment.go_frequencies go_elements_background in
+        let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in
+        let output_path = Printf.sprintf "%s/%s_hybrid_results.txt" output_dir output_prefix in
+        Go_enrichment.write_output enrichment_results gonames output_path ;
+        Ok "GOntact hybrid computation finished successfully.";
+      )
     | _ -> Error (Printf.sprintf "mode %s not recognized.\n" mode)
   in
   match main_result with

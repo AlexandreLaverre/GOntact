@@ -84,6 +84,7 @@ let test_go_frequencies () =
   let* obo = Obo.of_obo_file "/home/ubuntu/data/mydatalocal/GOntact/data/GeneOntology/go-basic.obo" in
   let* bp = Ontology.of_obo obo Biological_process in
   let+ gaf =  Gaf.of_gaf_file "/home/ubuntu/data/mydatalocal/GOntact/data/GeneOntology/goa_human.gaf" in
+  let gonames = Ontology.term_names bp in 
   let fa = Functional_annotation.of_gaf_and_ontology gaf bp in
   let fap = Functional_annotation.propagate_annotations fa bp in
   let gene_symbols = Functional_annotation.gene_symbols fap in
@@ -100,7 +101,7 @@ let test_go_frequencies () =
   let go_frequencies_foreground = Great.go_frequencies ~element_coordinates:fg ~regulatory_domains:domains_int ~functional_annot:fap in
   let go_frequencies_background = Great.go_frequencies ~element_coordinates:bg ~regulatory_domains:domains_int ~functional_annot:fap in
   let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in 
-  Go_enrichment.write_output enrichment_results "test_enrichment_great.txt"
+  Go_enrichment.write_output enrichment_results gonames "test_enrichment_great.txt"
 
 let test_fdr () =
   let pvalues = [ ("p1", 0.0015) ; ("p2", 0.3) ; ("p3", 0.1) ; ("p4", 0.05) ; ("p5", 0.005) ; ("p6", 0.001) ; ("p7", 0.005) ] in

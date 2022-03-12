@@ -1,3 +1,5 @@
+open Core
+
 type t
 
 type domain = Biological_process | Molecular_function | Cellular_component
@@ -29,3 +31,5 @@ val filter_terms : t -> string list -> string list
 val of_obo : Obo.t -> domain -> (t, string) result
 
 val define_domain : string -> (domain, string) result 
+
+val term_names : t -> string String.Map.t

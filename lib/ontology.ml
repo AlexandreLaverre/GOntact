@@ -19,6 +19,8 @@ module Term = struct
   
   let get_parents t = t.is_a
 
+  let get_name t = t.name
+                     
   module Set = Set.Make(X)
 
 end
@@ -85,3 +87,7 @@ let expand_id_list o il =
 
 let filter_terms o sl =
   List.filter sl ~f:(fun x -> not (Option.is_none (find_term o x)))
+
+let term_names t =
+  let id_to_term = t.id_to_term in
+  String.Map.map id_to_term ~f:(fun term -> Term.get_name term)  

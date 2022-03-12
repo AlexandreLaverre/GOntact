@@ -12,11 +12,15 @@ type enrichment_result = {
   fdr : float ; 
 }
 
+let compare er1 er2 =
+  Float.compare er1.fdr er2.fdr
+
 let combine_go_elements gomap1 gomap2 =
   let goids1 = String.Map.keys gomap1 in
   let goids2 = String.Map.keys gomap2 in
   let goids = List.append goids1 goids2 in
-  let gotuples = List.map goids ~f:(fun goid ->
+  let unique_goids = List.dedup_and_sort ~compare:String.compare goids in
+  let gotuples = List.map unique_goids ~f:(fun goid ->
       let olist1 = String.Map.find gomap1 goid in
       let olist2 = String.Map.find gomap2 goid in
       let l = (
@@ -71,8 +75,11 @@ let foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequenci
   in
   List.map shared_go_ids ~f:construct_enrichment_object 
   
-let write_output results path =
-    Out_channel.with_file path ~append:false ~f:(fun output ->
-      Out_channel.output_string output "GOID\tNbElementsForeground\tTotalForeground\tObserved\tNbElementsBackground\tTotalBackground\tExpected\tPValue\tFDR\n" ; 
-      List.iter results  ~f:(fun res -> Printf.fprintf output "%s\t%d\t%d\t%f\t%d\t%d\t%f\t%f\t%f\n" res.id res.count_foreground res.total_foreground res.observed res.count_background res.total_background res.expected res.pval res.fdr))
+let write_output results go_names path =
+  let ordered_results = List.sort results ~compare in 
+  Out_channel.with_file path ~append:false ~f:(fun output ->
+      Out_channel.output_string output "GOID\tGOName\tNbElementsForeground\tTotalForeground\tObserved\tNbElementsBackground\tTotalBackground\tExpected\tPValue\tFDR\n" ; 
+      List.iter ordered_results  ~f:(fun res ->
+          let name = String.Map.find_exn go_names res.id in 
+          Printf.fprintf output "%s\t%s\t%d\t%d\t%f\t%d\t%d\t%f\t%f\t%f\n" res.id name res.count_foreground res.total_foreground res.observed res.count_background res.total_background res.expected res.pval res.fdr))
 
