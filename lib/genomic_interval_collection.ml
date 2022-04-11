@@ -126,48 +126,7 @@ let intersect_lists l1 l2 =
       intersect_arrays achr1 achr2 0 0 0 []
     ) in
    List.join intersection_list 
-      
-  (*
-let rec intersect_element_list interval l ~init =
-  match l with
-  | [] -> init
-  | h :: t -> 
-    let comp = Genomic_interval.check_overlap interval h in
-    match comp with
-    | Smaller_chr -> init (* chr1 < chr2, there cannot be any more chr1 in the 2nd list, no intersection for interval *)
-    | Larger_chr -> intersect_element_list interval t ~init (* chr1 > chr2, there can be intersection for interval, but not with h*)
-    | Smaller_no_overlap -> init (*same chr, end1 < start2, there cannot be intersection for interval*)
-    | Larger_no_overlap -> init  (*same chr, start1 > end2, there cannot be intersection for anything with h *)
-    | Smaller_overlap | Larger_overlap | Equal  ->
-      let new_init = (Genomic_interval.id interval, Genomic_interval.id h) :: init in 
-      intersect_element_list interval t ~init:new_init (* chr1 > chr2, there can be intersection for h1, but not with h2*) (*there is intersection, h1 can overlap with other elements as well - but so can h2 !! *)
-
-let intersect_lists l1 l2 =
-  List.fold l1 ~init:[] ~f:(fun acc el -> intersect_element_list el l2 ~init:acc) 
-*)
-
-(*
-let rec intersect_lists l1 l2 = (* will return a list of (id1, id2) tuples for the interecting intervals *)
-  match (l1, l2) with
-  | ([], _) -> []
-  | (_, []) -> []
-  | (h1 :: t1, h2 :: t2) -> (
-      let comp = Genomic_interval.check_overlap h1 h2 in
-      Printf.printf "checking overlap between %s and %s.\n" (Genomic_interval.id h1) (Genomic_interval.id h2) ;
-      match comp with
-      | Smaller_chr -> intersect_lists t1 l2 (* chr1 < chr2, there cannot be any more chr1 in the 2nd list, no intersection for h1 *)
-      | Larger_chr -> intersect_lists l1 t2 (* chr1 > chr2, there can be intersection for h1, but not with h2*)
-      | Smaller_no_overlap -> intersect_lists t1 l2 (*same chr, end1 < start2, there cannot be intersection for h1*)
-      | Larger_no_overlap -> intersect_lists l1 t2  (*same chr, start1 > end2, there cannot be intersection for anything with h2 *)
-      | Smaller_overlap | Larger_overlap | Equal  ->
-        let intersect1 = intersect_lists [ h1 ] t2 in
-        let intersect2 = intersect_lists t1 l2 in
-        let full_intersect = List.append intersect1 intersect2 in 
-        (Genomic_interval.id h1, Genomic_interval.id h2) :: full_intersect  (*there is intersection, h1 can overlap with other elements as well - but so can h2 !! *)
-    )
-*)  
-
-  
+        
 let intersect c1 c2 =
   let (l1, l2) = (c1.int_list, c2.int_list) in (*collections of genomic intervals are necessarily ordered *)
   let tuple_list = intersect_lists l1 l2 in

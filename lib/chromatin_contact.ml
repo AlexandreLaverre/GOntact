@@ -119,7 +119,18 @@ let select_unbaited l ~bait_collection =
   let bait_ids = String.Set.of_list (List.map (Genomic_interval_collection.interval_list bait_collection) ~f:(fun i -> Genomic_interval.id i)) in
   let unbaited = List.filter l ~f:(fun x -> not (String.Set.mem bait_ids (get_id_frag x))) in
   unbaited
-     
+
+let symbol_annotate_baits ~bait_collection ~genome_annotation ~max_dist = 
+  let tss_intervals = Genomic_annotation.all_tss_intervals genome_annotation max_dist in 
+  let intersection = Genomic_interval_collection.intersect bait_collection tss_intervals in (*String.Map - key = bait ids ; values = list of gene_id:gene_symbol mixed id*)
+  let get_symbol id =
+    match String.split id ~on:':' with 
+    | [ _ ; symbol ] -> Some symbol 
+    | _ -> None (*not optimal, fix this*)
+  in
+  let symbol_annot = String.Map.map intersection ~f:(fun l -> List.filter_map l ~f:get_symbol) in
+  String.Map.map symbol_annot ~f:(fun l -> List.dedup_and_sort ~compare:String.compare l)
+
 let go_annotate_baits ~bait_collection ~genome_annotation ~max_dist ~functional_annot =
   let tss_intervals = Genomic_annotation.all_tss_intervals genome_annotation max_dist in 
   let intersection = Genomic_interval_collection.intersect bait_collection tss_intervals in (*String.Map - key = bait ids ; values = list of gene_id:gene_symbol mixed id*)
@@ -169,10 +180,10 @@ let extend_fragments ~contacts ~margin =
 let fragment_to_baits ~contacts =
   let tuples = List.map contacts ~f:(fun c -> (get_id_frag c, get_id_bait c)) in
   let sm = String.Map.of_alist_multi tuples in
-  String.Map.map sm ~f:(fun l -> List.dedup_and_sort ~compare:String.compare l) (* unique list of contacted baits*)
+  String.Map.map sm ~f:(fun l -> List.dedup_and_sort ~compare:String.compare l) (* unique list of contacted baits for each fragment*)
 
-
-let go_elements ~(element_coordinates:Genomic_interval_collection.t) ~(fragments:Genomic_interval_collection.t) ~fragment_to_baits ~annotated_baits =
+let annot_elements ~(element_coordinates:Genomic_interval_collection.t) ~(fragments:Genomic_interval_collection.t) ~fragment_to_baits ~annotated_baits =
+  (* for each element, find the list of annotations - gene symbols or GO categories - associated with it *)
   let intersection = Genomic_interval_collection.intersect element_coordinates fragments in
   let elbaits = String.Map.map intersection ~f:(fun l -> List.dedup_and_sort ~compare:String.compare (List.join (List.filter_map l ~f:(fun frag -> String.Map.find fragment_to_baits frag)))) in  
   let elgo = String.Map.map elbaits ~f:(fun l -> List.dedup_and_sort ~compare:String.compare (List.join (List.filter_map l ~f:(fun bait -> String.Map.find annotated_baits bait)))) in
@@ -181,11 +192,10 @@ let go_elements ~(element_coordinates:Genomic_interval_collection.t) ~(fragments
   let gomap = String.Map.of_alist_multi tuples in
   gomap
 
-
 let go_frequencies ~(element_coordinates:Genomic_interval_collection.t) ~(fragments:Genomic_interval_collection.t) ~fragment_to_baits ~annotated_baits =
   let intersection = Genomic_interval_collection.intersect element_coordinates fragments in
   let nb_elements = List.length (String.Map.keys intersection) in  
-  let elbaits = String.Map.map intersection ~f:(fun l -> List.dedup_and_sort ~compare:String.compare (List.join (List.filter_map l ~f:(fun frag -> String.Map.find fragment_to_baits frag)))) in  
+  let elbaits = String.Map.map intersection ~f:(fun l -> List.dedup_and_sort ~compare:String.compare (List.join (List.filter_map l ~f:(fun frag -> String.Map.find fragment_to_baits frag)))) in  (*for each element, the list of baits with which it is in contact*)
   let elgo = String.Map.map elbaits ~f:(fun l -> List.dedup_and_sort ~compare:String.compare (List.join (List.filter_map l ~f:(fun bait -> String.Map.find annotated_baits bait)))) in
   let elgolist = String.Map.to_alist elgo in
   let tuples = List.join (List.map elgolist ~f:(fun (id, l) -> List.map l ~f:(fun g -> (g, id)))) in

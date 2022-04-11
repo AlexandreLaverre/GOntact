@@ -1,7 +1,7 @@
 open Core
 open Cmdliner
 
-let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path ~chr_sizes ~upstream ~downstream ~extend ~bait_coords ~ibed_path ~max_dist_bait_TSS ~max_dist_element_fragment ~min_dist_contacts ~max_dist_contacts ~min_score ~output_dir ~output_prefix =
+let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path ~chr_sizes ~upstream ~downstream ~extend ~bait_coords ~ibed_path ~max_dist_bait_TSS ~max_dist_element_fragment ~min_dist_contacts ~max_dist_contacts ~min_score ~output_dir ~output_prefix ~write_elements_foreground ~write_elements_background =
 
   let found_func_annot = Sys.file_exists functional_annot in
   let found_obo = Sys.file_exists obo_path in
@@ -60,11 +60,23 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
         let filtered_annot_chr = Genomic_annotation.filter_chromosomes filtered_annot chr_set in (*take only genes on standard chromosomes*)
         let domains = Great.basal_plus_extension_domains ~chromosome_sizes:chr_collection ~genomic_annotation:filtered_annot_chr ~upstream ~downstream ~extend in
         let domains_int = Great.genomic_interval_collection domains in
-        let go_frequencies_foreground = Great.go_frequencies ~element_coordinates:foreground ~regulatory_domains:domains_int ~functional_annot:propagated_fa in
-        let go_frequencies_background = Great.go_frequencies ~element_coordinates:background ~regulatory_domains:domains_int ~functional_annot:propagated_fa in
+        let go_elements_foreground = Great.go_elements ~element_coordinates:foreground ~regulatory_domains:domains_int ~functional_annot:propagated_fa in
+        let go_elements_background = Great.go_elements ~element_coordinates:background ~regulatory_domains:domains_int ~functional_annot:propagated_fa in
+        let go_frequencies_foreground = Go_enrichment.go_frequencies go_elements_foreground in
+        let go_frequencies_background = Go_enrichment.go_frequencies go_elements_background in
         let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in
         let output_path = Printf.sprintf "%s/%s_GREAT_results.txt" output_dir output_prefix in
         Go_enrichment.write_output enrichment_results gonames output_path ;
+        if write_elements_foreground then (
+          let symbol_elements_foreground = Great.symbol_elements ~element_coordinates:foreground ~regulatory_domains:domains_int in
+          let output_path_fg_elements = Printf.sprintf "%s/%s_GREAT_element_gene_association_foreground.txt" output_dir output_prefix in
+          Great.write_annot_elements ~annot_elements:symbol_elements_foreground ~column_header:"GeneSymbol" output_path_fg_elements ;
+        ) ;
+        if write_elements_background then (
+          let symbol_elements_background = Great.symbol_elements ~element_coordinates:background ~regulatory_domains:domains_int in
+          let output_path_bg_elements = Printf.sprintf "%s/%s_GREAT_element_gene_association_background.txt" output_dir output_prefix in
+          Great.write_annot_elements ~annot_elements:symbol_elements_background ~column_header:"GeneSymbol" output_path_bg_elements ;
+        ) ;
         Ok "GREAT computation finished successfully.";
       )
     | "contacts" -> (
@@ -85,8 +97,10 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
         (* let nb_contacted_fragments = List.length (Genomic_interval_collection.interval_list contacted_fragments) in
           Printf.printf "Found %d contacted fragments.\n" nb_contacted_fragments;*)
         let fragment_to_baits = Chromatin_contact.fragment_to_baits ~contacts:all_contacts in
-        let go_frequencies_foreground = Chromatin_contact.go_frequencies ~element_coordinates:foreground ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
-        let go_frequencies_background = Chromatin_contact.go_frequencies ~element_coordinates:background ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
+        let go_elements_foreground = Chromatin_contact.annot_elements ~element_coordinates:foreground ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
+        let go_elements_background = Chromatin_contact.annot_elements ~element_coordinates:background ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
+        let go_frequencies_foreground = Go_enrichment.go_frequencies go_elements_foreground in
+        let go_frequencies_background = Go_enrichment.go_frequencies go_elements_background in
         let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in
         let output_path = Printf.sprintf "%s/%s_contacts_results.txt" output_dir output_prefix in
         Go_enrichment.write_output enrichment_results gonames output_path ;
@@ -115,8 +129,8 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
         (*let nb_contacted_fragments = List.length (Genomic_interval_collection.interval_list contacted_fragments) in
           Printf.printf "Found %d contacted fragments.\n" nb_contacted_fragments;*)
         let fragment_to_baits = Chromatin_contact.fragment_to_baits ~contacts:all_contacts in
-        let go_elements_cc_foreground = Chromatin_contact.go_elements ~element_coordinates:foreground ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
-        let go_elements_cc_background = Chromatin_contact.go_elements ~element_coordinates:background ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
+        let go_elements_cc_foreground = Chromatin_contact.annot_elements ~element_coordinates:foreground ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
+        let go_elements_cc_background = Chromatin_contact.annot_elements ~element_coordinates:background ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
         let go_elements_foreground = Go_enrichment.combine_go_elements go_elements_great_foreground go_elements_cc_foreground in
         let go_elements_background = Go_enrichment.combine_go_elements go_elements_great_background go_elements_cc_background in 
         let go_frequencies_foreground = Go_enrichment.go_frequencies go_elements_foreground in
@@ -195,8 +209,14 @@ let term =
   and+ output_prefix =
     let doc = "Prefix for output files." in
     Arg.(value & opt string "GOntact" & info ["output-prefix"] ~doc ~docv:"PATH")
-   in
-  main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path ~chr_sizes ~upstream ~downstream ~extend ~bait_coords ~ibed_path ~max_dist_bait_TSS ~max_dist_element_fragment ~min_dist_contacts ~max_dist_contacts ~min_score ~output_dir ~output_prefix
+  and+ write_elements_foreground =
+    let doc = "Write output for gene-element association in foreground." in
+    Arg.(value & flag  & info ["write-foreground"] ~doc)
+  and+ write_elements_background =
+    let doc = "Write output for gene-element association in background." in
+    Arg.(value & flag  & info ["write-background"] ~doc)
+  in
+  main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path ~chr_sizes ~upstream ~downstream ~extend ~bait_coords ~ibed_path ~max_dist_bait_TSS ~max_dist_element_fragment ~min_dist_contacts ~max_dist_contacts ~min_score ~output_dir ~output_prefix ~write_elements_foreground ~write_elements_background 
 
 let info = Cmd.info ~doc:"Compute GO enrichments." "GOntact"
 let command = Cmd.v info term

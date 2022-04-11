@@ -73,7 +73,6 @@ let basal_plus_extension_domains_one_chr  ~chr ~chromosome_size ~genomic_annotat
   let domains_list = extend_domains ~genomic_annotation:ga ~ordered_tss:(Genomic_interval_collection.interval_list major_tss) ~extend ~upstream ~downstream ~chromosome_size in
   domains_list
 
-
 let basal_plus_extension_domains ~(chromosome_sizes:Genomic_interval_collection.t) ~genomic_annotation ~upstream ~downstream ~extend =
   let cl = Genomic_interval_collection.interval_list chromosome_sizes in
   List.concat_map cl ~f:(fun i -> basal_plus_extension_domains_one_chr ~chr:(Genomic_interval.chr i) ~chromosome_size:(Genomic_interval.end_pos i) ~genomic_annotation ~upstream ~downstream ~extend)
@@ -89,7 +88,16 @@ let go_elements ~(element_coordinates:Genomic_interval_collection.t) ~(regulator
   let map_gocat_element = String.Map.of_alist_multi tuple_gocat_element in
   map_gocat_element
 
+let symbol_elements ~(element_coordinates:Genomic_interval_collection.t) ~(regulatory_domains:Genomic_interval_collection.t) =
+   let intersection = Genomic_interval_collection.intersect element_coordinates regulatory_domains in (*dictionary, element ids -> list of gene symbols*)
+   intersection
+   
+let write_annot_elements ~annot_elements ~column_header path =
+  Out_channel.with_file path ~append:false ~f:(fun output ->
+      Printf.fprintf output "ElementID\t%s\n" column_header ; 
+      String.Map.iteri annot_elements  ~f:(fun ~key ~data -> (List.iter data ~f:(fun d -> Printf.fprintf output "%s\t%s\n" key d))))
 
+(*
 let go_frequencies ~(element_coordinates:Genomic_interval_collection.t) ~(regulatory_domains:Genomic_interval_collection.t) ~(functional_annot:Functional_annotation.t) =
   (*regulatory domains were constructed for genes that have at least one GO annotation*)
   (*all their IDs should be in the functional annotation*)
@@ -108,4 +116,4 @@ let write_go_frequencies ~go_frequencies path =
   Out_channel.with_file path ~append:false ~f:(fun output ->
       Out_channel.output_string output "GOID\tNbElements\n" ; 
       String.Map.iteri go_frequencies  ~f:(fun ~key ~data -> Printf.fprintf output "%s\t%d\n" key data))
-          
+*)

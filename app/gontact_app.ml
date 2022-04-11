@@ -77,7 +77,7 @@ let test_regulatory_domains () =
   let int_domains = Great.genomic_interval_collection domains in
   Genomic_interval_collection.write_output int_domains "basal_plus_extension_domains.txt" ~append:false
 
-
+(*
 let test_go_frequencies () =
   let open Let_syntax.Result in
   let* ga = Genomic_annotation.of_ensembl_biomart_file "/home/ubuntu/data/mydatalocal/GOntact/data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt" in
@@ -102,7 +102,8 @@ let test_go_frequencies () =
   let go_frequencies_background = Great.go_frequencies ~element_coordinates:bg ~regulatory_domains:domains_int ~functional_annot:fap in
   let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in 
   Go_enrichment.write_output enrichment_results gonames "test_enrichment_great.txt"
-
+*)
+    
 let test_fdr () =
   let pvalues = [ ("p1", 0.0015) ; ("p2", 0.3) ; ("p3", 0.1) ; ("p4", 0.05) ; ("p5", 0.005) ; ("p6", 0.001) ; ("p7", 0.005) ] in
   let fdr = Stats.false_discovery_rates pvalues in

@@ -36,6 +36,12 @@ val select_unbaited :
   bait_collection:Genomic_interval_collection.t ->
   t list
 
+val symbol_annotate_baits :
+  bait_collection:Genomic_interval_collection.t ->
+  genome_annotation:Genomic_annotation.t ->
+  max_dist:int ->
+  (string list) String.Map.t
+
 val go_annotate_baits :
   bait_collection:Genomic_interval_collection.t ->
   genome_annotation:Genomic_annotation.t ->
@@ -58,7 +64,7 @@ val extend_fragments :
   margin:int ->
   Genomic_interval_collection.t
 
-val go_elements :
+val annot_elements :
   element_coordinates:Genomic_interval_collection.t ->
   fragments: Genomic_interval_collection.t ->
   fragment_to_baits:(string list) String.Map.t ->
