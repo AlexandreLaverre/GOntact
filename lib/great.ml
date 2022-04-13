@@ -92,11 +92,6 @@ let symbol_elements ~(element_coordinates:Genomic_interval_collection.t) ~(regul
    let intersection = Genomic_interval_collection.intersect element_coordinates regulatory_domains in (*dictionary, element ids -> list of gene symbols*)
    intersection
    
-let write_annot_elements ~annot_elements ~column_header path =
-  Out_channel.with_file path ~append:false ~f:(fun output ->
-      Printf.fprintf output "ElementID\t%s\n" column_header ; 
-      String.Map.iteri annot_elements  ~f:(fun ~key ~data -> (List.iter data ~f:(fun d -> Printf.fprintf output "%s\t%s\n" key d))))
-
 (*
 let go_frequencies ~(element_coordinates:Genomic_interval_collection.t) ~(regulatory_domains:Genomic_interval_collection.t) ~(functional_annot:Functional_annotation.t) =
   (*regulatory domains were constructed for genes that have at least one GO annotation*)

@@ -50,7 +50,7 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
     let gene_symbols = Functional_annotation.gene_symbols propagated_fa in 
     let filtered_annot_bio_gene = Genomic_annotation.filter_gene_biotypes gene_annot "protein_coding" in (*take only protein_coding genes*)
     let filtered_annot_bio_tx = Genomic_annotation.filter_transcript_biotypes filtered_annot_bio_gene "protein_coding" in (*take only protein_coding transcripts*)
-    let filtered_annot = Genomic_annotation.filter_gene_symbols filtered_annot_bio_tx gene_symbols in  (*take only genes whose symbols are in functional (GO) annotations*) 
+    let filtered_annot = Genomic_annotation.filter_gene_symbols filtered_annot_bio_tx gene_symbols in  (*take only genes whose symbols are in functional (GO) annotations*)
     let foreground = Genomic_interval_collection.of_bed_file fg_path ~strip_chr:true ~format:Base0 in
     let background = Genomic_interval_collection.of_bed_file bg_path ~strip_chr:true ~format:Base0 in
     match mode with
@@ -58,6 +58,7 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
         let chr_collection = Genomic_interval_collection.of_chr_size_file chr_sizes ~strip_chr:true in
         let chr_set = Genomic_interval_collection.chr_set chr_collection in
         let filtered_annot_chr = Genomic_annotation.filter_chromosomes filtered_annot chr_set in (*take only genes on standard chromosomes*)
+        let major_isoforms = Genomic_annotation.identify_major_isoforms_symbols filtered_annot_chr in
         let domains = Great.basal_plus_extension_domains ~chromosome_sizes:chr_collection ~genomic_annotation:filtered_annot_chr ~upstream ~downstream ~extend in
         let domains_int = Great.genomic_interval_collection domains in
         let go_elements_foreground = Great.go_elements ~element_coordinates:foreground ~regulatory_domains:domains_int ~functional_annot:propagated_fa in
@@ -69,13 +70,15 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
         Go_enrichment.write_output enrichment_results gonames output_path ;
         if write_elements_foreground then (
           let symbol_elements_foreground = Great.symbol_elements ~element_coordinates:foreground ~regulatory_domains:domains_int in
+          let dist_gene_elements_foreground = Genomic_annotation.compute_cis_distances symbol_elements_foreground ~gene_annotation:filtered_annot_chr ~major_isoforms:major_isoforms in 
           let output_path_fg_elements = Printf.sprintf "%s/%s_GREAT_element_gene_association_foreground.txt" output_dir output_prefix in
-          Great.write_annot_elements ~annot_elements:symbol_elements_foreground ~column_header:"GeneSymbol" output_path_fg_elements ;
+          Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_foreground output_path_fg_elements ;
         ) ;
         if write_elements_background then (
           let symbol_elements_background = Great.symbol_elements ~element_coordinates:background ~regulatory_domains:domains_int in
+          let dist_gene_elements_background = Genomic_annotation.compute_cis_distances symbol_elements_background ~gene_annotation:filtered_annot_chr ~major_isoforms:major_isoforms in 
           let output_path_bg_elements = Printf.sprintf "%s/%s_GREAT_element_gene_association_background.txt" output_dir output_prefix in
-          Great.write_annot_elements ~annot_elements:symbol_elements_background ~column_header:"GeneSymbol" output_path_bg_elements ;
+          Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_background output_path_bg_elements ;
         ) ;
         Ok "GREAT computation finished successfully.";
       )

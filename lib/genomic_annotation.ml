@@ -130,7 +130,6 @@ let filter_gene_biotypes ga biotype =
   let filtered_transcripts = String.Map.filter transcripts ~f:(fun x -> String.Set.mem filtered_gene_set x.gene_id) in
   let filtered_isoforms = isoforms_of_transcripts filtered_transcripts in
   {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
-
   
 let filter_gene_symbols ga symbol_set =
   (*symbol set is a set of strings = gene symbols*)
@@ -146,7 +145,15 @@ let filter_chromosomes ga chr_set =
   let filtered_transcripts = String.Map.filter ga.transcripts ~f:(fun tx -> String.Set.mem gene_set tx.gene_id) in
   let filtered_isoforms = String.Map.filter_keys ga.isoforms ~f:(fun gid -> String.Set.mem gene_set gid) in
   {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
-  
+
+(*
+let remove_duplicated_gene_symbols ga =
+  let tuples = String.Map.map ga.genes  ~f:(fun g -> (g.gene_symbol, g)) in
+  let symbol_id = String.Map.of_alist_multi tuples in
+  let new_genes = String.Map.filter_mapi symbol_id ~f:(fun ~key ~data -> (
+      ) 
+    )
+*)
 
 let compare_isoforms txinfo t1 t2 =
   (*two isoforms from the same gene *)
@@ -177,7 +184,6 @@ let compare_isoforms txinfo t1 t2 =
     | _ -> 0
   )
 
-
 let identify_major_isoforms ga =
   let gene_list = String.Map.keys ga.genes in
   let isoforms = ga.isoforms in
@@ -188,11 +194,21 @@ let identify_major_isoforms ga =
   let major_list = List.map gene_list ~f:(fun g -> (g, find_major_isoform (String.Map.find_exn isoforms g))) in
   String.Map.of_alist_exn major_list
 
+let identify_major_isoforms_symbols ga =
+  let gene_list = String.Map.keys ga.genes in
+  let isoforms = ga.isoforms in
+  let transcripts = ga.transcripts in
+  let find_major_isoform isolist =
+    Option.value_exn (List.max_elt isolist ~compare:(compare_isoforms transcripts))
+  in
+  let major_list = List.map gene_list ~f:(fun g -> ((gene_symbol_exn ga g), find_major_isoform (String.Map.find_exn isoforms g))) in
+  String.Map.of_alist_exn major_list
+
 let major_isoform_tss ga ~major_isoforms:iso =
   let ginfo = ga.genes in 
   let txinfo = ga.transcripts in
   let tss_pos = String.Map.map iso ~f:(fun tx -> (let ti = String.Map.find_exn txinfo tx in ti.tss_pos)) in  
-  let interval_of_gene g  =
+  let interval_of_gene g =
     let gi = String.Map.find_exn ginfo g in
     let tss = String.Map.find_exn tss_pos g in
     Genomic_interval.make ~id:g gi.chr tss tss gi.strand
@@ -217,3 +233,33 @@ let all_tss_intervals ga extend =
   let int_list = List.map (String.Map.keys txinfo) ~f:interval_of_transcript in
   Genomic_interval_collection.of_interval_list int_list
   
+let compute_cis_distances element_genes ~gene_annotation:ga ~major_isoforms:mi =
+  (* we assume that pairs of elements-genes are always in cis *) 
+  let txinfo = ga.transcripts in
+  let tss_pos = String.Map.map txinfo ~f:(fun tx -> tx.tss_pos) in
+  let compute_one_distance element_id gene_symbol =
+    let txid = String.Map.find_exn mi gene_symbol in
+    let this_tss_pos = float_of_int (String.Map.find_exn tss_pos txid) in 
+    match  String.split element_id ~on:':' with
+    | [ _  ; pos ] -> (
+        match String.split pos ~on:'-' with
+        | [ str_start ; str_end ] -> (
+            let start_pos = float_of_string str_start in
+            let end_pos = float_of_string str_end in
+            let mid_pos = (start_pos +. end_pos) /. 2. in
+            let dist = Float.abs (mid_pos -. this_tss_pos) in
+            (gene_symbol, dist)
+          )
+        | _ -> invalid_arg "element ids are not formatted properly"
+      )
+    | _ -> invalid_arg "element ids are not formatted properly"
+  in
+  String.Map.mapi element_genes ~f:(fun ~key ~data -> (List.map data ~f:(fun g -> compute_one_distance key g)))
+
+let write_distance_elements ~dist_elements path =
+  Out_channel.with_file path ~append:false ~f:(fun output ->
+      Printf.fprintf output "ElementID\tGeneSymbol\tDistance\n" ;
+      String.Map.iteri dist_elements  ~f:(fun ~key ~data -> (List.iter data ~f:(fun (gs, dist) -> Printf.fprintf output "%s\t%s\t%f\n" key gs dist))))
+
+
+

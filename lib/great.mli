@@ -34,12 +34,6 @@ val symbol_elements :
   regulatory_domains:Genomic_interval_collection.t ->
   (string list) String.Map.t
 
-val write_annot_elements :
-  annot_elements:((string list) String.Map.t) -> 
-  column_header:string ->
-  string ->
-  unit
-  
 (*
 val go_frequencies :
   element_coordinates:Genomic_interval_collection.t ->
