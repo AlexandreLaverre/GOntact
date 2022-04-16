@@ -146,15 +146,24 @@ let filter_chromosomes ga chr_set =
   let filtered_isoforms = String.Map.filter_keys ga.isoforms ~f:(fun gid -> String.Set.mem gene_set gid) in
   {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
 
+
 (*
 let remove_duplicated_gene_symbols ga =
-  let tuples = String.Map.map ga.genes  ~f:(fun g -> (g.gene_symbol, g)) in
+  let tuples = String.Map.fold ga.genes ~init:[]  ~f:(fun ~key:gene_id ~data:gene acc -> ((gene.gene_symbol, gene_id) :: acc)) in
   let symbol_id = String.Map.of_alist_multi tuples in
-  let new_genes = String.Map.filter_mapi symbol_id ~f:(fun ~key ~data -> (
+  let unique_genes = String.Map.fold symbol_id ~init:[] ~f:(fun ~key:_ ~data acc -> (
+        match data with
+        | [ gid ] -> gid :: acc  (*keep only those genes that are unique*)
+        | _ -> acc
       ) 
-    )
-*)
-
+    ) in
+  let filtered_gene_tuples = List.map unique_genes ~f:(fun g -> (g, (String.Map.find_exn ga.genes g))) in
+  let filtered_genes = String.Map.of_alist_exn filtered_gene_tuples in
+  filtered_genes
+      
+  *)                                                               
+      
+      
 let compare_isoforms txinfo t1 t2 =
   (*two isoforms from the same gene *)
   let info1 = String.Map.find_exn txinfo t1 in (*t1 and t2 are necessarily in the transcript dictionary*)
