@@ -157,7 +157,10 @@ let remove_duplicated_gene_symbols ga =
     ) in
   let filtered_gene_tuples = List.map unique_genes ~f:(fun g -> (g, (String.Map.find_exn ga.genes g))) in
   let filtered_genes = String.Map.of_alist_exn filtered_gene_tuples in
-  {genes = filtered_genes ; transcripts = ga.transcripts ; isoforms = ga.isoforms}
+  let gene_set = String.Set.of_list (String.Map.keys filtered_genes) in
+  let filtered_transcripts = String.Map.filter ga.transcripts ~f:(fun tx -> String.Set.mem gene_set tx.gene_id) in
+  let filtered_isoforms = String.Map.filter_keys ga.isoforms ~f:(fun gid -> String.Set.mem gene_set gid) in
+  {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
             
       
 let compare_isoforms txinfo t1 t2 =
