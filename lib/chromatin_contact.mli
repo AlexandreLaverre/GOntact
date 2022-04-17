@@ -64,12 +64,16 @@ val extend_fragments :
   margin:int ->
   Genomic_interval_collection.t
 
-val annot_elements :
+val annotations_by_element :
   element_coordinates:Genomic_interval_collection.t ->
   fragments: Genomic_interval_collection.t ->
   fragment_to_baits:(string list) String.Map.t ->
   annotated_baits:(string list) String.Map.t ->
   (string list) String.Map.t
+
+val elements_by_annotation :
+  (string list) String.Map.t ->
+  (string list) String.Map.t 
 
 val go_frequencies :
   element_coordinates:Genomic_interval_collection.t ->

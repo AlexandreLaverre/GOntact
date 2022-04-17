@@ -146,8 +146,6 @@ let filter_chromosomes ga chr_set =
   let filtered_isoforms = String.Map.filter_keys ga.isoforms ~f:(fun gid -> String.Set.mem gene_set gid) in
   {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
 
-
-(*
 let remove_duplicated_gene_symbols ga =
   let tuples = String.Map.fold ga.genes ~init:[]  ~f:(fun ~key:gene_id ~data:gene acc -> ((gene.gene_symbol, gene_id) :: acc)) in
   let symbol_id = String.Map.of_alist_multi tuples in
@@ -159,10 +157,8 @@ let remove_duplicated_gene_symbols ga =
     ) in
   let filtered_gene_tuples = List.map unique_genes ~f:(fun g -> (g, (String.Map.find_exn ga.genes g))) in
   let filtered_genes = String.Map.of_alist_exn filtered_gene_tuples in
-  filtered_genes
-      
-  *)                                                               
-      
+  {genes = filtered_genes ; transcripts = ga.transcripts ; isoforms = ga.isoforms}
+            
       
 let compare_isoforms txinfo t1 t2 =
   (*two isoforms from the same gene *)
@@ -242,26 +238,19 @@ let all_tss_intervals ga extend =
   let int_list = List.map (String.Map.keys txinfo) ~f:interval_of_transcript in
   Genomic_interval_collection.of_interval_list int_list
   
-let compute_cis_distances element_genes ~gene_annotation:ga ~major_isoforms:mi =
+let compute_cis_distances element_genes ~element_map:em ~gene_annotation:ga ~major_isoforms:mi =
   (* we assume that pairs of elements-genes are always in cis *) 
   let txinfo = ga.transcripts in
   let tss_pos = String.Map.map txinfo ~f:(fun tx -> tx.tss_pos) in
   let compute_one_distance element_id gene_symbol =
-    let txid = String.Map.find_exn mi gene_symbol in
-    let this_tss_pos = float_of_int (String.Map.find_exn tss_pos txid) in 
-    match  String.split element_id ~on:':' with
-    | [ _  ; pos ] -> (
-        match String.split pos ~on:'-' with
-        | [ str_start ; str_end ] -> (
-            let start_pos = float_of_string str_start in
-            let end_pos = float_of_string str_end in
-            let mid_pos = (start_pos +. end_pos) /. 2. in
-            let dist = Float.abs (mid_pos -. this_tss_pos) in
-            (gene_symbol, dist)
-          )
-        | _ -> invalid_arg "element ids are not formatted properly"
-      )
-    | _ -> invalid_arg "element ids are not formatted properly"
+    let txid = String.Map.find_exn mi gene_symbol in (*identifier of the major isoform*)
+    let this_tss_pos = float_of_int (String.Map.find_exn tss_pos txid) in
+    let gint = String.Map.find_exn em element_id in 
+    let start_pos = float_of_int (Genomic_interval.start_pos gint) in
+    let end_pos = float_of_int (Genomic_interval.end_pos gint) in
+    let mid_pos = (start_pos +. end_pos) /. 2. in
+    let dist = Float.abs (mid_pos -. this_tss_pos) in
+    (gene_symbol, dist)
   in
   String.Map.mapi element_genes ~f:(fun ~key ~data -> (List.map data ~f:(fun g -> compute_one_distance key g)))
 
@@ -269,6 +258,10 @@ let write_distance_elements ~dist_elements path =
   Out_channel.with_file path ~append:false ~f:(fun output ->
       Printf.fprintf output "ElementID\tGeneSymbol\tDistance\n" ;
       String.Map.iteri dist_elements  ~f:(fun ~key ~data -> (List.iter data ~f:(fun (gs, dist) -> Printf.fprintf output "%s\t%s\t%f\n" key gs dist))))
+
+let number_of_genes ga =
+  String.Map.length ga.genes
+
 
 
 

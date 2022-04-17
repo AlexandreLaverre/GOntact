@@ -149,3 +149,20 @@ let write_output c path ~append =
       List.iter il  ~f:(fun i -> Printf.fprintf output "%s\t%s\t%d\t%d\t%s\n" (Genomic_interval.id i) (Genomic_interval.chr i) (Genomic_interval.start_pos i) (Genomic_interval.end_pos i) Genomic_interval.(string_of_strand (strand i))))
 
 let length c = List.length c.int_list
+
+let remove_duplicated_identifiers c = 
+  let il = c.int_list in
+  let tuples = List.map il ~f:(fun i -> (Genomic_interval.id i, i)) in
+  let multi_map = String.Map.of_alist_multi tuples in
+  let filtered_interval_list = String.Map.fold multi_map ~init:[] ~f:(fun ~key:_ ~data acc -> (
+        match data with
+        | [ int ] -> int :: acc
+        | _ -> acc
+      )
+    ) in
+  of_interval_list filtered_interval_list
+
+let interval_map c =
+  let il = c.int_list in
+  let tuples = List.map il ~f:(fun i -> (Genomic_interval.id i, i)) in
+  String.Map.of_alist_exn tuples (* identifiers have to be unique *)

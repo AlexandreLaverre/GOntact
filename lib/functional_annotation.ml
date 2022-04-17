@@ -15,6 +15,14 @@ let extract_terms ga is =
   in
   String.Map.find d k 
 
+let extract_terms_exn  ga is =
+  let d, k = 
+    match is with
+    | `Id id ->  ga.gene_id_to_go, id
+    | `Symbol sym -> ga.gene_symbol_to_go, sym
+  in
+  String.Map.find_exn d k 
+
 let extract_genes ga ~go_id:go i =
   let d = match i with
     | `Id -> ga.go_to_gene_id

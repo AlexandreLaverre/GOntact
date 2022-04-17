@@ -15,7 +15,7 @@ type enrichment_result = {
 let compare er1 er2 =
   Float.compare er1.fdr er2.fdr
 
-let combine_go_elements gomap1 gomap2 =
+let combine_maps gomap1 gomap2 =
   let goids1 = String.Map.keys gomap1 in
   let goids2 = String.Map.keys gomap2 in
   let goids = List.append goids1 goids2 in
@@ -36,12 +36,9 @@ let combine_go_elements gomap1 gomap2 =
   let gomap = String.Map.of_alist_exn gotuples in
   gomap
 
-let go_frequencies gomap =
-  let list_el = String.Map.data gomap in
-  let flatten_el = List.join list_el in
-  let unique_el = List.dedup_and_sort ~compare:String.compare flatten_el in
-  let nb_total = List.length unique_el in
-  let counts = String.Map.map gomap ~f:(fun data -> List.length data) in
+let go_frequencies ~categories_by_element ~elements_by_category =
+  let nb_total = String.Map.length categories_by_element in (* number of elements that have at least one GO category*)
+  let counts = Utils.chrono "count elements for GO" (fun () -> String.Map.map elements_by_category ~f:(fun data -> List.length data)) () in
   let counts_with_total = String.Map.add_exn counts ~key:"total" ~data:nb_total in
   counts_with_total
 

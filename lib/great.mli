@@ -23,26 +23,16 @@ val basal_plus_extension_domains :
   extend:int ->
   regulatory_domain list
 
-val go_elements :
+val go_categories_by_element :
   element_coordinates:Genomic_interval_collection.t ->
   regulatory_domains:Genomic_interval_collection.t ->
   functional_annot:Functional_annotation.t ->
   (string list) String.Map.t
+
+val elements_by_go_category : (string list) String.Map.t -> (string list) String.Map.t 
 
 val symbol_elements : 
   element_coordinates:Genomic_interval_collection.t ->
   regulatory_domains:Genomic_interval_collection.t ->
   (string list) String.Map.t
 
-(*
-val go_frequencies :
-  element_coordinates:Genomic_interval_collection.t ->
-  regulatory_domains:Genomic_interval_collection.t ->
-  functional_annot:Functional_annotation.t ->
-  int String.Map.t
-
-val write_go_frequencies :
-  go_frequencies: int String.Map.t ->
-  string ->
-  unit 
-*)

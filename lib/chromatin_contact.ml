@@ -182,12 +182,14 @@ let fragment_to_baits ~contacts =
   let sm = String.Map.of_alist_multi tuples in
   String.Map.map sm ~f:(fun l -> List.dedup_and_sort ~compare:String.compare l) (* unique list of contacted baits for each fragment*)
 
-let annot_elements ~(element_coordinates:Genomic_interval_collection.t) ~(fragments:Genomic_interval_collection.t) ~fragment_to_baits ~annotated_baits =
+let annotations_by_element ~(element_coordinates:Genomic_interval_collection.t) ~(fragments:Genomic_interval_collection.t) ~fragment_to_baits ~annotated_baits =
   (* for each element, find the list of annotations - gene symbols or GO categories - associated with it *)
   let intersection = Genomic_interval_collection.intersect element_coordinates fragments in
   let elbaits = String.Map.map intersection ~f:(fun l -> List.dedup_and_sort ~compare:String.compare (List.join (List.filter_map l ~f:(fun frag -> String.Map.find fragment_to_baits frag)))) in  
-  let elgo = String.Map.map elbaits ~f:(fun l -> List.dedup_and_sort ~compare:String.compare (List.join (List.filter_map l ~f:(fun bait -> String.Map.find annotated_baits bait)))) in
-  let elgolist = String.Map.to_alist elgo in
+  String.Map.map elbaits ~f:(fun l -> List.dedup_and_sort ~compare:String.compare (List.join (List.filter_map l ~f:(fun bait -> String.Map.find annotated_baits bait)))) 
+
+let elements_by_annotation elannot = 
+  let elgolist = String.Map.to_alist elannot in
   let tuples = List.join (List.map elgolist ~f:(fun (id, l) -> List.map l ~f:(fun g -> (g, id)))) in
   let gomap = String.Map.of_alist_multi tuples in
   gomap

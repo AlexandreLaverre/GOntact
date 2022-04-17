@@ -28,3 +28,7 @@ val reverse_sort_by_coordinate : t -> t
 val write_output : t -> string -> append:bool  -> unit 
 
 val length : t -> int
+
+val remove_duplicated_identifiers : t -> t 
+
+val interval_map : t -> (Genomic_interval.t) String.Map.t 
