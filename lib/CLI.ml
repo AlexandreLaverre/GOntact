@@ -25,9 +25,9 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
         | _ -> Error "In GREAT mode the following parameters are required: functional-annot, ontology, gene-annot, chr-sizes, foreground, background."
       )
     | "contacts" -> (
-        match (found_func_annot, found_obo, found_gene_info, found_fg, found_bg, found_bait_coords, found_ibed_files) with
-        | (`Yes, `Yes, `Yes, `Yes, `Yes, `Yes, true) -> Ok "All required files were found."
-        | _ -> Error "In contacts mode the following parameters are required: functional-annot, ontology, gene-annot, foreground, background, bait-coords, ibed-path."
+        match (found_func_annot, found_obo, found_gene_info, found_fg, found_bg, found_bait_coords, found_ibed_files, found_chr_sizes) with
+        | (`Yes, `Yes, `Yes, `Yes, `Yes, `Yes, true, `Yes) -> Ok "All required files were found."
+        | _ -> Error "In contacts mode the following parameters are required: functional-annot, ontology, gene-annot, chr-sizes, foreground, background, bait-coords, ibed-path."
       )
     | "hybrid" -> (
         match (found_func_annot, found_obo, found_gene_info, found_fg, found_bg, found_bait_coords, found_chr_sizes, found_ibed_files) with
@@ -54,7 +54,11 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
     Printf.printf "%d genes after filtering transcript biotypes\n" (Genomic_annotation.number_of_genes filtered_annot_bio_tx) ;
     let filtered_annot_gene_symbols = Utils.chrono "filter gene symbols" (Genomic_annotation.filter_gene_symbols filtered_annot_bio_tx) gene_symbols in  (*take only genes whose symbols are in functional (GO) annotations*)
     Printf.printf "%d genes after filtering gene symbols\n" (Genomic_annotation.number_of_genes filtered_annot_gene_symbols) ;
-    let filtered_annot = Utils.chrono "remove duplicated gene symbols" Genomic_annotation.remove_duplicated_gene_symbols filtered_annot_gene_symbols in  (*remove duplicated gene symbols*)
+    let chr_collection = Utils.chrono "construct chr collection" (fun () -> Genomic_interval_collection.of_chr_size_file chr_sizes ~strip_chr:true) () in
+    let chr_set = Genomic_interval_collection.chr_set chr_collection in
+    let filtered_annot_chr = Utils.chrono "filter standard chromosomes" (Genomic_annotation.filter_chromosomes filtered_annot_gene_symbols) chr_set in (*take only genes on standard chromosomes*)
+    Printf.printf "%d genes on standard chromosomes\n" (Genomic_annotation.number_of_genes filtered_annot_chr) ;
+    let filtered_annot = Utils.chrono "remove duplicated gene symbols" Genomic_annotation.remove_duplicated_gene_symbols filtered_annot_chr in  (*remove duplicated gene symbols*)
     Printf.printf "%d genes after removing duplicated gene symbols\n" (Genomic_annotation.number_of_genes filtered_annot) ;
     let unfiltered_foreground = Utils.chrono "read foreground elements" (fun () -> Genomic_interval_collection.of_bed_file fg_path ~strip_chr:true ~format:Base0) () in
     let unfiltered_background = Utils.chrono "read background elements" (fun () -> Genomic_interval_collection.of_bed_file bg_path ~strip_chr:true ~format:Base0) () in
@@ -62,11 +66,8 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
     let background = Utils.chrono "removing duplicated background elements" Genomic_interval_collection.remove_duplicated_identifiers unfiltered_background in
     match mode with
     | "GREAT" -> (
-        let chr_collection = Utils.chrono "construct chr collection" (fun () -> Genomic_interval_collection.of_chr_size_file chr_sizes ~strip_chr:true) () in
-        let chr_set = Genomic_interval_collection.chr_set chr_collection in
-        let filtered_annot_chr = Utils.chrono "filter standard chromosomes" (Genomic_annotation.filter_chromosomes filtered_annot) chr_set in (*take only genes on standard chromosomes*)
-        let major_isoforms = Utils.chrono "extract major isoforms symbols" Genomic_annotation.identify_major_isoforms_symbols filtered_annot_chr in
-        let domains = Utils.chrono "construct GREAT domains" (fun () -> Great.basal_plus_extension_domains ~chromosome_sizes:chr_collection ~genomic_annotation:filtered_annot_chr ~upstream ~downstream ~extend) () in
+        let major_isoforms = Utils.chrono "extract major isoforms symbols" Genomic_annotation.identify_major_isoforms_symbols filtered_annot in
+        let domains = Utils.chrono "construct GREAT domains" (fun () -> Great.basal_plus_extension_domains ~chromosome_sizes:chr_collection ~genomic_annotation:filtered_annot ~upstream ~downstream ~extend) () in
         let domains_int = Great.genomic_interval_collection domains in
         let gocat_by_element_foreground = Utils.chrono "GO categories by element foreground" (fun () -> Great.go_categories_by_element ~element_coordinates:foreground ~regulatory_domains:domains_int ~functional_annot:propagated_fa) () in
         let gocat_by_element_background = Utils.chrono "GO categories by element background" (fun () -> Great.go_categories_by_element ~element_coordinates:background ~regulatory_domains:domains_int ~functional_annot:propagated_fa) () in
@@ -80,14 +81,14 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
         if write_elements_foreground then (
           let foreground_map = Utils.chrono "interval map foreground" Genomic_interval_collection.interval_map foreground in
           let symbol_elements_foreground = Utils.chrono "connect foreground elements to genes" (fun () -> Great.symbol_elements ~element_coordinates:foreground ~regulatory_domains:domains_int) () in
-          let dist_gene_elements_foreground = Utils.chrono "distance foreground elements to genes" (fun () -> Genomic_annotation.compute_cis_distances symbol_elements_foreground ~element_map:foreground_map ~gene_annotation:filtered_annot_chr ~major_isoforms:major_isoforms) () in 
+          let dist_gene_elements_foreground = Utils.chrono "distance foreground elements to genes" (fun () -> Genomic_annotation.compute_cis_distances symbol_elements_foreground ~element_map:foreground_map ~gene_annotation:filtered_annot ~major_isoforms:major_isoforms) () in 
           let output_path_fg_elements = Printf.sprintf "%s/%s_GREAT_element_gene_association_foreground.txt" output_dir output_prefix in
           Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_foreground output_path_fg_elements ;
         ) ;
         if write_elements_background then (
           let background_map = Utils.chrono "interval map background" Genomic_interval_collection.interval_map background in
           let symbol_elements_background = Utils.chrono "connect background elements to genes" (fun () -> Great.symbol_elements ~element_coordinates:background ~regulatory_domains:domains_int) () in
-          let dist_gene_elements_background = Utils.chrono "distance background element to genes" (fun () -> Genomic_annotation.compute_cis_distances symbol_elements_background ~element_map:background_map  ~gene_annotation:filtered_annot_chr ~major_isoforms:major_isoforms) () in 
+          let dist_gene_elements_background = Utils.chrono "distance background element to genes" (fun () -> Genomic_annotation.compute_cis_distances symbol_elements_background ~element_map:background_map  ~gene_annotation:filtered_annot ~major_isoforms:major_isoforms) () in 
           let output_path_bg_elements = Printf.sprintf "%s/%s_GREAT_element_gene_association_background.txt" output_dir output_prefix in
           Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_background output_path_bg_elements ;
         ) ;
@@ -123,10 +124,7 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
         Ok "GOntact computation finished successfully.";
       )
     | "hybrid" -> (
-        let chr_collection = Genomic_interval_collection.of_chr_size_file chr_sizes ~strip_chr:true in
-        let chr_set = Genomic_interval_collection.chr_set chr_collection in
-        let filtered_annot_chr = Genomic_annotation.filter_chromosomes filtered_annot chr_set in (*take only genes on standard chromosomes*)
-        let domains = Great.basal_plus_extension_domains ~chromosome_sizes:chr_collection ~genomic_annotation:filtered_annot_chr ~upstream ~downstream ~extend:0 in
+        let domains = Great.basal_plus_extension_domains ~chromosome_sizes:chr_collection ~genomic_annotation:filtered_annot ~upstream ~downstream ~extend:0 in
         let domains_int = Great.genomic_interval_collection domains in
         let gocat_by_element_great_foreground = Utils.chrono "GO categories by element foreground" (fun () -> Great.go_categories_by_element ~element_coordinates:foreground ~regulatory_domains:domains_int ~functional_annot:propagated_fa) () in
         let gocat_by_element_great_background = Utils.chrono "GO categories by element background" (fun () -> Great.go_categories_by_element ~element_coordinates:background ~regulatory_domains:domains_int ~functional_annot:propagated_fa) () in
