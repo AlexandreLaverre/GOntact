@@ -163,8 +163,6 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
         let unbaited_contacts = List.map score_contacts ~f:(fun cc -> Chromatin_contact.select_unbaited cc ~bait_collection) in
         let all_contacts = List.dedup_and_sort ~compare:Chromatin_contact.compare (List.join unbaited_contacts) in
         let contacted_fragments = Chromatin_contact.extend_fragments ~contacts:all_contacts ~margin:max_dist_element_fragment in
-        (*let nb_contacted_fragments = List.length (Genomic_interval_collection.interval_list contacted_fragments) in
-          Printf.printf "Found %d contacted fragments.\n" nb_contacted_fragments;*)
         let fragment_to_baits = Chromatin_contact.fragment_to_baits ~contacts:all_contacts in
         let gocat_by_element_cc_foreground = Chromatin_contact.annotations_by_element ~element_coordinates:foreground ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in 
         let gocat_by_element_cc_background = Chromatin_contact.annotations_by_element ~element_coordinates:background ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in 
@@ -179,7 +177,6 @@ let main ~mode ~functional_annot ~obo_path ~domain ~gene_info ~fg_path ~bg_path 
         let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in
         let output_path = Printf.sprintf "%s/%s_hybrid_results.txt" output_dir output_prefix in
         Go_enrichment.write_output enrichment_results gonames output_path ;
-
         if (write_elements_foreground || write_elements_background) then ( 
           let major_isoforms = Utils.chrono "extract major isoforms symbols" Genomic_annotation.identify_major_isoforms_symbols filtered_annot in
           let symbol_annotated_baits = Chromatin_contact.symbol_annotate_baits ~bait_collection ~genome_annotation:filtered_annot ~max_dist:max_dist_bait_TSS in
