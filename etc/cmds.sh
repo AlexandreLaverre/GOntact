@@ -1,120 +1,130 @@
 #!/bin/bash
 
-###########################################################################################################################
+export sp=$1
+export foreground=$2
+export background=$3
+export outprefix=$4
 
-## foreground mouse Vista limb enhancers
-## background ENCODE
+############################################################################################
+
+if [ ${sp} = "human" ]; then
+    export goa_file=goa_human
+    export genome=hg38
+fi
+
+if [ ${sp} = "mouse" ]; then
+    export goa_file=mgi
+    export genome=mm10
+fi
+
+############################################################################################
+
 ## GREAT max distance 2Mb
 
-if [ -e results/mouse/Vista_limb_vs_ENCODE/biological_process/GREAT_upstream5kb_downstream1kb_extend2Mb ]; then
+if [ -e results/${sp}/${outprefix}/biological_process/GREAT_upstream5kb_downstream1kb_extend2Mb ]; then
     echo "outdir exists"
 else
-    mkdir -p results/mouse/Vista_limb_vs_ENCODE/biological_process/GREAT_upstream5kb_downstream1kb_extend2Mb 
+    mkdir -p results/${sp}/${outprefix}/biological_process/GREAT_upstream5kb_downstream1kb_extend2Mb 
 fi
 
 _build/install/default/bin/gontact --mode=GREAT \
-				   --foreground=data/enhancers/human/VistaEnhancers_heart_hg38.bed --background=data/enhancers/human/ENCODE.Laverre2022.bed \
-				   --functional-annot=data/GeneOntology/goa_human.gaf  --ontology=data/GeneOntology/go-basic.obo \
-				   --gene-annot=data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt  \
-				   --chr-sizes=data/ensembl_annotations/human/chr_sizes_hg38.txt \
+				   --foreground=data/enhancers/${sp}/${foreground}.bed --background=data/enhancers/${sp}/${background}.bed \
+				   --functional-annot=data/GeneOntology/${goa_file}.gaf  --ontology=data/GeneOntology/go-basic.obo \
+				   --gene-annot=data/ensembl_annotations/${sp}/GeneAnnotation_BioMart_Ensembl102_${genome}.txt  \
+				   --chr-sizes=data/ensembl_annotations/${sp}/chr_sizes_${genome}.txt \
 				   --upstream=5000 --downstream=1000 --extend=2000000 \
 				   --write-foreground --write-background \
-				   --output-dir=results/human/Vista_heart_vs_ENCODE/biological_process/GREAT_upstream5kb_downstream1kb_extend2Mb 
+				   --output-dir=results/${sp}/${outprefix}/biological_process/GREAT_upstream5kb_downstream1kb_extend2Mb 
 
 ## GREAT max distance 1Mb
 
-if [ -e results/human/Vista_heart_vs_ENCODE/biological_process/GREAT_upstream5kb_downstream1kb_extend1Mb ]; then
+if [ -e results/${sp}/${outprefix}/biological_process/GREAT_upstream5kb_downstream1kb_extend1Mb ]; then
     echo "outdir exists"
 else
-    mkdir -p results/human/Vista_heart_vs_ENCODE/biological_process/GREAT_upstream5kb_downstream1kb_extend1Mb 
+    mkdir -p results/${sp}/${outprefix}/biological_process/GREAT_upstream5kb_downstream1kb_extend1Mb 
 fi
 
 _build/install/default/bin/gontact --mode=GREAT \
-				   --foreground=data/enhancers/human/VistaEnhancers_heart_hg38.bed --background=data/enhancers/human/ENCODE.Laverre2022.bed \
-				   --functional-annot=data/GeneOntology/goa_human.gaf  --ontology=data/GeneOntology/go-basic.obo \
-				   --gene-annot=data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt  \
-				   --chr-sizes=data/ensembl_annotations/human/chr_sizes_hg38.txt \
+				   --foreground=data/enhancers/${sp}/${foreground}.bed --background=data/enhancers/${sp}/${background}.bed \
+				   --functional-annot=data/GeneOntology/${goa_file}.gaf  --ontology=data/GeneOntology/go-basic.obo \
+				   --gene-annot=data/ensembl_annotations/${sp}/GeneAnnotation_BioMart_Ensembl102_${genome}.txt  \
+				   --chr-sizes=data/ensembl_annotations/${sp}/chr_sizes_${genome}.txt \
 				   --upstream=5000 --downstream=1000 --extend=1000000 \
 				   --write-foreground --write-background \
-				   --output-dir=results/human/Vista_heart_vs_ENCODE/biological_process/GREAT_upstream5kb_downstream1kb_extend1Mb 
+				   --output-dir=results/${sp}/${outprefix}/biological_process/GREAT_upstream5kb_downstream1kb_extend1Mb 
+
+###########################################################################################################################
 
 ## prepare ibed files for contacts
 
 export paths_ibed=""
 
-for file in `ls  data/PCHi-C/human/ibed_files/`
+for file in `ls  data/PCHi-C/${sp}/ibed_files/`
 do
-    export paths_ibed=data/PCHi-C/human/ibed_files/${file},${paths_ibed}
+    export paths_ibed=data/PCHi-C/${sp}/ibed_files/${file},${paths_ibed}
 done
 
+## chop off the comma
 export paths_ibed=${paths_ibed::-1}
+
+###########################################################################################################################
 
 ## contacts, max distance 1Mb
 
-if [ -e results/human/Vista_heart_vs_ENCODE/biological_process/contacts_mindist25kb_maxdist1Mb ]; then
+if [ -e results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist1Mb ]; then
     echo "outdir exists"
 else
-    mkdir -p results/human/Vista_heart_vs_ENCODE/biological_process/contacts_mindist25kb_maxdist1Mb 
+    mkdir -p results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist1Mb 
 fi
 
 _build/install/default/bin/gontact --mode=contacts \
-				   --foreground=data/enhancers/human/VistaEnhancers_heart_hg38.bed --background=data/enhancers/human/ENCODE.Laverre2022.bed \
-				   --functional-annot=data/GeneOntology/goa_human.gaf  --ontology=data/GeneOntology/go-basic.obo \
-				   --gene-annot=data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt  \
-				   --chr-sizes=data/ensembl_annotations/human/chr_sizes_hg38.txt \
+				   --foreground=data/enhancers/${sp}/${foreground}.bed --background=data/enhancers/${sp}/${background}.bed \
+				   --functional-annot=data/GeneOntology/${goa_file}.gaf  --ontology=data/GeneOntology/go-basic.obo \
+				   --gene-annot=data/ensembl_annotations/${sp}/GeneAnnotation_BioMart_Ensembl102_${genome}.txt  \
+				   --chr-sizes=data/ensembl_annotations/${sp}/chr_sizes_${genome}.txt \
 				   --min-dist-contacts=25000 --max-dist-contacts=1000000 \
-				   --ibed-path=${paths_ibed} --bait-coords=data/PCHi-C/human/hg38.baitmap \
+				   --ibed-path=${paths_ibed} --bait-coords=data/PCHi-C/${sp}/${genome}.baitmap \
 				   --write-foreground --write-background \
-				   --output-dir=results/human/Vista_heart_vs_ENCODE/biological_process/contacts_mindist25kb_maxdist1Mb
+				   --output-dir=results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist1Mb
 
 
 ## contacts, max distance 2Mb
 
-if [ -e results/human/Vista_heart_vs_ENCODE/biological_process/contacts_mindist25kb_maxdist2Mb ]; then
+if [ -e results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist2Mb ]; then
     echo "outdir exists"
 else
-    mkdir -p results/human/Vista_heart_vs_ENCODE/biological_process/contacts_mindist25kb_maxdist2Mb 
+    mkdir -p results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist2Mb 
 fi
 
 _build/install/default/bin/gontact --mode=contacts \
-				   --foreground=data/enhancers/human/VistaEnhancers_heart_hg38.bed --background=data/enhancers/human/ENCODE.Laverre2022.bed \
-				   --functional-annot=data/GeneOntology/goa_human.gaf  --ontology=data/GeneOntology/go-basic.obo \
-				   --gene-annot=data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt  \
-				   --chr-sizes=data/ensembl_annotations/human/chr_sizes_hg38.txt \
+				   --foreground=data/enhancers/${sp}/${foreground}.bed --background=data/enhancers/${sp}/${background}.bed \
+				   --functional-annot=data/GeneOntology/${goa_file}.gaf  --ontology=data/GeneOntology/go-basic.obo \
+				   --gene-annot=data/ensembl_annotations/${sp}/GeneAnnotation_BioMart_Ensembl102_${genome}.txt  \
+				   --chr-sizes=data/ensembl_annotations/${sp}/chr_sizes_${genome}.txt \
 				   --min-dist-contacts=25000 --max-dist-contacts=2000000 \
-				   --ibed-path=${paths_ibed} --bait-coords=data/PCHi-C/human/hg38.baitmap \
+				   --ibed-path=${paths_ibed} --bait-coords=data/PCHi-C/${sp}/${genome}.baitmap \
 				   --write-foreground --write-background \
-				   --output-dir=results/human/Vista_heart_vs_ENCODE/biological_process/contacts_mindist25kb_maxdist2Mb
-
-## hybrid, max distance 1Mb
-
-if [ -e results/human/Vista_heart_vs_ENCODE/biological_process/hybrid_mindist25kb_maxdist1Mb ]; then
-    echo "outdir exists"
-else
-    mkdir -p results/human/Vista_heart_vs_ENCODE/biological_process/hybrid_mindist25kb_maxdist1Mb 
-fi
-
-_build/install/default/bin/gontact --mode=hybrid \
-				   --foreground=data/enhancers/human/VistaEnhancers_heart_hg38.bed --background=data/enhancers/human/ENCODE.Laverre2022.bed \
-				   --functional-annot=data/GeneOntology/goa_human.gaf  --ontology=data/GeneOntology/go-basic.obo \
-				   --gene-annot=data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt  \
-				   --chr-sizes=data/ensembl_annotations/human/chr_sizes_hg38.txt \
-				   --min-dist-contacts=25000 --max-dist-contacts=1000000 \
-				   --upstream=25000 --downstream=25000 --extend=25000 \
-				   --ibed-path=${paths_ibed} --bait-coords=data/PCHi-C/human/hg38.baitmap \
-				   --write-foreground --write-background \
-				   --output-dir=results/human/Vista_heart_vs_ENCODE/biological_process/hybrid_mindist25kb_maxdist1Mb
-
+				   --output-dir=results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist2Mb
 
 ###########################################################################################################################
 
-_build/install/default/bin/gontact --mode=contacts \
-				   --foreground=data/enhancers/mouse/VistaLimbEnhancerGenie_mm10.bed --background=data/enhancers/mouse/ENCODE.Laverre2022.bed \
-				   --functional-annot=data/GeneOntology/mgi.gaf  --ontology=data/GeneOntology/go-basic.obo \
-				   --gene-annot=data/ensembl_annotations/mouse/GeneAnnotation_BioMart_Ensembl102_mm10.txt \
-				   --chr-sizes=data/ensembl_annotations/mouse/chr_sizes_mm10.txt \
-				   --min-dist-contacts=25000 --max-dist-contacts=1000000 \
-				   --ibed-path=${paths_ibed} --bait-coords=data/PCHi-C/mouse/mm10.baitmap \
-				   --write-foreground --write-background \
-				   --output-dir= results/mouse/VistaLimbEnhancerGenie_vs_ENCODE/biological_processcontacts_mindist25kb_maxdist1Mb
+## hybrid, max distance 1Mb
 
+if [ -e results/${sp}/${outprefix}/biological_process/hybrid_mindist25kb_maxdist1Mb ]; then
+    echo "outdir exists"
+else
+    mkdir -p results/${sp}/${outprefix}/biological_process/hybrid_mindist25kb_maxdist1Mb 
+fi
+
+_build/install/default/bin/gontact --mode=hybrid \
+				   --foreground=data/enhancers/${sp}/${foreground}.bed --background=data/enhancers/${sp}/${background}.bed \
+				   --functional-annot=data/GeneOntology/${goa_file}.gaf  --ontology=data/GeneOntology/go-basic.obo \
+				   --gene-annot=data/ensembl_annotations/${sp}/GeneAnnotation_BioMart_Ensembl102_${genome}.txt  \
+				   --chr-sizes=data/ensembl_annotations/${sp}/chr_sizes_${genome}.txt \
+				   --min-dist-contacts=25000 --max-dist-contacts=1000000 \
+				   --upstream=25000 --downstream=25000 --extend=25000 \
+				   --ibed-path=${paths_ibed} --bait-coords=data/PCHi-C/${sp}/${genome}.baitmap \
+				   --write-foreground --write-background \
+				   --output-dir=results/${sp}/${outprefix}/biological_process/hybrid_mindist25kb_maxdist1Mb
+
+###########################################################################################################################
