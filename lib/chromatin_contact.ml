@@ -66,14 +66,12 @@ let of_ibed_file_filtered path ~strip_chr ~min_dist ~max_dist ~min_score ~bait_m
 
 let select_min_score l ~min_score =
   (* let nb_original = List.length l in
-  Printf.printf "Found %d contacts before filtering on minimum score %f.\n" nb_original min_score;
-  *)
+  Printf.printf "Found %d contacts before filtering on minimum score %f.\n" nb_original min_score;  *)
   List.filter l ~f:Float.(fun cc -> cc.score >= min_score)
     
 let select_cis l =
   (*  let nb_original = List.length l in
-      Printf.printf "Found %d contacts before filtering to keep only cis contacts.\n" nb_original;
-  *)
+      Printf.printf "Found %d contacts before filtering to keep only cis contacts.\n" nb_original;  *)
   List.filter l ~f:(fun cc -> String.equal cc.bait_chr cc.otherEnd_chr)
 
 let compute_distance cc =
@@ -88,8 +86,7 @@ let compute_distance cc =
 
 let select_distance l ~min_dist ~max_dist =
   (* let nb_original = List.length l in
-    Printf.printf "Found %d contacts before filtering with minimum distance %f and maximum distance %f.\n" nb_original min_dist max_dist;
-  *)
+    Printf.printf "Found %d contacts before filtering with minimum distance %f and maximum distance %f.\n" nb_original min_dist max_dist; *)
   let verify_distance cc =
     let d = compute_distance cc in
     match d with
@@ -147,7 +144,6 @@ let go_annotate_baits ~bait_collection ~genome_annotation ~max_dist ~functional_
   let go_annot = String.Map.map intersection ~f:(fun l -> List.concat_map l ~f:get_terms_symbol) in
   String.Map.map go_annot ~f:(fun l -> List.dedup_and_sort ~compare:String.compare l)
 
-
 let output_bait_annotation ~bait_collection ~bait_annotation ~path =
   let bait_list = Genomic_interval_collection.interval_list bait_collection in
   let id_baits = List.map bait_list ~f:(fun b -> Genomic_interval.id b) in 
@@ -194,16 +190,5 @@ let elements_by_annotation elannot =
   let gomap = String.Map.of_alist_multi tuples in
   gomap
 
-let go_frequencies ~(element_coordinates:Genomic_interval_collection.t) ~(fragments:Genomic_interval_collection.t) ~fragment_to_baits ~annotated_baits =
-  let intersection = Genomic_interval_collection.intersect element_coordinates fragments in
-  let nb_elements = List.length (String.Map.keys intersection) in  
-  let elbaits = String.Map.map intersection ~f:(fun l -> List.dedup_and_sort ~compare:String.compare (List.join (List.filter_map l ~f:(fun frag -> String.Map.find fragment_to_baits frag)))) in  (*for each element, the list of baits with which it is in contact*)
-  let elgo = String.Map.map elbaits ~f:(fun l -> List.dedup_and_sort ~compare:String.compare (List.join (List.filter_map l ~f:(fun bait -> String.Map.find annotated_baits bait)))) in
-  let elgolist = String.Map.to_alist elgo in
-  let tuples = List.join (List.map elgolist ~f:(fun (id, l) -> List.map l ~f:(fun g -> (g, id)))) in
-  let gomap = String.Map.of_alist_multi tuples in
-  let counts = String.Map.map gomap ~f:(fun l -> List.length l) in
-  let counts_with_total = String.Map.add_exn counts ~key:"total" ~data:nb_elements in
-  counts_with_total
 
 
