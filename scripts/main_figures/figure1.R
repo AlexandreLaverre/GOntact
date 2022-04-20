@@ -273,7 +273,7 @@ this.ylim=c(0, 40)
 par(mar=c(4.1,4.1,3.1,1.1))
 
 plot(1, type="n", xlab="", ylab="", xlim=this.xlim, ylim=this.ylim, main="", axes=F)
-points(xpos, 100*prop.dist.great, pch=20, col="red", cex=1.5, type="b")
+points(xpos, 100*prop.dist.great, pch=20, col="red", cex=1.25, type="b")
 points(xpos, 100*prop.dist.contacts, pch=20, col="steelblue", cex=1.25, type="b")
 
 
