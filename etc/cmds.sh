@@ -24,7 +24,7 @@ fi
 if [ -e results/${sp}/${outprefix}/biological_process/GREAT_upstream5kb_downstream1kb_extend2Mb ]; then
     echo "outdir exists"
 else
-    mkdir -p results/${sp}/${outprefix}/biological_process/GREAT_upstream5kb_downstream1kb_extend2Mb 
+    mkdir -p results/${sp}/${outprefix}/biological_process/GREAT_upstream5kb_downstream1kb_extend2Mb
 fi
 
 _build/install/default/bin/gontact --mode=GREAT \
@@ -34,14 +34,14 @@ _build/install/default/bin/gontact --mode=GREAT \
 				   --chr-sizes=data/ensembl_annotations/${sp}/chr_sizes_${genome}.txt \
 				   --upstream=5000 --downstream=1000 --extend=2000000 \
 				   --write-foreground --write-background \
-				   --output-dir=results/${sp}/${outprefix}/biological_process/GREAT_upstream5kb_downstream1kb_extend2Mb 
+				   --output-dir=results/${sp}/${outprefix}/biological_process/GREAT_upstream5kb_downstream1kb_extend2Mb
 
 ## GREAT max distance 1Mb
 
 if [ -e results/${sp}/${outprefix}/biological_process/GREAT_upstream5kb_downstream1kb_extend1Mb ]; then
     echo "outdir exists"
 else
-    mkdir -p results/${sp}/${outprefix}/biological_process/GREAT_upstream5kb_downstream1kb_extend1Mb 
+    mkdir -p results/${sp}/${outprefix}/biological_process/GREAT_upstream5kb_downstream1kb_extend1Mb
 fi
 
 _build/install/default/bin/gontact --mode=GREAT \
@@ -51,7 +51,7 @@ _build/install/default/bin/gontact --mode=GREAT \
 				   --chr-sizes=data/ensembl_annotations/${sp}/chr_sizes_${genome}.txt \
 				   --upstream=5000 --downstream=1000 --extend=1000000 \
 				   --write-foreground --write-background \
-				   --output-dir=results/${sp}/${outprefix}/biological_process/GREAT_upstream5kb_downstream1kb_extend1Mb 
+				   --output-dir=results/${sp}/${outprefix}/biological_process/GREAT_upstream5kb_downstream1kb_extend1Mb
 
 ###########################################################################################################################
 
@@ -69,12 +69,12 @@ export paths_ibed=${paths_ibed::-1}
 
 ###########################################################################################################################
 
-## contacts, max distance 1Mb
+## contacts, max distance 1Mb, min distance 25kb
 
 if [ -e results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist1Mb ]; then
     echo "outdir exists"
 else
-    mkdir -p results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist1Mb 
+    mkdir -p results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist1Mb
 fi
 
 _build/install/default/bin/gontact --mode=contacts \
@@ -88,12 +88,12 @@ _build/install/default/bin/gontact --mode=contacts \
 				   --output-dir=results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist1Mb
 
 
-## contacts, max distance 2Mb
+## contacts, max distance 2Mb, min distance 25kb
 
 if [ -e results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist2Mb ]; then
     echo "outdir exists"
 else
-    mkdir -p results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist2Mb 
+    mkdir -p results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist2Mb
 fi
 
 _build/install/default/bin/gontact --mode=contacts \
@@ -108,12 +108,52 @@ _build/install/default/bin/gontact --mode=contacts \
 
 ###########################################################################################################################
 
+## contacts, max distance 1Mb, min distance 0 kb
+
+if [ -e results/${sp}/${outprefix}/biological_process/contacts_mindist0kb_maxdist1Mb ]; then
+    echo "outdir exists"
+else
+    mkdir -p results/${sp}/${outprefix}/biological_process/contacts_mindist0kb_maxdist1Mb
+fi
+
+_build/install/default/bin/gontact --mode=contacts \
+				   --foreground=data/enhancers/${sp}/${foreground}.bed --background=data/enhancers/${sp}/${background}.bed \
+				   --functional-annot=data/GeneOntology/${goa_file}.gaf  --ontology=data/GeneOntology/go-basic.obo \
+				   --gene-annot=data/ensembl_annotations/${sp}/GeneAnnotation_BioMart_Ensembl102_${genome}.txt  \
+				   --chr-sizes=data/ensembl_annotations/${sp}/chr_sizes_${genome}.txt \
+				   --min-dist-contacts=0 --max-dist-contacts=1000000 \
+				   --ibed-path=${paths_ibed} --bait-coords=data/PCHi-C/${sp}/${genome}.baitmap \
+				   --write-foreground --write-background \
+				   --output-dir=results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist1Mb
+
+
+## contacts, max distance 2Mb
+
+if [ -e results/${sp}/${outprefix}/biological_process/contacts_mindist0kb_maxdist2Mb ]; then
+    echo "outdir exists"
+else
+    mkdir -p results/${sp}/${outprefix}/biological_process/contacts_mindist0kb_maxdist2Mb
+fi
+
+_build/install/default/bin/gontact --mode=contacts \
+				   --foreground=data/enhancers/${sp}/${foreground}.bed --background=data/enhancers/${sp}/${background}.bed \
+				   --functional-annot=data/GeneOntology/${goa_file}.gaf  --ontology=data/GeneOntology/go-basic.obo \
+				   --gene-annot=data/ensembl_annotations/${sp}/GeneAnnotation_BioMart_Ensembl102_${genome}.txt  \
+				   --chr-sizes=data/ensembl_annotations/${sp}/chr_sizes_${genome}.txt \
+				   --min-dist-contacts=0 --max-dist-contacts=2000000 \
+				   --ibed-path=${paths_ibed} --bait-coords=data/PCHi-C/${sp}/${genome}.baitmap \
+				   --write-foreground --write-background \
+				   --output-dir=results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist2Mb
+
+
+###########################################################################################################################
+
 ## hybrid, max distance 1Mb
 
 if [ -e results/${sp}/${outprefix}/biological_process/hybrid_mindist25kb_maxdist1Mb ]; then
     echo "outdir exists"
 else
-    mkdir -p results/${sp}/${outprefix}/biological_process/hybrid_mindist25kb_maxdist1Mb 
+    mkdir -p results/${sp}/${outprefix}/biological_process/hybrid_mindist25kb_maxdist1Mb
 fi
 
 _build/install/default/bin/gontact --mode=hybrid \
