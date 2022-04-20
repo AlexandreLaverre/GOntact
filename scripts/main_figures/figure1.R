@@ -4,8 +4,6 @@ pathFigures="../../data_for_publication/figures/"
 
 options(stringsAsFactors=F)
 
-library(plotrix)
-
 #####################################################################################
 
 if(load){
@@ -55,8 +53,17 @@ if(prepare){
   nbenh.great=table(assoc.great.common$GeneSymbol)
   nbenh.contacts=table(assoc.contacts.common$GeneSymbol)
 
+  nbgenes.great=table(assoc.great.common$ElementID)
+  nbgenes.contacts=table(assoc.contacts.common$ElementID)
+
   mediandist.great=tapply(assoc.great.common$Distance, as.factor(assoc.great.common$GeneSymbol), median)
   mediandist.contacts=tapply(assoc.contacts.common$Distance, as.factor(assoc.contacts.common$GeneSymbol), median)
+
+  assoc.great.common$DistanceClass=cut(assoc.great.common$Distance, breaks=seq(from=0, to=1e6, by=50e3), include.lowest=T)
+  assoc.contacts.common$DistanceClass=cut(assoc.contacts.common$Distance, breaks=seq(from=0, to=1e6, by=50e3), include.lowest=T)
+
+  prop.dist.great=as.numeric(table(assoc.great.common$DistanceClass))/sum(as.numeric(table(assoc.great.common$DistanceClass)))
+  prop.dist.contacts=as.numeric(table(assoc.contacts.common$DistanceClass))/sum(as.numeric(table(assoc.contacts.common$DistanceClass)))
 
   ## example gene
 
@@ -88,7 +95,7 @@ if(prepare){
   all.enhancers$ID=paste(all.enhancers$Chr,":", all.enhancers$Start,"-",all.enhancers$End,sep="")
   all.enhancers$Great=all.enhancers$ID%in%enhancers.great$ElementID
   all.enhancers$Contacts=all.enhancers$ID%in%enhancers.contacts$ElementID
-  
+
   prepare=FALSE
 }
 
@@ -102,18 +109,14 @@ if(prepare){
 
 pdf(file=paste(pathFigures, "Figure1.pdf",sep=""), width=6.85, height=5.5)
 
-m=matrix(rep(NA, 12*5), nrow=12)
+m=matrix(rep(NA, 12*9), nrow=12)
 
 for(i in 1:5){
-  m[i,]=rep(1,5)
+  m[i,]=rep(1,9)
 }
 
-for(i in 5:6){
-  m[i,]=rep(2,5)
-}
-
-for(i in 7:12){
-  m[i,]=rep(3,5)
+for(i in 6:12){
+  m[i,]=c(rep(2,2), rep(3,2), rep(4,5))
 }
 
 layout(m)
@@ -124,7 +127,7 @@ layout(m)
 
 ylim=c(-0.4,1)
 
-par(mar=c(0.1, 2.1, 2.1, 1))
+par(mar=c(2.1, 1.5, 2.1, 1.5))
 
 plot(1, type="n", xlab="", ylab="", axes=F, main="", xaxs="i", yaxs="i", xlim=xlim, ylim=ylim)
 
@@ -192,7 +195,7 @@ segments(all.enhancers$Start[which(all.enhancers$Contacts)] , yenh-height.enh, a
 gene.ypos=c(0.55, 0.41, 0.3, 0.55, 0.41, 0.3)
 names(gene.ypos)=names(all.tss)
 
-text("domains", x=xlim[2]-diff(xlim)/28, y=0.38, cex=1.1)
+text("GREAT domains", x=xlim[2]-diff(xlim)/14, y=0.38, cex=1.1)
 
 for(g in names(all.tss)){
   this.domain.start=this.domains$Start[which(this.domains$GeneID==g)]
@@ -201,7 +204,7 @@ for(g in names(all.tss)){
   this.col=gene.colors[g]
 
   segments(this.domain.start, gene.ypos[g], this.domain.end, gene.ypos[g], col=this.col)
-  
+
   if(g=="POU6F1"){
     segments(this.domain.start, 0, this.domain.start, 0.75, lty=3, col="red")
     segments(this.domain.end, 0, this.domain.end, 0.75, lty=3, col="red")
@@ -210,7 +213,8 @@ for(g in names(all.tss)){
 
 prettyx=pretty(xlim)
 labels=paste(prettyx/1e6, "Mb", sep=" ")
-axis(side=1, at=prettyx, labels=labels, mgp=c(3,0.5,0))
+axis(side=1, at=prettyx, labels=labels, mgp=c(3,0.5,0), cex.axis=1.05)
+mtext("chr12", side=1, line=0.5, at=xlim[1]+diff(xlim)/50, cex=0.75)
 
 #####################################################################################
 
@@ -223,14 +227,69 @@ for(i in which(all.enhancers$Contacts)){
 
   y.first=0.82
   y.top=1.15
-  
-  segments(pos.gene, y.first, x.center, y.top, col="lightblue", xpd=NA)
-  segments(x.center, y.top, pos.enh, y.first, col="lightblue", xpd=NA)
+
+  segments(pos.gene, y.first, x.center, y.top, col="steelblue", xpd=NA)
+  segments(x.center, y.top, pos.enh, y.first, col="steelblue", xpd=NA)
 }
 
 ## plot label
 
-mtext("A", side=3, line=0.1, at=xlim[1]-diff(xlim)/50, font=2, cex=1.1)
+mtext("A", side=3, line=0.5, at=xlim[1]-diff(xlim)/55, font=2, cex=1.1)
+
+#####################################################################################
+
+## boxplot for the number of enhancers per gene
+
+par(mar=c(4.1,4.1,3.1,1.1))
+boxplot(as.numeric(nbenh.great), as.numeric(nbenh.contacts), col="white", border=c("red", "steelblue"), outline=F, names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T)
+
+mtext("nb. enhancers per gene", side=2, line=2.75, cex=0.75)
+mtext(c("GREAT", "PCHi-C"), side=1, at=c(0.9,2.1), line=1, cex=0.75)
+
+## plot label
+
+mtext("B", side=3, line=0.5, at=-0.7, font=2, cex=1.1)
+
+#####################################################################################
+
+## boxplot for the number of genes per enhancer
+
+par(mar=c(4.1,4.1,3.1,1.1))
+boxplot(as.numeric(nbgenes.great), as.numeric(nbgenes.contacts), col="white", border=c("red", "steelblue"), outline=F, names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T)
+
+mtext("nb. genes per enhancer", side=2, line=2.75, cex=0.75)
+mtext(c("GREAT", "PCHi-C"), side=1, at=c(0.9,2.1), line=1, cex=0.75)
+
+## plot label
+
+mtext("C", side=3, line=0.5, at=-0.7, font=2, cex=1.1)
+
+#####################################################################################
+
+xpos=1:20
+this.xlim=c(0.5,20.5)
+this.ylim=c(0, 40)
+
+par(mar=c(4.1,4.1,3.1,1.1))
+
+plot(1, type="n", xlab="", ylab="", xlim=this.xlim, ylim=this.ylim, main="", axes=F)
+points(xpos, 100*prop.dist.great, pch=20, col="red", cex=1.5, type="b")
+points(xpos, 100*prop.dist.contacts, pch=20, col="steelblue", cex=1.25, type="b")
+
+
+xax=c(1, 5.5, 10.5, 15.5, 20)
+xax.lab=c("25kb", "250kb", "500kb", "750kb", "1Mb")
+axis(side=1, at=xax, labels=xax.lab)
+axis(side=2, cex.axis=1.05)
+
+mtext("% gene-enhancer associations", side=2, line=2.75, cex=0.75)
+mtext("distance class", side=1, line=2.5, cex=0.75)
+
+legend("topright", legend=c("GREAT", "PCHi-C"), bty="n", pch=20, col=c("red", "steelblue"), inset=0.025, cex=1.1)
+
+## plot label
+
+mtext("D", side=3, line=0.5, at=-3.2, font=2, cex=1.1)
 
 #####################################################################################
 
