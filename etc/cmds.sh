@@ -124,7 +124,7 @@ _build/install/default/bin/gontact --mode=contacts \
 				   --min-dist-contacts=0 --max-dist-contacts=1000000 \
 				   --ibed-path=${paths_ibed} --bait-coords=data/PCHi-C/${sp}/${genome}.baitmap \
 				   --write-foreground --write-background \
-				   --output-dir=results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist1Mb
+				   --output-dir=results/${sp}/${outprefix}/biological_process/contacts_mindist0kb_maxdist1Mb
 
 
 ## contacts, max distance 2Mb
@@ -143,7 +143,7 @@ _build/install/default/bin/gontact --mode=contacts \
 				   --min-dist-contacts=0 --max-dist-contacts=2000000 \
 				   --ibed-path=${paths_ibed} --bait-coords=data/PCHi-C/${sp}/${genome}.baitmap \
 				   --write-foreground --write-background \
-				   --output-dir=results/${sp}/${outprefix}/biological_process/contacts_mindist25kb_maxdist2Mb
+				   --output-dir=results/${sp}/${outprefix}/biological_process/contacts_mindist0kb_maxdist2Mb
 
 
 ###########################################################################################################################
