@@ -13,6 +13,11 @@ val write_output :
   string ->
   unit
 
+val write_detailed_association :
+  (string list) String.Map.t -> 
+  string ->
+  unit
+
 val combine_maps :
   (string list) String.Map.t ->
   (string list) String.Map.t ->

@@ -71,7 +71,14 @@ let foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequenci
     {id ; observed ; expected ; count_foreground = count_fg ; total_foreground = total_fg ; count_background = count_bg ; total_background = total_bg ; pval ; fdr }
   in
   List.map shared_go_ids ~f:construct_enrichment_object 
-  
+
+let write_detailed_association gomap path =
+  Out_channel.with_file path ~append:false ~f:(fun output ->
+      String.Map.iteri gomap  ~f:(fun ~key ~data ->
+          Printf.fprintf output "%s\t" key ;
+          List.iter data ~f:(fun g -> Printf.fprintf output "%s," g) ;
+          Printf.fprintf output "\n" ))
+          
 let write_output results go_names path =
   let ordered_results = List.sort results ~compare in 
   Out_channel.with_file path ~append:false ~f:(fun output ->
