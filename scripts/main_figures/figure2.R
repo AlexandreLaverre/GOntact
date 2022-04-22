@@ -80,7 +80,7 @@ if(prepare){
 ## 2 columns width 174 mm = 6.85 in
 ## max height: 11 in
 
-pdf(file=paste(pathFigures, "Figure2.pdf",sep=""), width=6.85, height=5.5)
+pdf(file=paste(pathFigures, "Figure2.pdf",sep=""), width=6.85, height=6)
 
 m=matrix(rep(NA, 12*15), nrow=12)
 
@@ -94,11 +94,17 @@ for(i in 7:12){
 
 layout(m)
 
+par(oma=c(0,0,0,1.5))
+
 #####################################################################################
 
 labels=list()
 labels[["human"]]=c("A", "B", "C")
 labels[["mouse"]]=c("D", "E", "F")
+samples=c("heart", "limb")
+names(samples)=c("human", "mouse")
+ypos=c(0.75,0.25)
+names(ypos)=c("human", "mouse")
 
 for(sp in c("human", "mouse")){
 
@@ -118,7 +124,7 @@ for(sp in c("human", "mouse")){
 
   text(great1Mb[top10.great, "GOName"], y=b+1, x=0, adj=c(0,0.5), cex=0.9, xpd=NA)
 
-  mtext(labels[[sp]][1], side=3, at=-0.15, line=0.5, font=2)
+  mtext(labels[[sp]][1], side=3, at=-0.09, line=0.5, font=2)
 
   mtext("GREAT", side=3, at=5.5, cex=0.7, line=0.5)
 
@@ -150,7 +156,7 @@ for(sp in c("human", "mouse")){
 
   signif.any1Mb=results[[sp]][["signif.any1Mb"]]
 
-  par(mar=c(3.1, 5.0,2.1,1.5))
+  par(mar=c(3.1, 5.0,2.1,0.5))
 
   col.signifany=rep("black", length(signif.any1Mb))
   names(col.signifany)=signif.any1Mb
@@ -165,14 +171,20 @@ for(sp in c("human", "mouse")){
 
   axis(side=1, mgp=c(3,0.5,0), cex.axis=0.9)
   axis(side=2, mgp=c(3,0.75,0), cex.axis=0.9)
-  mtext("% associated w. category, GREAT", side=1, line=2.0, cex=0.7)
-  mtext("% associated w. category, GOntact", side=2, line=2.25, cex=0.7)
+  mtext("% enh. associated w. category, GREAT", side=1, line=1.75, cex=0.7)
+  mtext("% enh. associated w. category, GOntact", side=2, line=2.25, cex=0.7)
 
   box()
 
-  legend("bottomright", col=c("red", "steelblue", "darkorange"), pch=20, legend=c("GREAT only", "GOntact only", "both"), inset=0.01)
+  if(sp=="human"){
+    legend("topleft", col=c("red", "steelblue", "darkorange"), pch=20, legend=c("GREAT FDR<0.01", "GOntact FDR<0.01", "both methods FDR<0.01"), inset=0.01)
+  }
 
-  mtext(labels[[sp]][3], side=3, at=-5.5, line=0.5, font=2)
+  mtext(labels[[sp]][3], side=3, at=-5.15, line=0.5, font=2)
+
+  ## label for species and sample
+
+  mtext(paste(sp, samples[sp]), side=4, line=0.15, outer=T, at=ypos[sp], cex=0.7)
 
   #####################################################################################
 }
