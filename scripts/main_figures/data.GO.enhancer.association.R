@@ -25,7 +25,7 @@ for(sp in c("human", "mouse")){
       methods=system(paste("ls ", pathResults, sp, "/", data, "/", domain, sep=""), intern=T)
 
       for(method in methods){
-        res.fg=read.table(paste(pathResults, sp, "/", data, "/", domain, "/", method, "/GOntact_element_GO_association_foreground.txt",sep=""), h=T, sep="\t", quote="\"")
+        res.fg=read.table(paste(pathResults, sp, "/", data, "/", domain, "/", method, "/GOntact_element_GO_association_foreground.txt",sep=""), h=F, sep="\t", quote="\"")
 
         foreground.association[[sp]][[data]][[domain]][[method]]=res.fg
       }
