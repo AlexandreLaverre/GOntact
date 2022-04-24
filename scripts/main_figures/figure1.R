@@ -25,7 +25,7 @@ if(load){
 if(prepare){
 
   assoc.great=background.association[[sp]][[dataset]][[domain]][["GREAT_upstream5kb_downstream1kb_extend1Mb"]]
-  assoc.contacts=background.association[[sp]][[dataset]][[domain]][["contacts_mindist25kb_maxdist1Mb"]]
+  assoc.contacts=background.association[[sp]][[dataset]][[domain]][["contacts_mindist0kb_maxdist1Mb"]]
 
   ## enhancer coordinates, GREAT association
   assoc.great$Chr=unlist(lapply(assoc.great$ElementID, function(x) unlist(strsplit(x, split=":"))[1]))

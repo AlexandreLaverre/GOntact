@@ -35,7 +35,7 @@ if(prepare){
     rownames(great1Mb)=great1Mb$GOID
     great1Mb$Enrichment=great1Mb$Observed/great1Mb$Expected
 
-    contacts1Mb=enrichment.results[[sp]][[sample]][[domain]][["contacts_mindist25kb_maxdist1Mb"]]
+    contacts1Mb=enrichment.results[[sp]][[sample]][[domain]][["contacts_mindist0kb_maxdist1Mb"]]
     rownames(contacts1Mb)=contacts1Mb$GOID
     contacts1Mb$Enrichment=contacts1Mb$Observed/contacts1Mb$Expected
 
