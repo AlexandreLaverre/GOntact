@@ -15,7 +15,6 @@ if(load){
 
   minFDR=1e-10
   maxFDR=0.01
-  minEnrichment=2
 
   load=FALSE
 }
@@ -50,9 +49,9 @@ if(prepare){
     hybrid1Mb$FDR[which(hybrid1Mb$FDR<minFDR)]=minFDR
 
     ## signif categories
-    signif.great1Mb=great1Mb$GOID[which(great1Mb$FDR<maxFDR & great1Mb$Enrichment>=minEnrichment)]
-    signif.contacts1Mb=contacts1Mb$GOID[which(contacts1Mb$FDR<maxFDR & contacts1Mb$Enrichment>=minEnrichment)]
-    signif.hybrid1Mb=hybrid1Mb$GOID[which(hybrid1Mb$FDR<maxFDR & hybrid1Mb$Enrichment>=minEnrichment)]
+    signif.great1Mb=great1Mb$GOID[which(great1Mb$FDR<maxFDR)]
+    signif.contacts1Mb=contacts1Mb$GOID[which(contacts1Mb$FDR<maxFDR)]
+    signif.hybrid1Mb=hybrid1Mb$GOID[which(hybrid1Mb$FDR<maxFDR)]
     signif.any1Mb=unique(c(signif.great1Mb, signif.contacts1Mb))
 
     ## direct comparison great vs contacts, 1Mb
