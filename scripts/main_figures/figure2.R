@@ -165,7 +165,9 @@ for(sp in c("human", "mouse")){
   col.signifany[signif.contacts1Mb]="steelblue"
   col.signifany[intersect(signif.great1Mb, signif.contacts1Mb)]="darkorange"
 
-  plot(100*great1Mb[signif.any1Mb, "Observed"], 100*contacts1Mb[signif.any1Mb, "Observed"], pch=20, axes=F, xlab="", ylab="", main="", xlim=c(0,25), ylim=c(0,25), col=col.signifany)
+  ymax=max(c(great1Mb[signif.any1Mb, "Observed"], 100*contacts1Mb[signif.any1Mb, "Observed"]))
+
+  plot(100*great1Mb[signif.any1Mb, "Observed"], 100*contacts1Mb[signif.any1Mb, "Observed"], pch=20, axes=F, xlab="", ylab="", main="", xlim=c(0,ymax), ylim=c(0,ymax), col=col.signifany)
 
   abline(0, 1, col="black", lty=3)
 
@@ -176,8 +178,8 @@ for(sp in c("human", "mouse")){
 
   box()
 
-  if(sp=="human"){
-    legend("topleft", col=c("red", "steelblue", "darkorange"), pch=20, legend=c("GREAT FDR<0.01", "GOntact FDR<0.01", "both methods FDR<0.01"), inset=0.01)
+  if(sp=="mouse"){
+    legend("bottomright", col=c("red", "steelblue", "darkorange"), pch=20, legend=c("GREAT FDR<0.01", "GOntact FDR<0.01", "both methods FDR<0.01"), inset=0.01)
   }
 
   mtext(labels[[sp]][3], side=3, at=-5.15, line=0.5, font=2)
