@@ -165,7 +165,7 @@ for(sp in c("human", "mouse")){
   col.signifany[signif.contacts1Mb]="steelblue"
   col.signifany[intersect(signif.great1Mb, signif.contacts1Mb)]="darkorange"
 
-  ymax=max(c(great1Mb[signif.any1Mb, "Observed"], 100*contacts1Mb[signif.any1Mb, "Observed"]))
+  ymax=max(c(great1Mb[signif.any1Mb, "Observed"], 100*contacts1Mb[signif.any1Mb, "Observed"]), na.rm=T)
 
   plot(100*great1Mb[signif.any1Mb, "Observed"], 100*contacts1Mb[signif.any1Mb, "Observed"], pch=20, axes=F, xlab="", ylab="", main="", xlim=c(0,ymax), ylim=c(0,ymax), col=col.signifany)
 
