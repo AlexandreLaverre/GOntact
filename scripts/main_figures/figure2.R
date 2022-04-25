@@ -61,6 +61,7 @@ if(prepare){
     ## smaller names
 
     great1Mb$GOName[which(great1Mb$GOName=="positive regulation of epithelial cell proliferation")]="positive reg. of epithelial cell proliferation"
+    great1Mb$GOName[which(great1Mb$GOName=="regulation of cellular macromolecule biosynthetic process")]="reg. of cell. macromolecule biosynthetic proc."
     contacts1Mb$GOName[which(contacts1Mb$GOName=="positive regulation of transcription by RNA polymerase II")]="positive reg. of transcription by RNA pol II"
 
     ## save results
