@@ -136,8 +136,8 @@ let main {mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg_
     | "contacts" -> (
         let bait_collection = Genomic_interval_collection.of_bed_file bait_coords ~strip_chr:true ~format:Base1 in
         let annotated_baits = Chromatin_contact.go_annotate_baits ~bait_collection ~genome_annotation:filtered_annot ~max_dist:max_dist_bait_TSS ~functional_annot:propagated_fa in
-        let output_path_baits = Printf.sprintf "%s/%s_bait_annotation.txt" output_dir output_prefix in
-        Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:annotated_baits ~path:output_path_baits ; 
+        let output_path_GO_baits = Printf.sprintf "%s/%s_bait_GO_annotation.txt" output_dir output_prefix in
+        Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:annotated_baits ~path:output_path_GO_baits ; 
         let contact_list = List.map ibed_files ~f:(fun file -> Chromatin_contact.of_ibed_file file ~strip_chr:true) in
         let with_annotated_baits = List.map contact_list ~f:(fun cc -> Chromatin_contact.remove_unannotated_baits ~contacts:cc ~bait_annotation:annotated_baits) in 
         let cis_contacts = List.map with_annotated_baits ~f:(fun cc -> Chromatin_contact.select_cis cc) in
@@ -160,6 +160,8 @@ let main {mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg_
         if (write_elements_foreground || write_elements_background) then ( 
           let major_isoforms = Utils.chrono "extract major isoforms symbols" Genomic_annotation.identify_major_isoforms_symbols filtered_annot in
           let symbol_annotated_baits = Chromatin_contact.symbol_annotate_baits ~bait_collection ~genome_annotation:filtered_annot ~max_dist:max_dist_bait_TSS in
+          let output_path_gene_baits = Printf.sprintf "%s/%s_bait_gene_annotation.txt" output_dir output_prefix in
+          Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:symbol_annotated_baits ~path:output_path_gene_baits ; 
           
           if write_elements_foreground then (
             let symbol_elements_foreground = Chromatin_contact.annotations_by_element ~element_coordinates:foreground ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits:symbol_annotated_baits in 
