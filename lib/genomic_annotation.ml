@@ -212,6 +212,11 @@ let identify_major_isoforms_symbols ga =
   let major_list = List.map gene_list ~f:(fun g -> ((gene_symbol_exn ga g), find_major_isoform (String.Map.find_exn isoforms g))) in
   String.Map.of_alist_exn major_list
 
+let write_major_isoforms mi path =
+  Out_channel.with_file path ~append:false ~f:(fun output ->
+      Printf.fprintf output "GeneID\tTranscript\n" ;
+      String.Map.iteri mi  ~f:(fun ~key ~data -> Printf.fprintf output "%s\t%s\n" key data))
+
 let major_isoform_tss ga ~major_isoforms:iso =
   let ginfo = ga.genes in 
   let txinfo = ga.transcripts in

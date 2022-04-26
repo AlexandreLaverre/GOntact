@@ -111,6 +111,8 @@ let main {mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg_
 
         if (write_elements_foreground || write_elements_background) then ( 
           let major_isoforms = Utils.chrono "extract major isoforms symbols" Genomic_annotation.identify_major_isoforms_symbols filtered_annot in
+          let output_path_isoforms = Printf.sprintf "%s/%s_major_isoforms.txt" output_dir output_prefix in
+          Genomic_annotation.write_major_isoforms major_isoforms output_path_isoforms ; 
           if write_elements_foreground then (
             let foreground_map = Utils.chrono "interval map foreground" Genomic_interval_collection.interval_map foreground in
             let symbol_elements_foreground = Utils.chrono "connect foreground elements to genes" (fun () -> Great.symbol_elements ~element_coordinates:foreground ~regulatory_domains:domains_int) () in
