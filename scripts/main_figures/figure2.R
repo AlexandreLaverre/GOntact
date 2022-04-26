@@ -178,15 +178,16 @@ for(sp in c("human", "mouse")){
 
   box()
 
-  if(sp=="mouse"){
+  if(sp=="human"){
     legend("bottomright", col=c("red", "steelblue", "darkorange"), pch=20, legend=c("GREAT FDR<0.01", "GOntact FDR<0.01", "both methods FDR<0.01"), inset=0.01)
   }
 
-  mtext(labels[[sp]][3], side=3, at=-5.15, line=0.5, font=2)
+
+  mtext(labels[[sp]][3], side=3, at=-ymax/5, line=0.5, font=2)
 
   ## label for species and sample
 
-  mtext(paste(sp, samples[sp]), side=4, line=0.15, outer=T, at=ypos[sp], cex=0.7)
+  mtext(paste(sp, samples[sp]), side=4, line=-0.1, outer=T, at=ypos[sp], cex=0.7)
 
   #####################################################################################
 }
