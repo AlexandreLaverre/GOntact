@@ -14,7 +14,7 @@ if(load){
   domain="biological_process"
 
   minFDR=1e-10
-  maxFDR=0.01
+  maxFDR=0.05
   minEnrichment=1.5
 
   load=FALSE
