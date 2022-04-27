@@ -10,7 +10,7 @@ if(load){
   load(paste(pathFigures, "RData/data.enrichment.results.RData",sep=""))
 
   species=c("human", "mouse")
-  samples=c("Vista_heart_vs_ENCODE", "Vista_limb_vs_ENCODE")
+  samples=c("Vista_heart_vs_ENCODE", "Vista_heart_vs_ENCODE")
   domain="biological_process"
 
   minFDR=1e-10
@@ -74,16 +74,16 @@ if(prepare){
 ## 2 columns width 174 mm = 6.85 in
 ## max height: 11 in
 
-pdf(file=paste(pathFigures, "Figure2.pdf",sep=""), width=6.85, height=6)
+pdf(file=paste(pathFigures, "Figure2.pdf",sep=""), width=6.85, height=7)
 
-m=matrix(rep(NA, 12*15), nrow=12)
+m=matrix(rep(NA, 12*16), nrow=12)
 
 for(i in 1:6){
-  m[i,]=c(rep(1,4), rep(2,4), rep(3,7))
+  m[i,]=c(rep(1,4), rep(2,4), rep(3,4), rep(4,4))
 }
 
 for(i in 7:12){
-  m[i,]=c(rep(4,4), rep(5,4), rep(6,7))
+  m[i,]=c(rep(5,4), rep(6,4), rep(7,4), rep(8,4))
 }
 
 layout(m)
@@ -93,95 +93,108 @@ par(oma=c(0,0,0,1.5))
 #####################################################################################
 
 labels=list()
-labels[["human"]]=c("A", "B", "C")
-labels[["mouse"]]=c("D", "E", "F")
-samples=c("heart", "limb")
+labels[["human"]]=c("A", "B")
+labels[["mouse"]]=c("C", "D")
+samples=c("heart", "heart")
 names(samples)=c("human", "mouse")
 ypos=c(0.75,0.25)
 names(ypos)=c("human", "mouse")
 
 for(sp in c("human", "mouse")){
 
+  ## significant categories, GREAT 1Mb
+
   signif.great1Mb=results[[sp]][["signif.great1Mb"]]
   great1Mb=results[[sp]][["great1Mb"]]
-
-  ## barplot - significant categories, GREAT 1Mb
-
   top10.great=signif.great1Mb[10:1]
+
+  ## barplot, observed vs expected
+  observed=great1Mb[top10.great,"Observed"]
+  expected=great1Mb[top10.great,"Expected"]
+
+  all.values=-100*as.numeric(rbind(expected, observed))
+  xax=pretty(all.values)
+  xax.lab=-xax
+  xlim=range(all.values)
+  xlim[1]=min(c(xlim, xax))-5
+  xlim[2]=0
+
+  par(mar=c(4.1, 1.5, 2.1, 0.35))
+  b=barplot(all.values, horiz=T, axes=F, col=c("black","indianred"), border=NA, space=c(2.25,0.35), xlim=xlim)
+
+  axis(side=1, at=xax, labels=xax.lab, mgp=c(3,0.5,0), cex.axis=0.9)
+
+  mtext(labels[[sp]][1], side=3, at=xlim[1], line=0.5, font=2)
+  mtext("% associated enhancers", side=1, line=1.75, cex=0.65)
+
+  if(sp=="human"){
+    legend("bottomleft", fill=c("indianred", "black"), border=c("indianred", "black"), legend=c("observed", "expected"), inset=c(-0.175, 0.02),bty="n", cex=0.95, xpd=NA)
+  }
+
+
+  ## barplot, log10 FDR
+
   log10fdr=-log10(great1Mb[top10.great,"FDR"])
 
-  par(mar=c(3.1, 0.5, 2.1, 3.5))
-  b=barplot(log10fdr, horiz=T, axes=F, col="steelblue", border="steelblue", space=1, xlim=c(0,10))
-  axis(side=1, mgp=c(3,0.5,0), cex.axis=0.9)
+  par(mar=c(4.1, 0.35, 2.1, 1.5))
+  b=barplot(log10fdr, horiz=T, axes=F, col="steelblue", border=NA, space=1, xlim=c(0,10))
 
-  mtext("-log10 FDR", side=1, line=1.5, cex=0.6)
+  xax=seq(from=0, to=10, by=2)
+  xax.labels=as.character(xax)
+  xax.labels[length(xax.labels)]=">10"
+  axis(side=1, mgp=c(3,0.5,0), cex.axis=0.9, at=xax, labels=xax.labels)
 
-  text(great1Mb[top10.great, "GOName"], y=b+1, x=0, adj=c(0,0.5), cex=0.9, xpd=NA)
+  mtext("-log10 FDR", side=1, line=1.75, cex=0.65)
 
-  mtext(labels[[sp]][1], side=3, at=-0.09, line=0.5, font=2)
+  text(great1Mb[top10.great, "GOName"], y=b+1, x=0, adj=c(0.5,0.5), cex=0.92, xpd=NA)
 
-  mtext("GREAT", side=3, at=5.5, cex=0.7, line=0.5)
+
+  mtext(paste("GREAT,", sp, samples[sp]) , side=3, at=0, cex=0.7, line=0.5)
 
   #####################################################################################
 
-  ## barplot - significant categories, contacts 1Mb
+  ## significant categories, contacts 1Mb
 
   signif.contacts1Mb=results[[sp]][["signif.contacts1Mb"]]
   contacts1Mb=results[[sp]][["contacts1Mb"]]
 
   top10.contacts=signif.contacts1Mb[10:1]
+
+  ## barplot, observed vs expected
+  observed=contacts1Mb[top10.contacts,"Observed"]
+  expected=contacts1Mb[top10.contacts,"Expected"]
+
+  all.values=-100*as.numeric(rbind(expected, observed))
+  xax=pretty(all.values)
+  xax.lab=-xax
+  xlim=range(all.values)
+  xlim[1]=min(c(xlim, xax))
+  xlim[2]=0
+
+  par(mar=c(4.1, 1.5, 2.1, 0.35))
+  b=barplot(all.values, horiz=T, axes=F, col=c("black", "indianred"), border=NA, space=c(2.25, 0.35), xlim=xlim)
+  axis(side=1, at=xax, labels=xax.lab, mgp=c(3,0.5,0), cex.axis=0.9)
+
+  mtext(labels[[sp]][2], side=3, at=xlim[1], line=0.5, font=2)
+  mtext("% associated enhancers", side=1, line=1.75, cex=0.65)
+
+ ## barplot, log10 FDR
+
   log10fdr=-log10(contacts1Mb[top10.contacts,"FDR"])
 
-  par(mar=c(3.1, 0.5, 2.1, 3.5))
+  par(mar=c(4.1, 0.35, 2.1, 1.5))
   b=barplot(log10fdr, horiz=T, axes=F, col="steelblue", border="steelblue", space=1, xlim=c(0,10))
-  axis(side=1, mgp=c(3,0.5,0), cex.axis=0.9)
 
-  mtext("-log10 FDR", side=1, line=1.5, cex=0.6)
+  xax=seq(from=0, to=10, by=2)
+  xax.labels=as.character(xax)
+  xax.labels[length(xax.labels)]=">10"
+  axis(side=1, mgp=c(3,0.5,0), cex.axis=0.9, at=xax, labels=xax.labels)
 
-  text(contacts1Mb[top10.contacts, "GOName"], y=b+1, x=0, adj=c(0,0.5), cex=0.9, xpd=NA)
+  mtext("-log10 FDR", side=1, line=1.75, cex=0.65)
 
-  mtext(labels[[sp]][2], side=3, at=-0.15, line=0.5, font=2)
+  text(contacts1Mb[top10.contacts, "GOName"], y=b+1, x=0, adj=c(0.5,0.5), cex=0.92, xpd=NA)
 
-  mtext("GOntact", side=3, at=5.5, cex=0.7, line=0.5)
-
-  #####################################################################################
-
-  ## comparison between GREAT and GOntact
-
-  signif.any1Mb=results[[sp]][["signif.any1Mb"]]
-
-  par(mar=c(3.1, 5.0,2.1,0.5))
-
-  col.signifany=rep("black", length(signif.any1Mb))
-  names(col.signifany)=signif.any1Mb
-
-  col.signifany[signif.great1Mb]="red"
-  col.signifany[signif.contacts1Mb]="steelblue"
-  col.signifany[intersect(signif.great1Mb, signif.contacts1Mb)]="darkorange"
-
-  ymax=max(c(great1Mb[signif.any1Mb, "Enrichment"], 100*contacts1Mb[signif.any1Mb, "Enrichment"]), na.rm=T)
-
-  plot(100*great1Mb[signif.any1Mb, "Enrichment"], 100*contacts1Mb[signif.any1Mb, "Enrichment"], pch=20, axes=F, xlab="", ylab="", main="", xlim=c(0,ymax), ylim=c(0,ymax), col=col.signifany)
-
-  abline(0, 1, col="black", lty=3)
-
-  axis(side=1, mgp=c(3,0.5,0), cex.axis=0.9)
-  axis(side=2, mgp=c(3,0.75,0), cex.axis=0.9)
-  mtext("observed/expected ratio, GREAT", side=1, line=1.75, cex=0.7)
-  mtext("observed/expected ratio, GOntact", side=2, line=2.25, cex=0.7)
-
-  box()
-
-  if(sp=="human"){
-    legend("bottomright", col=c("red", "steelblue", "darkorange"), pch=20, legend=c("GREAT FDR<0.01", "GOntact FDR<0.01", "both methods FDR<0.01"), inset=0.01)
-  }
-
-
-  mtext(labels[[sp]][3], side=3, at=-ymax/5, line=0.5, font=2)
-
-  ## label for species and sample
-
-  mtext(paste(sp, samples[sp]), side=4, line=-0.1, outer=T, at=ypos[sp], cex=0.7)
+  mtext(paste("GOntact,", sp, samples[sp]), side=3, at=0, cex=0.7, line=0.5)
 
   #####################################################################################
 }
