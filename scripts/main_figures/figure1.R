@@ -135,7 +135,7 @@ segments(xlim[1], 0, xlim[2], 0)
 
 gene.colors=rep("black",length(all.tss))
 names(gene.colors)=names(all.tss)
-gene.colors["POU6F1"]="red"
+gene.colors["POU6F1"]="black"
 
 tinyy=0.02
 
@@ -185,8 +185,8 @@ segments(xlim[1], yenh, xlim[2], yenh)
 text("enhancers", x=xlim[2]-diff(xlim)/22, y=0.9, cex=1.1)
 
 segments(all.enhancers$Start[which(!(all.enhancers$Great | all.enhancers$Contacts))] , yenh-height.enh, all.enhancers$End[which(!(all.enhancers$Great | all.enhancers$Contacts))], yenh+height.enh)
-segments(all.enhancers$Start[which(all.enhancers$Great)] , yenh-height.enh, all.enhancers$End[which(all.enhancers$Great)], yenh+height.enh, col="red")
-segments(all.enhancers$Start[which(all.enhancers$Contacts)] , yenh-height.enh, all.enhancers$End[which(all.enhancers$Contacts)], yenh+height.enh, col="steelblue")
+segments(all.enhancers$Start[which(all.enhancers$Great)] , yenh-height.enh, all.enhancers$End[which(all.enhancers$Great)], yenh+height.enh, col="black")
+segments(all.enhancers$Start[which(all.enhancers$Contacts)] , yenh-height.enh, all.enhancers$End[which(all.enhancers$Contacts)], yenh+height.enh, col="darkorange")
 
 #####################################################################################
 
@@ -206,8 +206,8 @@ for(g in names(all.tss)){
   segments(this.domain.start, gene.ypos[g], this.domain.end, gene.ypos[g], col=this.col)
 
   if(g=="POU6F1"){
-    segments(this.domain.start, 0, this.domain.start, 0.75, lty=3, col="red")
-    segments(this.domain.end, 0, this.domain.end, 0.75, lty=3, col="red")
+    segments(this.domain.start, 0, this.domain.start, 0.75, lty=3, col="black")
+    segments(this.domain.end, 0, this.domain.end, 0.75, lty=3, col="black")
   }
 }
 
@@ -228,8 +228,8 @@ for(i in which(all.enhancers$Contacts)){
   y.first=0.82
   y.top=1.15
 
-  segments(pos.gene, y.first, x.center, y.top, col="steelblue", xpd=NA)
-  segments(x.center, y.top, pos.enh, y.first, col="steelblue", xpd=NA)
+  segments(pos.gene, y.first, x.center, y.top, col="darkorange", xpd=NA)
+  segments(x.center, y.top, pos.enh, y.first, col="darkorange", xpd=NA)
 }
 
 ## plot label
@@ -241,7 +241,7 @@ mtext("A", side=3, line=0.5, at=xlim[1]-diff(xlim)/55, font=2, cex=1.1)
 ## boxplot for the number of enhancers per gene
 
 par(mar=c(3.5,4.1,3.1,1.1))
-boxplot(as.numeric(nbenh.great), as.numeric(nbenh.contacts), col="white", border=c("red", "steelblue"), outline=F, names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T)
+boxplot(as.numeric(nbenh.great), as.numeric(nbenh.contacts), col="white", border=c("black", "darkorange"), outline=F, names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T)
 
 mtext("nb. enhancers per gene", side=2, line=2.75, cex=0.75)
 mtext(c("GREAT", "PCHi-C"), side=1, at=c(0.9,2.1), line=1, cex=0.75)
@@ -255,7 +255,7 @@ mtext("B", side=3, line=0.5, at=-0.7, font=2, cex=1.1)
 ## boxplot for the number of genes per enhancer
 
 par(mar=c(3.5,4.1,3.1,1.1))
-boxplot(as.numeric(nbgenes.great), as.numeric(nbgenes.contacts), col="white", border=c("red", "steelblue"), outline=F, names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T)
+boxplot(as.numeric(nbgenes.great), as.numeric(nbgenes.contacts), col="white", border=c("black", "darkorange"), outline=F, names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T)
 
 mtext("nb. genes per enhancer", side=2, line=2.75, cex=0.75)
 mtext(c("GREAT", "PCHi-C"), side=1, at=c(0.9,2.1), line=1, cex=0.75)
@@ -273,8 +273,8 @@ this.ylim=c(0, 40)
 par(mar=c(4.1,4.1,3.1,1.1))
 
 plot(1, type="n", xlab="", ylab="", xlim=this.xlim, ylim=this.ylim, main="", axes=F)
-points(xpos, 100*prop.dist.great, pch=20, col="red", cex=1.25, type="b")
-points(xpos, 100*prop.dist.contacts, pch=20, col="steelblue", cex=1.25, type="b")
+points(xpos, 100*prop.dist.great, pch=20, col="black", cex=1.25, type="b")
+points(xpos, 100*prop.dist.contacts, pch=20, col="darkorange", cex=1.25, type="b")
 
 
 xax=c(1, 5.5, 10.5, 15.5, 20)
@@ -285,7 +285,7 @@ axis(side=2, cex.axis=1.05)
 mtext("% gene-enhancer associations", side=2, line=2.75, cex=0.75)
 mtext("enhancer - TSS distance", side=1, line=2.5, cex=0.75)
 
-legend("topright", legend=c("GREAT", "PCHi-C"), bty="n", pch=20, col=c("red", "steelblue"), inset=0.025, cex=1.1)
+legend("topright", legend=c("GREAT", "PCHi-C"), bty="n", pch=20, col=c("black", "darkorange"), inset=0.025, cex=1.1)
 
 ## plot label
 
