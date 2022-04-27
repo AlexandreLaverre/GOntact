@@ -15,6 +15,7 @@ if(load){
 
   minFDR=1e-10
   maxFDR=0.01
+  minEnrichment=1.5
 
   load=FALSE
 }
@@ -38,10 +39,6 @@ if(prepare){
     rownames(contacts1Mb)=contacts1Mb$GOID
     contacts1Mb$Enrichment=contacts1Mb$Observed/contacts1Mb$Expected
 
-    hybrid1Mb=enrichment.results[[sp]][[sample]][[domain]][["hybrid_mindist25kb_maxdist1Mb"]]
-    rownames(hybrid1Mb)=hybrid1Mb$GOID
-    hybrid1Mb$Enrichment=hybrid1Mb$Observed/hybrid1Mb$Expected
-
     ## replace very small FDRs
 
     great1Mb$FDR[which(great1Mb$FDR<minFDR)]=minFDR
@@ -49,14 +46,12 @@ if(prepare){
     hybrid1Mb$FDR[which(hybrid1Mb$FDR<minFDR)]=minFDR
 
     ## signif categories
-    signif.great1Mb=great1Mb$GOID[which(great1Mb$FDR<maxFDR)]
-    signif.contacts1Mb=contacts1Mb$GOID[which(contacts1Mb$FDR<maxFDR)]
-    signif.hybrid1Mb=hybrid1Mb$GOID[which(hybrid1Mb$FDR<maxFDR)]
+    signif.great1Mb=great1Mb$GOID[which(great1Mb$FDR<maxFDR  & great1Mb$Enrichment>=minEnrichment)]
+    signif.contacts1Mb=contacts1Mb$GOID[which(contacts1Mb$FDR<maxFDR & contacts1Mb$Enrichment>=minEnrichment)]
     signif.any1Mb=unique(c(signif.great1Mb, signif.contacts1Mb))
 
     ## direct comparison great vs contacts, 1Mb
     common1Mb=intersect(great1Mb$GOID, contacts1Mb$GOID)
-
 
     ## smaller names
 
@@ -165,16 +160,16 @@ for(sp in c("human", "mouse")){
   col.signifany[signif.contacts1Mb]="steelblue"
   col.signifany[intersect(signif.great1Mb, signif.contacts1Mb)]="darkorange"
 
-  ymax=max(c(great1Mb[signif.any1Mb, "Observed"], 100*contacts1Mb[signif.any1Mb, "Observed"]), na.rm=T)
+  ymax=max(c(great1Mb[signif.any1Mb, "Enrichment"], 100*contacts1Mb[signif.any1Mb, "Enrichment"]), na.rm=T)
 
-  plot(100*great1Mb[signif.any1Mb, "Observed"], 100*contacts1Mb[signif.any1Mb, "Observed"], pch=20, axes=F, xlab="", ylab="", main="", xlim=c(0,ymax), ylim=c(0,ymax), col=col.signifany)
+  plot(100*great1Mb[signif.any1Mb, "Enrichment"], 100*contacts1Mb[signif.any1Mb, "Enrichment"], pch=20, axes=F, xlab="", ylab="", main="", xlim=c(0,ymax), ylim=c(0,ymax), col=col.signifany)
 
   abline(0, 1, col="black", lty=3)
 
   axis(side=1, mgp=c(3,0.5,0), cex.axis=0.9)
   axis(side=2, mgp=c(3,0.75,0), cex.axis=0.9)
-  mtext("% enh. associated w. category, GREAT", side=1, line=1.75, cex=0.7)
-  mtext("% enh. associated w. category, GOntact", side=2, line=2.25, cex=0.7)
+  mtext("observed/expected ratio, GREAT", side=1, line=1.75, cex=0.7)
+  mtext("observed/expected ratio, GOntact", side=2, line=2.25, cex=0.7)
 
   box()
 
