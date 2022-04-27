@@ -283,7 +283,7 @@ axis(side=1, at=xax, labels=xax.lab)
 axis(side=2, cex.axis=1.05)
 
 mtext("% gene-enhancer associations", side=2, line=2.75, cex=0.75)
-mtext("distance class", side=1, line=2.5, cex=0.75)
+mtext("enhancer - TSS distance", side=1, line=2.5, cex=0.75)
 
 legend("topright", legend=c("GREAT", "PCHi-C"), bty="n", pch=20, col=c("red", "steelblue"), inset=0.025, cex=1.1)
 
