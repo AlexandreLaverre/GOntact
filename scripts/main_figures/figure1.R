@@ -135,7 +135,7 @@ segments(xlim[1], 0, xlim[2], 0)
 
 gene.colors=rep("black",length(all.tss))
 names(gene.colors)=names(all.tss)
-gene.colors["POU6F1"]="black"
+gene.colors["POU6F1"]="red"
 
 tinyy=0.02
 
@@ -185,8 +185,10 @@ segments(xlim[1], yenh, xlim[2], yenh)
 text("enhancers", x=xlim[2]-diff(xlim)/22, y=0.9, cex=1.1)
 
 segments(all.enhancers$Start[which(!(all.enhancers$Great | all.enhancers$Contacts))] , yenh-height.enh, all.enhancers$End[which(!(all.enhancers$Great | all.enhancers$Contacts))], yenh+height.enh)
-segments(all.enhancers$Start[which(all.enhancers$Great)] , yenh-height.enh, all.enhancers$End[which(all.enhancers$Great)], yenh+height.enh, col="black")
+segments(all.enhancers$Start[which(all.enhancers$Great)] , yenh-height.enh, all.enhancers$End[which(all.enhancers$Great)], yenh+height.enh, col="red")
 segments(all.enhancers$Start[which(all.enhancers$Contacts)] , yenh-height.enh, all.enhancers$End[which(all.enhancers$Contacts)], yenh+height.enh, col="darkorange")
+
+text("PCHi-C contacts", x=xlim[2]-diff(xlim)/15, y=1.05, cex=1.1, col="darkorange", xpd=NA)
 
 #####################################################################################
 
@@ -241,10 +243,12 @@ mtext("A", side=3, line=0.5, at=xlim[1]-diff(xlim)/55, font=2, cex=1.1)
 ## boxplot for the number of enhancers per gene
 
 par(mar=c(3.5,4.1,3.1,1.1))
-boxplot(as.numeric(nbenh.great), as.numeric(nbenh.contacts), col="white", border=c("black", "darkorange"), outline=F, names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T)
+boxplot(as.numeric(nbenh.great), as.numeric(nbenh.contacts), col="white", border=c("black", "darkorange"),  outline=F, names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T, axes=F, ylim=c(0,200))
+axis(side=2)
+axis(side=1, at=1:2, labels=rep("",2))
 
 mtext("nb. enhancers per gene", side=2, line=2.75, cex=0.75)
-mtext(c("GREAT", "PCHi-C"), side=1, at=c(0.9,2.1), line=1, cex=0.75)
+mtext(c("GREAT", "GOntact"), side=1, at=c(0.9,2.1), line=1, cex=0.75)
 
 ## plot label
 
@@ -255,10 +259,13 @@ mtext("B", side=3, line=0.5, at=-0.7, font=2, cex=1.1)
 ## boxplot for the number of genes per enhancer
 
 par(mar=c(3.5,4.1,3.1,1.1))
-boxplot(as.numeric(nbgenes.great), as.numeric(nbgenes.contacts), col="white", border=c("black", "darkorange"), outline=F, names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T)
+boxplot(as.numeric(nbgenes.great), as.numeric(nbgenes.contacts), col="white", border=c("black", "darkorange"), outline=F,  names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T, axes=F)
+
+axis(side=2)
+axis(side=1, at=1:2, labels=rep("",2))
 
 mtext("nb. genes per enhancer", side=2, line=2.75, cex=0.75)
-mtext(c("GREAT", "PCHi-C"), side=1, at=c(0.9,2.1), line=1, cex=0.75)
+mtext(c("GREAT", "GOntact"), side=1, at=c(0.9,2.1), line=1, cex=0.75)
 
 ## plot label
 
@@ -285,7 +292,7 @@ axis(side=2, cex.axis=1.05)
 mtext("% gene-enhancer associations", side=2, line=2.75, cex=0.75)
 mtext("enhancer - TSS distance", side=1, line=2.5, cex=0.75)
 
-legend("topright", legend=c("GREAT", "PCHi-C"), bty="n", pch=20, col=c("black", "darkorange"), inset=0.025, cex=1.1)
+legend("topright", legend=c("GREAT", "GOntact"), bty="n", pch=20, col=c("black", "darkorange"), inset=0.025, cex=1.1)
 
 ## plot label
 
