@@ -240,7 +240,7 @@ mtext("A", side=3, line=0.5, at=xlim[1]-diff(xlim)/55, font=2, cex=1.1)
 
 ## boxplot for the number of enhancers per gene
 
-par(mar=c(4.1,4.1,3.1,1.1))
+par(mar=c(3.5,4.1,3.1,1.1))
 boxplot(as.numeric(nbenh.great), as.numeric(nbenh.contacts), col="white", border=c("red", "steelblue"), outline=F, names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T)
 
 mtext("nb. enhancers per gene", side=2, line=2.75, cex=0.75)
@@ -254,7 +254,7 @@ mtext("B", side=3, line=0.5, at=-0.7, font=2, cex=1.1)
 
 ## boxplot for the number of genes per enhancer
 
-par(mar=c(4.1,4.1,3.1,1.1))
+par(mar=c(3.5,4.1,3.1,1.1))
 boxplot(as.numeric(nbgenes.great), as.numeric(nbgenes.contacts), col="white", border=c("red", "steelblue"), outline=F, names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T)
 
 mtext("nb. genes per enhancer", side=2, line=2.75, cex=0.75)

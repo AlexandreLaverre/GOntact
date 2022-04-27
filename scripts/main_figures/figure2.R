@@ -43,7 +43,6 @@ if(prepare){
 
     great1Mb$FDR[which(great1Mb$FDR<minFDR)]=minFDR
     contacts1Mb$FDR[which(contacts1Mb$FDR<minFDR)]=minFDR
-    hybrid1Mb$FDR[which(hybrid1Mb$FDR<minFDR)]=minFDR
 
     ## signif categories
     signif.great1Mb=great1Mb$GOID[which(great1Mb$FDR<maxFDR  & great1Mb$Enrichment>=minEnrichment)]
