@@ -44,7 +44,7 @@ for(sp in c("human", "mouse")){
 
     res.great=data.frame(chr.great, start.great, end.great, only.great, rep(".", length(only.great)),rep("+", length(only.great)))
 
-    write.table(res.great, paste(pathResults, "motif_enrichment/",sp,"/",cat,"/GREAT/associated_enhancers.bed",sep=""))
+    write.table(res.great, paste(pathResults, "motif_enrichment/",sp,"/",cat,"/GREAT/associated_enhancers.bed",sep=""), row.names=F, col.names=F, sep="\t", quote=F))
 
     ## write output for only gontact
 
@@ -55,7 +55,7 @@ for(sp in c("human", "mouse")){
 
     res.gontact=data.frame(chr.gontact, start.gontact, end.gontact, only.gontact, rep(".", length(only.gontact)),rep("+", length(only.gontact)))
 
-    write.table(res.gontact, paste(pathResults, "motif_enrichment/",sp,"/",cat,"/GOntact/associated_enhancers.bed",sep=""))
+    write.table(res.gontact, paste(pathResults, "motif_enrichment/",sp,"/",cat,"/GOntact/associated_enhancers.bed",sep=""), row.names=F, col.names=F, sep="\t", quote=F))
 
     ## write output for shared
 
@@ -66,7 +66,7 @@ for(sp in c("human", "mouse")){
 
     res.shared=data.frame(chr.shared, start.shared, end.shared, only.shared, rep(".", length(only.shared)),rep("+", length(only.shared)))
 
-    write.table(res.shared, paste(pathResults, "motif_enrichment/",sp,"/",cat,"/shared/associated_enhancers.bed",sep=""))
+    write.table(res.shared, paste(pathResults, "motif_enrichment/",sp,"/",cat,"/shared/associated_enhancers.bed",sep=""), row.names=F, col.names=F, sep="\t", quote=F))
 
   }
 
