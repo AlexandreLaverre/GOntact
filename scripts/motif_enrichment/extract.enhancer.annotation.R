@@ -22,9 +22,11 @@ for(sp in c("human", "mouse")){
   gontact=read.table(paste(pathResults, sp, "/", sample, "/biological_process/contacts_mindist0kb_maxdist1Mb/GOntact_element_GO_association_background.txt",sep=""), h=F, stringsAsFactors=F)
 
   for(cat in categories){
-    system(paste("mkdir -p ",pathResults, "motif_enrichment/",sp,"/",cat,"/GREAT_only/",sep=""))
-    system(paste("mkdir -p ",pathResults, "motif_enrichment/",sp,"/",cat,"/GOntact_only/",sep=""))
-    system(paste("mkdir -p ",pathResults, "motif_enrichment/",sp,"/",cat,"/shared/",sep=""))
+    outcat=paste(unlist(strsplit(cat, split=":")),collapse="")
+
+    system(paste("mkdir -p ",pathResults, "motif_enrichment/",sp,"/",outcat,"/GREAT_only/",sep=""))
+    system(paste("mkdir -p ",pathResults, "motif_enrichment/",sp,"/",outcat,"/GOntact_only/",sep=""))
+    system(paste("mkdir -p ",pathResults, "motif_enrichment/",sp,"/",outcat,"/shared/",sep=""))
 
     enh.great=great$V2[which(great$V1==cat)]
     enh.gontact=gontact$V2[which(gontact$V1==cat)]
@@ -44,7 +46,7 @@ for(sp in c("human", "mouse")){
 
     res.great=data.frame(chr.great, start.great, end.great, only.great, rep(".", length(only.great)),rep("+", length(only.great)))
 
-    write.table(res.great, paste(pathResults, "motif_enrichment/",sp,"/",cat,"/GREAT/associated_enhancers.bed",sep=""), row.names=F, col.names=F, sep="\t", quote=F)
+    write.table(res.great, paste(pathResults, "motif_enrichment/",sp,"/",outcat,"/GREAT_only/associated_enhancers.bed",sep=""), row.names=F, col.names=F, sep="\t", quote=F)
 
     ## write output for only gontact
 
@@ -55,7 +57,7 @@ for(sp in c("human", "mouse")){
 
     res.gontact=data.frame(chr.gontact, start.gontact, end.gontact, only.gontact, rep(".", length(only.gontact)),rep("+", length(only.gontact)))
 
-    write.table(res.gontact, paste(pathResults, "motif_enrichment/",sp,"/",cat,"/GOntact/associated_enhancers.bed",sep=""), row.names=F, col.names=F, sep="\t", quote=F)
+    write.table(res.gontact, paste(pathResults, "motif_enrichment/",sp,"/",outcat,"/GOntact_only/associated_enhancers.bed",sep=""), row.names=F, col.names=F, sep="\t", quote=F)
 
     ## write output for shared
 
@@ -64,9 +66,9 @@ for(sp in c("human", "mouse")){
     start.shared=unlist(lapply(coords.shared, function(x) unlist(strsplit(x, split="-"))[1]))
     end.shared=unlist(lapply(coords.shared, function(x) unlist(strsplit(x, split="-"))[2]))
 
-    res.shared=data.frame(chr.shared, start.shared, end.shared, only.shared, rep(".", length(only.shared)),rep("+", length(only.shared)))
+    res.shared=data.frame(chr.shared, start.shared, end.shared, both, rep(".", length(both)),rep("+", length(both)))
 
-    write.table(res.shared, paste(pathResults, "motif_enrichment/",sp,"/",cat,"/shared/associated_enhancers.bed",sep=""), row.names=F, col.names=F, sep="\t", quote=F)
+    write.table(res.shared, paste(pathResults, "motif_enrichment/",sp,"/",outcat,"/shared/associated_enhancers.bed",sep=""), row.names=F, col.names=F, sep="\t", quote=F)
 
   }
 
