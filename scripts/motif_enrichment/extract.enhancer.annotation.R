@@ -1,7 +1,6 @@
 #####################################################################################
 
 pathResults="../../results/"
-pathFigures="../../data_for_publication/figures/"
 
 sample="Vista_heart_vs_ENCODE"
 
