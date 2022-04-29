@@ -38,7 +38,7 @@ if(prepare){
 
   nb.great1Mb.common=list()
   nb.contacts1Mb.common=list()
-  prop.shared1Mb.common=list()
+  nb.shared1Mb.common=list()
 
   for(sp in species){
     for(sample in names(enrichment.results[[sp]])){
@@ -99,11 +99,9 @@ if(prepare){
       names(nb.enh.common)=signif.both1Mb
       names(nb.enh.any)=signif.both1Mb
 
-      prop.shared=nb.enh.common/nb.enh.any
-
       nb.great1Mb.common[[paste(sp, sample)]]=nb.enh.great
       nb.contacts1Mb.common[[paste(sp, sample)]]=nb.enh.contacts
-      prop.shared1Mb.common[[paste(sp, sample)]]=prop.shared
+      nb.shared1Mb.common[[paste(sp, sample)]]=nb.enh.common
     }
   }
 
@@ -119,10 +117,10 @@ if(prepare){
 
 pdf(file=paste(pathFigures, "Figure3.pdf",sep=""), width=4.95, height=6)
 
-m=matrix(rep(NA, 2*8), nrow=2)
+m=matrix(rep(NA, 2*9), nrow=2)
 
-m[1,]=c(rep(1,3), rep(2, 3), rep(3,2))
-m[2,]=c(rep(4,3), rep(5, 3), rep(6,2))
+m[1,]=c(rep(1,3), rep(2, 3), rep(3,3))
+m[2,]=c(rep(4,3), rep(5, 3), rep(6,3))
 
 layout(m)
 
@@ -148,7 +146,7 @@ for(sp in c("human", "mouse")){
 
   mtext(c("GREAT", "GOntact", "shared"),side=1, at=b, las=2,line=0.1, cex=0.75)
 
-  mtext(labels[[sp]][1], side=3, at=-0.65, font=2, line=1, cex=1.1)
+  mtext(labels[[sp]][1], side=3, at=-0.95, font=2, line=1, cex=1.1)
 
 
   ## boxplot nb contacted enhancers
@@ -163,21 +161,24 @@ for(sp in c("human", "mouse")){
   mtext("nb. associated enhancers", side=2, line=2.5, cex=0.8)
   mtext(c("GREAT", "GOntact"), side=1, at=c(1,2), line=1, cex=0.75, las=2)
 
-  mtext(labels[[sp]][2], side=3, at=-0.32, font=2, line=1, cex=1.1)
+  mtext(labels[[sp]][2], side=3, at=-0.5, font=2, line=1, cex=1.1)
 
   ## boxplot proportion shared
 
-  par(mar=c(5.1, 2.5, 2.5, 0.5))
+  par(mar=c(5.1, 3.5, 2.5, 2))
 
-  boxplot(prop.shared1Mb.common[[this.id]], border="navy", col="white", notch=T, axes=F)
-  axis(side=1, at=c(0.5, 1, 1.5), labels=rep("",3))
+  prop.shared.gontact=nb.shared1Mb.common[[this.id]]/nb.contacts1Mb.common[[this.id]]
+  prop.shared.great=nb.shared1Mb.common[[this.id]]/nb.great1Mb.common[[this.id]]
+
+  boxplot(prop.shared.great, prop.shared.gontact, border=c("black", "darkorange"), col="white", notch=T, axes=F, boxwex=0.6)
+  axis(side=1, at=c(1, 2), labels=rep("",2))
   axis(side=2)
   mtext("% shared associated enhancers", side=2, line=2.5, cex=0.8)
-  mtext(c("shared"), side=1, at=c(1), line=1, cex=0.75, las=2)
+  mtext(c("GREAT", "GOntact"), side=1, at=c(1,2), line=1, cex=0.75, las=2)
 
-  mtext(labels[[sp]][3], side=3, at=-0.05, font=2, line=1, cex=1.1)
+  mtext(labels[[sp]][3], side=3, at=-0.5, font=2, line=1, cex=1.1)
 
-  mtext(paste(sp, "heart"), side=4, line=-0.65, cex=0.75)
+  mtext(paste(sp, "heart"), side=4, line=0.5, cex=0.75)
 }
 
 #####################################################################################
