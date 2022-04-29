@@ -6,17 +6,14 @@ export acc=$3
 
 ##########################################################
 
-pathResults=../../results/motif_enrichment/${sp}/${acc}
+pathResults=../../results/motif_enrichment/${sp}
 pathGenome=../../data/genome_sequences/${sp}
-pathEnhancers=../../data/enhancers/${sp}
 
 ##########################################################
 
 for dir in GREAT_only GOntact_only shared
 do
-
-    findMotifsGenome.pl ${pathResults}/${dir}/associated_enhancers.bed ${pathGenome}/${genome}.fa ${pathResults}/${dir} -bg ${pathEnhancers}/ENCODE.Laverre2022.bed
-
+    findMotifsGenome.pl ${pathResults}/${acc}/${dir}/associated_enhancers.bed ${pathGenome}/${genome}.fa ${pathResults}/${acc}/${dir} -bg ${pathResults}/ENCODE.Laverre2022.random50K.bed
 done
 
 ##########################################################
