@@ -28,12 +28,17 @@ elements.gontact=unique(gontact$ElementID[which(gontact$GeneSymbol%in%down)])
 elements.great=unique(great$ElementID[which(great$GeneSymbol%in%down)])
 
 only.gontact=setdiff(elements.gontact, elements.great)
-only.gontact=setdiff(elements.great, elements.gontact)
+only.great=setdiff(elements.great, elements.gontact)
 shared=intersect(elements.great, elements.gontact)
 
 ################################################################################
 
 outdir="HNF4a"
+
+system(paste("mkdir -p ",pathResults, "motif_enrichment/",sp,"/",outdir,"/GREAT_only/", sep=""))
+system(paste("mkdir -p ",pathResults, "motif_enrichment/",sp,"/",outdir,"/GOntact_only/", sep=""))
+system(paste("mkdir -p ",pathResults, "motif_enrichment/",sp,"/",outdir,"/shared/", sep=""))
+
 
 ## write output for only great
 chr.great=unlist(lapply(only.great, function(x) unlist(strsplit(x, split=":"))[1]))
@@ -63,7 +68,7 @@ coords.shared=unlist(lapply(shared, function(x) unlist(strsplit(x, split=":"))[2
 start.shared=unlist(lapply(coords.shared, function(x) unlist(strsplit(x, split="-"))[1]))
 end.shared=unlist(lapply(coords.shared, function(x) unlist(strsplit(x, split="-"))[2]))
 
-res.shared=data.frame(chr.shared, start.shared, end.shared, both, rep(".", length(both)),rep("+", length(both)))
+res.shared=data.frame(chr.shared, start.shared, end.shared, shared, rep(".", length(shared)),rep("+", length(shared)))
 
 write.table(res.shared, paste(pathResults, "motif_enrichment/",sp,"/",outdir,"/shared/associated_enhancers.bed",sep=""), row.names=F, col.names=F, sep="\t", quote=F)
 
