@@ -216,6 +216,8 @@ while($line){
 
     my $seq=substr $genome{$chr}, ($start-1), ($end-$start+1);
 
+    $seq=uc $seq;
+
     writeSequence($seq, $id, $output);
 
     $line=<$input>;
