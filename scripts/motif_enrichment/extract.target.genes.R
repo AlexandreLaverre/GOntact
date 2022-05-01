@@ -66,6 +66,7 @@ for(i in 1:length(genes)){
   system(paste("mkdir -p ",pathResults, "motif_enrichment/",sp,"/",outdir,"/GREAT_only/", sep=""))
   system(paste("mkdir -p ",pathResults, "motif_enrichment/",sp,"/",outdir,"/GOntact_only/", sep=""))
   system(paste("mkdir -p ",pathResults, "motif_enrichment/",sp,"/",outdir,"/shared/", sep=""))
+  system(paste("mkdir -p ",pathResults, "motif_enrichment/",sp,"/",outdir,"/hybrid/", sep=""))
 
 
   ## write output for only great
