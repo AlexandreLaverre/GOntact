@@ -28,7 +28,7 @@ for(i in 1:length(motifs)){
 
   scores[[motif]][["bg"]]=bg.fimo$score
 
-  for(type in c("GREAT_only", "GOntact_only", "shared")){
+  for(type in c("GREAT_only", "GOntact_only", "shared", "hybrid")){
     fg.enh=read.table(paste(pathResults, sp, "/", dataset, "/", type, "/associated_enhancers.bed",sep=""), h=F, stringsAsFactors=F)
     fg.fimo=read.table(paste(pathResults, sp, "/", dataset, "/", type, "/",motif,"/fimo.tsv",sep=""), h=T, stringsAsFactors=F)
 
@@ -39,8 +39,8 @@ for(i in 1:length(motifs)){
 
   }
 
-  names(nb.tot[[motif]])=c("background", "GREAT_only", "GOntact_only", "shared")
-  names(nb.with[[motif]])=c("background", "GREAT_only", "GOntact_only", "shared")
+  names(nb.tot[[motif]])=c("background", "GREAT_only", "GOntact_only", "shared", "hybrid")
+  names(nb.with[[motif]])=c("background", "GREAT_only", "GOntact_only", "shared", "hybrid")
 }
 
 #############################################################################
