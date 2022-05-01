@@ -18,8 +18,8 @@ gontact=read.table(paste(pathResults, sp, "/", sample, "/biological_process/cont
 
 ################################################################################
 
-genes=c("HNF4a", "Hoxd13")
-files=c("Marable2020_HNF4a_knockout.txt", "Salsi2008_Hoxd13.txt")
+genes=c("HNF4a", "Hoxd13", "Nr2f1_up", "Nr2f1_down")
+files=c("Marable2020_HNF4a_knockout.txt", "Salsi2008_Hoxd13.txt", "Chen2020_NR2F1_knockout.txt", "Chen2020_NR2F1_knockout.txt")
 
 for(i in 1:length(genes)){
   gene=genes[i]
@@ -30,7 +30,20 @@ for(i in 1:length(genes)){
 
     targets=toupper(hnf4a$gene[which(hnf4a$log2.fold_change.<0 & hnf4a$q_value<0.05)])
   } else{
-    targets=readLines(paste(pathTargetGenes, file, sep=""))
+    if(gene%in%c("Nr2f1_up", "Nr2f1_down")){
+      test=read.table(paste(pathTargetGenes, file, sep=""), h=T, stringsAsFactors=F, sep="\t", quote="\"", comment.char="", skip=2)
+
+      if(gene=="Nr2f1_up"){
+        targets=test$Gene.Symbol[which(test$padj<0.05 & test$log2FoldChange>0)]
+      }
+
+       if(gene=="Nr2f1_down"){
+        targets=test$Gene.Symbol[which(test$padj<0.05 & test$log2FoldChange<0)]
+      }
+
+    } else{
+      targets=readLines(paste(pathTargetGenes, file, sep=""))
+    }
   }
 
   ################################################################################
