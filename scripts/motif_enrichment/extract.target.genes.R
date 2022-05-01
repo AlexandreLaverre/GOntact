@@ -19,14 +19,14 @@ gontact=read.table(paste(pathResults, sp, "/", sample, "/biological_process/cont
 ################################################################################
 
 genes=c("HNF4a", "Hoxd13")
-paths=c("Marable2020_HNF4a_knockout.txt", "Salsi2008_Hoxd13.txt")
+files=c("Marable2020_HNF4a_knockout.txt", "Salsi2008_Hoxd13.txt")
 
 for(i in 1:length(genes)){
   gene=genes[i]
   file=files[i]
 
   if(gene=="HNF4a"){
-    hnf4a=read.table(paste(pathTargetGenes, file,sep=""), h=T, stringsAsFactors=F, sep="\t", quote="\"", comment.char="")
+    hnf4a=read.table(paste(pathTargetGenes, file, sep=""), h=T, stringsAsFactors=F, sep="\t", quote="\"", comment.char="")
 
     targets=toupper(hnf4a$gene[which(hnf4a$log2.fold_change.<0 & hnf4a$q_value<0.05)])
   } else{
