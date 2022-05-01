@@ -102,12 +102,12 @@ for(i in 1:length(genes)){
 
   ## write output for hybrid
 
-  chr.hybrid=unlist(lapply(hybrid, function(x) unlist(strsplit(x, split=":"))[1]))
-  coords.hybrid=unlist(lapply(hybrid, function(x) unlist(strsplit(x, split=":"))[2]))
+  chr.hybrid=unlist(lapply(elements.hybrid, function(x) unlist(strsplit(x, split=":"))[1]))
+  coords.hybrid=unlist(lapply(elements.hybrid, function(x) unlist(strsplit(x, split=":"))[2]))
   start.hybrid=unlist(lapply(coords.hybrid, function(x) unlist(strsplit(x, split="-"))[1]))
   end.hybrid=unlist(lapply(coords.hybrid, function(x) unlist(strsplit(x, split="-"))[2]))
 
-  res.hybrid=data.frame(chr.hybrid, start.hybrid, end.hybrid, hybrid, rep(".", length(hybrid)),rep("+", length(hybrid)))
+  res.hybrid=data.frame(chr.hybrid, start.hybrid, end.hybrid, elements.hybrid, rep(".", length(elements.hybrid)),rep("+", length(elements.hybrid)))
 
   write.table(res.hybrid, paste(pathResults, "motif_enrichment/",sp,"/",outdir,"/hybrid/associated_enhancers.bed",sep=""), row.names=F, col.names=F, sep="\t", quote=F)
 
