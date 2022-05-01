@@ -16,6 +16,9 @@ great=read.table(paste(pathResults, sp, "/",sample, "/biological_process/GREAT_u
 ## contacts
 gontact=read.table(paste(pathResults, sp, "/", sample, "/biological_process/contacts_mindist0kb_maxdist1Mb/GOntact_element_gene_association_background.txt",sep=""), h=T, stringsAsFactors=F)
 
+## hybrid
+hybrid=read.table(paste(pathResults, sp, "/", sample, "/biological_process/hybrid_mindist25kb_maxdist1Mb/GOntact_element_gene_association_background.txt",sep=""), h=T, stringsAsFactors=F)
+
 ################################################################################
 
 genes=c("HNF4a", "Hoxd13", "Nr2f1_up", "Nr2f1_down")
@@ -50,6 +53,7 @@ for(i in 1:length(genes)){
 
   elements.gontact=unique(gontact$ElementID[which(toupper(gontact$GeneSymbol)%in%targets)])
   elements.great=unique(great$ElementID[which(toupper(great$GeneSymbol)%in%targets)])
+  elements.hybrid=unique(hybrid$ElementID[which(toupper(great$GeneSymbol)%in%targets)])
 
   only.gontact=setdiff(elements.gontact, elements.great)
   only.great=setdiff(elements.great, elements.gontact)
@@ -95,6 +99,17 @@ for(i in 1:length(genes)){
   res.shared=data.frame(chr.shared, start.shared, end.shared, shared, rep(".", length(shared)),rep("+", length(shared)))
 
   write.table(res.shared, paste(pathResults, "motif_enrichment/",sp,"/",outdir,"/shared/associated_enhancers.bed",sep=""), row.names=F, col.names=F, sep="\t", quote=F)
+
+  ## write output for hybrid
+
+  chr.hybrid=unlist(lapply(hybrid, function(x) unlist(strsplit(x, split=":"))[1]))
+  coords.hybrid=unlist(lapply(hybrid, function(x) unlist(strsplit(x, split=":"))[2]))
+  start.hybrid=unlist(lapply(coords.hybrid, function(x) unlist(strsplit(x, split="-"))[1]))
+  end.hybrid=unlist(lapply(coords.hybrid, function(x) unlist(strsplit(x, split="-"))[2]))
+
+  res.hybrid=data.frame(chr.hybrid, start.hybrid, end.hybrid, hybrid, rep(".", length(hybrid)),rep("+", length(hybrid)))
+
+  write.table(res.hybrid, paste(pathResults, "motif_enrichment/",sp,"/",outdir,"/hybrid/associated_enhancers.bed",sep=""), row.names=F, col.names=F, sep="\t", quote=F)
 
 ################################################################################
 
