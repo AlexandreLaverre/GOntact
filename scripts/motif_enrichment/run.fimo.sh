@@ -16,3 +16,11 @@ pathResults=../../results/motif_enrichment/${sp}
 fimo -o ${pathResults}/${acc}/${dir}/${motif}  ${pathJASPAR}/${motif}.meme ${pathResults}/${acc}/${dir}/associated_enhancers.fa
 
 ##########################################################
+
+if [ -e ${pathResults}/${motif} ]; then
+    echo "ENCODE bg done"
+else
+   fimo -o ${pathResults}/${motif} ${pathJASPAR}/${motif}.meme ${pathResults}/ENCODE.Laverre2022.random50K.fa
+fi
+
+##########################################################
