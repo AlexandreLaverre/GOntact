@@ -13,7 +13,11 @@ pathResults=../../results/motif_enrichment/${sp}
 
 ##########################################################
 
-fimo -o ${pathResults}/${acc}/${dir}/${motif}  ${pathJASPAR}/${motif}.meme ${pathResults}/${acc}/${dir}/associated_enhancers.fa
+if [ -e ${pathResults}/${acc}/${dir}/${motif} ]; then
+    echo "already done"
+else
+    fimo -o ${pathResults}/${acc}/${dir}/${motif}  ${pathJASPAR}/${motif}.meme ${pathResults}/${acc}/${dir}/associated_enhancers.fa
+fi
 
 ##########################################################
 
