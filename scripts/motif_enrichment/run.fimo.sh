@@ -16,7 +16,7 @@ pathResults=../../results/motif_enrichment/${sp}
 if [ -e ${pathResults}/${acc}/${dir}/${motif} ]; then
     echo "already done"
 else
-    fimo -o ${pathResults}/${acc}/${dir}/${motif}  ${pathJASPAR}/${motif}.meme ${pathResults}/${acc}/${dir}/associated_enhancers.fa
+    fimo -o ${pathResults}/${acc}/${dir}/${motif} --no-qvalue ${pathJASPAR}/${motif}.meme ${pathResults}/${acc}/${dir}/associated_enhancers.fa
 fi
 
 ##########################################################
@@ -24,7 +24,7 @@ fi
 if [ -e ${pathResults}/${motif} ]; then
     echo "ENCODE bg done"
 else
-   fimo -o ${pathResults}/${motif} ${pathJASPAR}/${motif}.meme ${pathResults}/ENCODE.Laverre2022.random50K.fa
+   fimo -o ${pathResults}/${motif}  --no-qvalue ${pathJASPAR}/${motif}.meme ${pathResults}/ENCODE.Laverre2022.random50K.fa
 fi
 
 ##########################################################
