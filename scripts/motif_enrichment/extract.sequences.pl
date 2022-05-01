@@ -214,7 +214,7 @@ while($line){
 
     my $id=$chr.":".$start."-".$end;
 
-    my $seq=substr $genome{$actualchr}, ($start-1), ($end-$start+1);
+    my $seq=substr $genome{$chr}, ($start-1), ($end-$start+1);
 
     writeSequence($seq, $id, $output);
 
