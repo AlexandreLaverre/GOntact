@@ -34,11 +34,11 @@ for(i in 1:length(genes)){
       test=read.table(paste(pathTargetGenes, file, sep=""), h=T, stringsAsFactors=F, sep="\t", quote="\"", comment.char="", skip=2)
 
       if(gene=="Nr2f1_up"){
-        targets=test$Gene.Symbol[which(test$padj<0.05 & test$log2FoldChange>0)]
+        targets=toupper(test$Gene.Symbol[which(test$padj<0.05 & test$log2FoldChange>0)])
       }
 
        if(gene=="Nr2f1_down"){
-        targets=test$Gene.Symbol[which(test$padj<0.05 & test$log2FoldChange<0)]
+        targets=toupper(test$Gene.Symbol[which(test$padj<0.05 & test$log2FoldChange<0)])
       }
 
     } else{
