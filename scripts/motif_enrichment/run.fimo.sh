@@ -5,7 +5,6 @@ export motif=$2
 export acc=$3
 export dir=$4
 
-
 ##########################################################
 
 pathJASPAR=../../data/JASPAR
