@@ -13,6 +13,6 @@ pathResults=../../results/motif_enrichment/${sp}
 
 ##########################################################
 
-fimo -o ${pathResults}/${acc}/${dir}/${motif}  -bfile ${pathResults}/ENCODE.Laverre2022.random50K.fa  ${pathJASPAR}/${motif}.meme ${pathResults}/${acc}/${dir}/associated_enhancers.fa
+fimo -o ${pathResults}/${acc}/${dir}/${motif}  ${pathJASPAR}/${motif}.meme ${pathResults}/${acc}/${dir}/associated_enhancers.fa
 
 ##########################################################
