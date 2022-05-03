@@ -24,7 +24,10 @@ if(load){
 
 if(prepare){
 
-  intersections=c()
+  intersections=list()
+  enhancers.great=list()
+  enhancers.gontact=list()
+  enhancers.shared=list()
 
   for(sp in species){
     for(sample in names(enrichment.results[[sp]])){
@@ -55,84 +58,31 @@ if(prepare){
       triple=intersect(intersect(signif.contacts, signif.great), signif.hybrid)
 
       intersections[[paste(sp, sample)]]=list("only.great"=only.great, "only.contacts"=only.contacts, "only.hybrid"=only.hybrid, "great.contacts"=great.contacts, "great.hybrid"=great.hybrid, "contacts.hybrid"=contacts.hybrid, "triple"=triple)
+
+      ## shared GO categories - associations
+
+      shared=intersect(signif.contacts, signif.great)
+
+      ## GO-enhancer association
+
+      assoc.great=foreground.association[[sp]][[sample]][[domain]][["GREAT_upstream5kb_downstream1kb_extend1Mb"]]
+      assoc.gontact=foreground.association[[sp]][[sample]][[domain]][["contacts_mindist0kb_maxdist1Mb"]]
+
+      enh.great=lapply(shared, function(x) unlist(strsplit(assoc.great$V2[which(assoc.great$V1==x)], split=",")))
+      names(enh.great)=shared
+
+      enh.gontact=lapply(shared, function(x) unlist(strsplit(assoc.gontact$V2[which(assoc.gontact$V1==x)], split=",")))
+      names(enh.gontact)=shared
+
+      enh.shared=lapply(shared, function(x) intersect(enh.great[[x]], enh.gontact[[x]]))
+      names(enh.shared)=shared
+
+      enhancers.great[[paste(sp, sample)]]=enh.great
+      enhancers.gontact[[paste(sp, sample)]]=enh.gontact
+      enhancers.shared[[paste(sp, sample)]]=enh.shared
+
     }
   }
-
-
-
-  ## nb.signif.great1Mb=c()
-  ## nb.signif.contacts1Mb=c()
-  ## nb.signif.common1Mb=c()
-  ## nb.signif.any1Mb=c()
-
-  ## nb.great1Mb.common=list()
-  ## nb.contacts1Mb.common=list()
-  ## nb.shared1Mb.common=list()
-
-  ## for(sp in species){
-  ##   for(sample in names(enrichment.results[[sp]])){
-  ##     ## 1Mb
-  ##     test.great1Mb=enrichment.results[[sp]][[sample]][[domain]][["GREAT_upstream5kb_downstream1kb_extend1Mb"]]
-  ##     test.great1Mb$Enrichment=test.great1Mb$Observed/test.great1Mb$Expected
-  ##     rownames(test.great1Mb)=test.great1Mb$GOID
-
-  ##     test.contacts1Mb=enrichment.results[[sp]][[sample]][[domain]][["contacts_mindist0kb_maxdist1Mb"]]
-  ##     test.contacts1Mb$Enrichment=test.contacts1Mb$Observed/test.contacts1Mb$Expected
-  ##     rownames(test.contacts1Mb)=test.contacts1Mb$GOID
-
-  ##     ## 2Mb
-  ##     test.great2Mb=enrichment.results[[sp]][[sample]][[domain]][["GREAT_upstream5kb_downstream1kb_extend2Mb"]]
-  ##     test.great2Mb$Enrichment=test.great2Mb$Observed/test.great2Mb$Expected
-  ##     rownames(test.great2Mb)=test.great2Mb$GOID
-
-  ##     test.contacts2Mb=enrichment.results[[sp]][[sample]][[domain]][["contacts_mindist0kb_maxdist2Mb"]]
-  ##     test.contacts2Mb$Enrichment=test.contacts2Mb$Observed/test.contacts2Mb$Expected
-  ##     rownames(test.contacts2Mb)=test.contacts2Mb$GOID
-
-  ##     ## signif categories
-
-  ##     ## 1Mb
-  ##     signif.great1Mb=test.great1Mb$GOID[which(test.great1Mb$FDR<maxFDR & test.great1Mb$Enrichment>=minEnrichment)]
-  ##     signif.contacts1Mb=test.contacts1Mb$GOID[which(test.contacts1Mb$FDR<maxFDR & test.contacts1Mb$Enrichment>=minEnrichment)]
-  ##     signif.any1Mb=unique(c(signif.great1Mb, signif.contacts1Mb))
-  ##     signif.both1Mb=intersect(signif.great1Mb, signif.contacts1Mb)
-
-  ##     nb.signif.great1Mb=c(nb.signif.great1Mb, length(signif.great1Mb))
-  ##     nb.signif.contacts1Mb=c(nb.signif.contacts1Mb, length(signif.contacts1Mb))
-  ##     nb.signif.common1Mb=c(nb.signif.common1Mb, length(signif.both1Mb))
-  ##     nb.signif.any1Mb=c(nb.signif.any1Mb, length(signif.any1Mb))
-
-  ##     ## 2Mb
-  ##     signif.great2Mb=test.great2Mb$GOID[which(test.great2Mb$FDR<maxFDR & test.great2Mb$Enrichment>=minEnrichment)]
-  ##     signif.contacts2Mb=test.contacts2Mb$GOID[which(test.contacts2Mb$FDR<maxFDR & test.contacts2Mb$Enrichment>=minEnrichment)]
-  ##     signif.any2Mb=unique(c(signif.great2Mb, signif.contacts2Mb))
-  ##     signif.both2Mb=intersect(signif.great2Mb, signif.contacts2Mb)
-
-  ##     nb.signif.great2Mb=c(nb.signif.great2Mb, length(signif.great2Mb))
-  ##     nb.signif.contacts2Mb=c(nb.signif.contacts2Mb, length(signif.contacts2Mb))
-  ##     nb.signif.common2Mb=c(nb.signif.common2Mb, length(signif.both2Mb))
-  ##     nb.signif.any2Mb=c(nb.signif.any2Mb, length(signif.any2Mb))
-
-  ##     id=c(id, paste(sp, sample))
-
-  ##     assoc.great1Mb=foreground.association[[sp]][[sample]][[domain]][["GREAT_upstream5kb_downstream1kb_extend1Mb"]]
-  ##     assoc.contacts1Mb=foreground.association[[sp]][[sample]][[domain]][["contacts_mindist0kb_maxdist1Mb"]]
-
-  ##     nb.enh.great=test.great1Mb[signif.both1Mb, "NbElementsForeground"]
-  ##     nb.enh.contacts=test.contacts1Mb[signif.both1Mb, "NbElementsForeground"]
-  ##     nb.enh.common=unlist(lapply(signif.both1Mb, function(x) {y=unlist(strsplit(assoc.contacts1Mb[which(assoc.contacts1Mb$V1==x),2], split=",")) ; z=unlist(strsplit(assoc.great1Mb[which(assoc.great1Mb$V1==x),2], split=",")) ; return(length(intersect(y,z))) }))
-  ##     nb.enh.any=nb.enh.great+nb.enh.contacts-nb.enh.common
-
-  ##     names(nb.enh.great)=signif.both1Mb
-  ##     names(nb.enh.contacts)=signif.both1Mb
-  ##     names(nb.enh.common)=signif.both1Mb
-  ##     names(nb.enh.any)=signif.both1Mb
-
-  ##     nb.great1Mb.common[[paste(sp, sample)]]=nb.enh.great
-  ##     nb.contacts1Mb.common[[paste(sp, sample)]]=nb.enh.contacts
-  ##     nb.shared1Mb.common[[paste(sp, sample)]]=nb.enh.common
-  ##   }
-  ## }
 
   prepare=FALSE
 }
@@ -144,27 +94,30 @@ if(prepare){
 ## 2 columns width 174 mm = 6.85 in
 ## max height: 11 in
 
-pdf(file=paste(pathFigures, "Figure3.pdf",sep=""), width=6.85, height=6)
+pdf(file=paste(pathFigures, "Figure3.pdf",sep=""), width=6.85, height=7.5)
 
 m=matrix(rep(NA, 6*10), nrow=6)
 
 for(i in 1:2){
-  m[i,]=c(rep(1,6), rep(5, 4))
+  m[i,]=c(rep(1,6), rep(3, 4))
 }
 
-m[3,]=c(rep(2,6), rep(5, 4))
+m[3,]=c(rep(2,6), rep(3, 4))
 
 for(i in 4:5){
-  m[i,]=c(rep(3,6), rep(6, 4))
+  m[i,]=c(rep(4,6), rep(6, 4))
 }
 
-m[6,]=c(rep(4,6), rep(6, 4))
+m[6,]=c(rep(5,6), rep(6, 4))
 
 layout(m)
 
 #####################################################################################
 
 sample="Vista_heart_vs_ENCODE"
+
+labels=list("human"=c("A", "B"), "mouse"=c("C", "D"))
+
 
 for(sp in c("human", "mouse")){
   this.sample=paste(sp, sample)
@@ -181,17 +134,66 @@ for(sp in c("human", "mouse")){
   ylim=c(0, max(numbers))
   xlim=c(0.25, length(numbers)+0.75)
 
-  par(mar=c(0,0,0,0))
-  plot(1, type="n", xlab="", ylab="", xlim=xlim, ylim=ylim, xaxs="i", yaxs="i", axes=F)
+  par(mar=c(0.5,4.5, 2.5,0.5))
+  plot(1, type="n", xlab="", ylab="", xlim=xlim, ylim=ylim, yaxs="i", xaxs="i", axes=F)
 
-  rect(xpos-0.25, 0, xpos+0.25, numbers, col="black", border="black")
+  rect(xpos-0.25, 0, xpos+0.25, numbers, col="gray40", border="black")
 
-  ## empty plot for now
+  axis(side=2, mgp=c(3, 0.65, 0), cex.axis=1.15)
 
-  par(mar=c(0,0,0,0))
-  plot(1, type="n", xlab="", ylab="", xlim=xlim, ylim=ylim, xaxs="i", yaxs="i", axes=F)
+  mtext("nb. significant GO categories", side=2, line=2.75, cex=0.9)
+
+  mtext(labels[[sp]][1], side=3, at=-0.725, font=2, line=1, cex=1.25)
+
+  ## labels for the intersections
+
+  par(mar=c(1,4.5,0.5,0.5))
+  plot(1, type="n", xlab="", ylab="", xlim=xlim, ylim=c(0.5,3.5), xaxs="i", yaxs="i", axes=F)
+  smallx=diff(xlim)/40
+  segments(xpos[1]-smallx, 1:3, xpos[7]+smallx, 1:3, lty=3)
+  points(xpos[c(1, 4, 5,7)], rep(3,4), pch=20, cex=2) ## GREAT
+  points(xpos[c(2, 4, 6,7)], rep(2,4), pch=20, cex=2) ## GOntact
+  points(xpos[c(3, 5, 6,7)], rep(1,4), pch=20, cex=2) ## hybrid
+
+  segments(xpos[4], 2, xpos[4], 3)
+  segments(xpos[5], 1, xpos[5], 3)
+  segments(xpos[6], 1, xpos[6], 2)
+  segments(xpos[7], 1, xpos[7], 3)
+
+
+  mtext("GREAT", at=3, side=2, las=2, cex=0.9)
+  mtext("GOntact", at=2, side=2, las=2, cex=0.9)
+  mtext("hybrid", at=1, side=2, las=2, cex=0.9)
+
+  ## number of enhancers found with just one of the approaches
+
+  enh.great=enhancers.great[[paste(sp, sample)]]
+  enh.gontact=enhancers.gontact[[paste(sp, sample)]]
+  enh.shared=enhancers.shared[[paste(sp, sample)]]
+
+  nb.only.great=unlist(lapply(names(enh.great), function(x) length(setdiff(enh.great[[x]], enh.gontact[[x]]))))
+  nb.only.gontact=unlist(lapply(names(enh.gontact), function(x) length(setdiff(enh.gontact[[x]], enh.great[[x]]))))
+  nb.shared=unlist(lapply(names(enh.shared), function(x) length(intersect(enh.gontact[[x]], enh.great[[x]]))))
+
+  par(mar=c(5.1,4.5,2.5,1.5))
+
+  boxplot(nb.only.great, nb.only.gontact, nb.shared, boxwex=0.65, col="white", border=c("black", "darkorange", "slateblue"), pch=20, cex=1.1, axes=F)
+  axis(side=2, mgp=c(3, 0.65, 0), cex.axis=1.15)
+  axis(side=1, at=1:3, labels=rep("",3))
+
+  mtext("nb. associated enhancers", side=2, line=2.75, cex=0.9)
+
+  mtext(c("GREAT", "GOntact"), at=c(1,2), side=1, line=1.1, cex=0.9)
+  mtext(c("only", "only"), at=c(1,2), side=1, line=2.5, cex=0.9)
+  mtext("shared", at=3, side=1, line=1.8, cex=0.9)
+
+
+  mtext(labels[[sp]][2], side=3, at=-0.35, font=2, line=1, cex=1.25)
+
+
+  mtext(paste(sp, "heart"), side=4, line=0.25)
+
 }
-
 
 #####################################################################################
 
@@ -199,80 +201,3 @@ dev.off()
 
 #####################################################################################
 #####################################################################################
-
-## 1 column width 85 mm = 3.34 in
-## 1.5 column width 114 mm = 4.49 in
-## 2 columns width 174 mm = 6.85 in
-## max height: 11 in
-
-## pdf(file=paste(pathFigures, "Figure3.pdf",sep=""), width=4.95, height=6)
-
-## m=matrix(rep(NA, 2*9), nrow=2)
-
-## m[1,]=c(rep(1,3), rep(2, 3), rep(3,3))
-## m[2,]=c(rep(4,3), rep(5, 3), rep(6,3))
-
-## layout(m)
-
-## #####################################################################################
-
-## sample="Vista_heart_vs_ENCODE"
-
-## labels=list("human"=c("A", "B", "C"), "mouse"=c("D", "E", "F"))
-
-## for(sp in c("human", "mouse")){
-##   this.id=paste(sp, sample)
-
-##   ## barplot nb great, contacts, shared
-
-##   nbg=nb.signif.great1Mb[which(id==this.id)]
-##   nbc=nb.signif.contacts1Mb[which(id==this.id)]
-##   nbs=nb.signif.common1Mb[which(id==this.id)]
-
-##   par(mar=c(5.1, 4.1, 2.5, 1.5))
-##   b=barplot(c(nbg, nbc, nbs), col=c("black", "darkorange", "navy"), density=20, border=c("black", "darkorange", "navy"), xlab="", names=rep("", 3), space=c(1, 0.5, 0.5))
-
-##   mtext("nb. significant GO categories", side=2, line=2.5, cex=0.8)
-
-##   mtext(c("GREAT", "GOntact", "shared"),side=1, at=b, las=2,line=0.1, cex=0.75)
-
-##   mtext(labels[[sp]][1], side=3, at=-0.95, font=2, line=1, cex=1.1)
-
-
-##   ## boxplot nb contacted enhancers
-
-
-##   par(mar=c(5.1, 3.5, 2.5, 2.0))
-
-##   boxplot(nb.great1Mb.common[[this.id]], nb.contacts1Mb.common[[this.id]], col="white", border=c("black", "darkorange"), boxwex=0.6, names=rep("",2), notch=T, pch=20, axes=F)
-##   axis(side=1, at=c(1,2), labels=rep("",2))
-##   axis(side=2)
-
-##   mtext("nb. associated enhancers", side=2, line=2.5, cex=0.8)
-##   mtext(c("GREAT", "GOntact"), side=1, at=c(1,2), line=1, cex=0.75, las=2)
-
-##   mtext(labels[[sp]][2], side=3, at=-0.5, font=2, line=1, cex=1.1)
-
-##   ## boxplot proportion shared
-
-##   par(mar=c(5.1, 3.5, 2.5, 2))
-
-##   prop.shared.gontact=nb.shared1Mb.common[[this.id]]/nb.contacts1Mb.common[[this.id]]
-##   prop.shared.great=nb.shared1Mb.common[[this.id]]/nb.great1Mb.common[[this.id]]
-
-##   boxplot(prop.shared.great, prop.shared.gontact, border=c("black", "darkorange"), col="white", notch=T, axes=F, boxwex=0.6)
-##   axis(side=1, at=c(1, 2), labels=rep("",2))
-##   axis(side=2)
-##   mtext("% shared associated enhancers", side=2, line=2.5, cex=0.8)
-##   mtext(c("GREAT", "GOntact"), side=1, at=c(1,2), line=1, cex=0.75, las=2)
-
-##   mtext(labels[[sp]][3], side=3, at=-0.5, font=2, line=1, cex=1.1)
-
-##   mtext(paste(sp, "heart"), side=4, line=0.5, cex=0.75)
-## }
-
-## #####################################################################################
-
-## dev.off()
-
-## #####################################################################################
