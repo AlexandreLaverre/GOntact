@@ -3,3 +3,9 @@
   (libraries gontact)
   (preprocess (pps ppx_deriving.show))	
   (public_name gontact))
+(executable
+  (name gontact_utils)
+  (libraries gontact)
+  (preprocess (pps ppx_deriving.show))	
+  (public_name gontact_utils))
+
