@@ -1,11 +1,13 @@
 (executable
   (name gontact_app)
   (libraries gontact)
+  (modules Gontact_app)	
   (preprocess (pps ppx_deriving.show))	
   (public_name gontact))
 (executable
   (name gontact_utils)
   (libraries gontact)
+  (modules Gontact_utils)
   (preprocess (pps ppx_deriving.show))	
-  (public_name gontact_utils))
+  (public_name gontact-utils))
 
