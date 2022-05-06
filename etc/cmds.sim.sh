@@ -47,6 +47,7 @@ _build/install/default/bin/gontact --mode=contacts \
 				   --chr-sizes=data/ensembl_annotations/${sp}/chr_sizes_${genome}.txt \
 				   --min-dist-contacts=25000 --max-dist-contacts=1000000 \
 				   --ibed-path=${paths_ibed} --bait-coords=data/PCHi-C/${sp}/${genome}.baitmap \
+				   --min-score=0 \
 				   --write-foreground --write-background \
 				   --output-dir=results/${sp}/${outprefix}/biological_process/simulated_contacts_mindist25kb_maxdist1Mb
 
@@ -66,6 +67,7 @@ _build/install/default/bin/gontact --mode=contacts \
 				   --chr-sizes=data/ensembl_annotations/${sp}/chr_sizes_${genome}.txt \
 				   --min-dist-contacts=25000 --max-dist-contacts=2000000 \
 				   --ibed-path=${paths_ibed} --bait-coords=data/PCHi-C/${sp}/${genome}.baitmap \
+				   --min-score=0 \
 				   --write-foreground --write-background \
 				   --output-dir=results/${sp}/${outprefix}/biological_process/simulated_contacts_mindist25kb_maxdist2Mb
 
@@ -86,6 +88,7 @@ _build/install/default/bin/gontact --mode=contacts \
 				   --chr-sizes=data/ensembl_annotations/${sp}/chr_sizes_${genome}.txt \
 				   --min-dist-contacts=0 --max-dist-contacts=1000000 \
 				   --ibed-path=${paths_ibed} --bait-coords=data/PCHi-C/${sp}/${genome}.baitmap \
+				   --min-score=0 \
 				   --write-foreground --write-background \
 				   --output-dir=results/${sp}/${outprefix}/biological_process/simulated_contacts_mindist0kb_maxdist1Mb
 
@@ -105,6 +108,7 @@ _build/install/default/bin/gontact --mode=contacts \
 				   --chr-sizes=data/ensembl_annotations/${sp}/chr_sizes_${genome}.txt \
 				   --min-dist-contacts=0 --max-dist-contacts=2000000 \
 				   --ibed-path=${paths_ibed} --bait-coords=data/PCHi-C/${sp}/${genome}.baitmap \
+				   --min-score=0 \
 				   --write-foreground --write-background \
 				   --output-dir=results/${sp}/${outprefix}/biological_process/simulated_contacts_mindist0kb_maxdist2Mb
 
