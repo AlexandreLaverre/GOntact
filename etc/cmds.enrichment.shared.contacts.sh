@@ -31,7 +31,7 @@ else
     mkdir -p results/${sp}/${outprefix}/biological_process/shared_contacts_mindist25kb_maxdist1Mb
 fi
 
-_build/install/default/bin/gontact --mode=shared_contacts \
+_build/install/default/bin/gontact --mode=contacts \
 				   --foreground=data/enhancers/${sp}/${foreground}.bed --background=data/enhancers/${sp}/${background}.bed \
 				   --functional-annot=data/GeneOntology/${goa_file}.gaf  --ontology=data/GeneOntology/go-basic.obo \
 				   --gene-annot=data/ensembl_annotations/${sp}/GeneAnnotation_BioMart_Ensembl102_${genome}.txt  \
