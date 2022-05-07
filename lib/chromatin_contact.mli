@@ -1,7 +1,8 @@
 open Core
     
 type t
-
+[@@deriving sexp]
+  
 val of_ibed_file :
   string ->
   strip_chr:bool->

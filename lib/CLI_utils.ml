@@ -16,7 +16,7 @@ let shared_contacts ibed_paths min_nb_samples path_output =
   in
   if found_ibed_files then
     let table l =
-      let module I = struct type t = Chromatin_contact.t let hash = Hashtbl.hash let compare = Chromatin_contact.compare let sexp_of_t _ = assert false let t_of_sexp = assert false end in
+      let module I = struct include Chromatin_contact let hash = Hashtbl.hash end in
       let module H = Hashtbl.Make(I) in
       let h = H.create () in
       List.iter l ~f:(fun x -> H.add_multi h ~key:x ~data:()) ;

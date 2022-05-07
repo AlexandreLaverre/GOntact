@@ -12,6 +12,7 @@ type t = {
   n_reads : int ;
   score : float ;
 }
+[@@deriving sexp]
 
 let split_ibed_line line ~strip_chr =
   if String.is_prefix line ~prefix:"bait_chr" then None (*we ignore header*)
