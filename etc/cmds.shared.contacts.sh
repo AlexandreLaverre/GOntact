@@ -21,4 +21,3 @@ export paths_ibed=${paths_ibed::-1}
 ./_build/install/default/bin/gontact-utils shared-contacts --ibed-path=${paths_ibed} --min-nb-samples=2 --path-output=data/PCHi-C/${sp}/ibed_files/shared_contacts_min2samples.ibed
 
 ###########################################################################################################################
-
