@@ -19,7 +19,7 @@ for(sp in c("human", "mouse")){
       background.association=list()
       foreground.association=list()
 
-      methods=system(paste("ls ", pathResults, sp, "/", data, "/", domain, sep=""), intern=T)
+      methods=system(paste("ls ", pathResults, sp, "/", data, "/", domain," | grep -v txt", sep=""), intern=T)
 
       for(method in methods){
         path.bg=paste(pathResults, sp, "/", data, "/", domain, "/", method, "/GOntact_element_gene_association_background.txt",sep="")
