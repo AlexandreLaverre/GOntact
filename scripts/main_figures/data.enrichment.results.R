@@ -22,7 +22,7 @@ for(sp in c("human", "mouse")){
     for(domain in domains){
       enrichment.results[[sp]][[data]][[domain]]=list()
 
-      methods=system(paste("ls ", pathResults, sp, "/", data, "/", domain, sep=""), intern=T)
+      methods=system(paste("ls ", pathResults, sp, "/", data, "/", domain, " | grep -v txt", sep=""), intern=T)
 
       for(method in methods){
         res=read.table(paste(pathResults, sp, "/", data, "/", domain, "/", method, "/GOntact_enrichment_results.txt",sep=""), h=T,sep="\t", quote="\"")
