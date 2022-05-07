@@ -109,15 +109,38 @@ let get_id_bait i =
   Printf.sprintf "%s:%d-%d" chr start_pos end_pos
 
 let compare i1 i2 =
-  let id1 = Printf.sprintf "%s %s" (get_id_bait i1) (get_id_frag i1) in
-  let id2 = Printf.sprintf "%s %s" (get_id_bait i2) (get_id_frag i2) in
-  String.compare id1 id2
-
-let equal i1 i2 =
-  let id1 = Printf.sprintf "%s %s" (get_id_bait i1) (get_id_frag i1) in
+  match String.compare i1.bait_chr i2.bait_chr with
+  | 0 -> (
+      match Int.compare i1.bait_start i2.bait_start with
+      | 0 -> (
+          match Int.compare i1.bait_end i2.bait_end with
+          | 0 -> (
+              match String.compare i1.otherEnd_chr i2.otherEnd_chr with
+              | 0 -> (
+                  match Int.compare i1.otherEnd_start i2.otherEnd_start with
+                  | 0 -> Int.compare i1.otherEnd_end i2.otherEnd_end
+                  | n -> n 
+                )
+              | n -> n 
+            )
+          |  n -> n 
+        )
+      | n -> n 
+    )
+  | n -> n 
+                      
+  (*  Stdlib.compare (i1.bait_chr, i1.bait_start, i1.bait_end, i1.otherEnd_chr, i1.otherEnd_start, i1.otherEnd_end) (i2.bait_chr, i2.bait_start, i2.bait_end, i2.otherEnd_chr, i2.otherEnd_start, i2.otherEnd_end) *)
+  
+  (*let id1 = Printf.sprintf "%s %s" (get_id_bait i1) (get_id_frag i1) in
+    let id2 = Printf.sprintf "%s %s" (get_id_bait i2) (get_id_frag i2) in
+    String.compare id1 id2
+  *)
+    
+let equal i1 i2 = (compare i1 i2 = 0) 
+  (*let id1 = Printf.sprintf "%s %s" (get_id_bait i1) (get_id_frag i1) in
   let id2 = Printf.sprintf "%s %s" (get_id_bait i2) (get_id_frag i2) in
   String.equal id1 id2
-
+  *)
 let select_unbaited l ~bait_collection =
   let bait_ids = String.Set.of_list (List.map (Genomic_interval_collection.interval_list bait_collection) ~f:(fun i -> Genomic_interval.id i)) in
   let unbaited = List.filter l ~f:(fun x -> not (String.Set.mem bait_ids (get_id_frag x))) in
