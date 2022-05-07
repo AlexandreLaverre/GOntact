@@ -1,3 +1,22 @@
+#!/bin/bash
+
+export sp=$1
+export foreground=$2
+export background=$3
+export outprefix=$4
+
+############################################################################################
+
+if [ ${sp} = "human" ]; then
+    export goa_file=goa_human
+    export genome=hg38
+fi
+
+if [ ${sp} = "mouse" ]; then
+    export goa_file=mgi
+    export genome=mm10
+fi
+
 ###########################################################################################################################
 
 export paths_ibed=data/PCHi-C/${sp}/ibed_files/shared_contacts_min2samples.ibed
