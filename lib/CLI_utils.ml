@@ -16,14 +16,13 @@ let shared_contacts ibed_paths min_nb_samples path_output =
   in
   if found_ibed_files then
     let table l =
-      let module I = struct include Chromatin_contact let hash = Hashtbl.hash end in
-      let module H = Hashtbl.Make(I) in
+      let module H = Hashtbl.Make(Chromatin_contact) in
       let h = H.create () in
       List.iter l ~f:(fun x -> H.add_multi h ~key:x ~data:()) ;
       H.to_alist h |> List.map ~f:(fun (x, y) -> (x, List.length y))
     in 
     let contact_list = List.concat_map ibed_files ~f:(fun file -> Chromatin_contact.of_ibed_file file ~strip_chr:false) in
-    let contact_table = table contact_list in 
+    let contact_table = table contact_list in
     Out_channel.with_file path_output ~append:false ~f:(fun output -> (
         Printf.fprintf output "bait_chr\tbait_start\tbait_end\tbait_name\totherEnd_chr\totherEnd_start\totherEnd_end\totherEnd_name\tN_reads\tscore\n" ;
         List.iter contact_table ~f:(fun (c, nb) -> (if nb >= min_nb_samples then Chromatin_contact.write_contact c output))))

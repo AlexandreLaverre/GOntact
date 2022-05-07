@@ -52,6 +52,8 @@ val go_annotate_baits :
 
 val compare : t -> t -> int
 
+val hash : t -> int
+
 val fragment_to_baits :
   contacts:(t list) ->
   (string list) String.Map.t
