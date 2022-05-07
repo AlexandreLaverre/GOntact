@@ -7,15 +7,16 @@ options(stringsAsFactors=F)
 #####################################################################################
 
 if(load){
-  load(paste(pathFigures, "RData/data.background.association.RData",sep=""))
-  load(paste(pathFigures, "RData/data.regulatory.domains.RData",sep=""))
 
+  load(paste(pathFigures, "RData/data.regulatory.domains.RData",sep=""))
   load(paste(pathFigures, "RData/data.ENCODE.human.RData",sep=""))
   colnames(encode)=c("Chr", "Start", "End")
 
   sp="human"
   dataset="Vista_heart_vs_ENCODE"
   domain="biological_process"
+
+  load(paste(pathFigures, "RData/data.background.association.",sp,".",dataset, ".",domain,".RData",sep=""))
 
   load=FALSE
 }
