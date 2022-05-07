@@ -111,7 +111,12 @@ let compare i1 i2 =
   let id1 = Printf.sprintf "%s %s" (get_id_bait i1) (get_id_frag i1) in
   let id2 = Printf.sprintf "%s %s" (get_id_bait i2) (get_id_frag i2) in
   String.compare id1 id2
-    
+
+let equal i1 i2 =
+  let id1 = Printf.sprintf "%s %s" (get_id_bait i1) (get_id_frag i1) in
+  let id2 = Printf.sprintf "%s %s" (get_id_bait i2) (get_id_frag i2) in
+  String.equal id1 id2
+
 let select_unbaited l ~bait_collection =
   let bait_ids = String.Set.of_list (List.map (Genomic_interval_collection.interval_list bait_collection) ~f:(fun i -> Genomic_interval.id i)) in
   let unbaited = List.filter l ~f:(fun x -> not (String.Set.mem bait_ids (get_id_frag x))) in
@@ -190,5 +195,6 @@ let elements_by_annotation elannot =
   let gomap = String.Map.of_alist_multi tuples in
   gomap
 
-
+let write_contact contact output =
+  Printf.fprintf output "%s\t%d\t%d\t%s\t%s\t%d\t%d\t%s\t%d\t%f\n" contact.bait_chr contact.bait_start contact.bait_end contact.bait_name  contact.otherEnd_chr contact.otherEnd_start contact.otherEnd_end contact.otherEnd_name 0 0.0 
 

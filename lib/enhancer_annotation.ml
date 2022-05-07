@@ -30,7 +30,7 @@ let compare_annotations annot1 annot2 path =
   let non_empty_keys = String.Set.to_list (String.Set.remove all_keys "") in 
   let ca = common_annotations annot1 annot2 in
   Out_channel.with_file path ~append:false ~f:(fun output ->
-      Printf.fprintf output "EnhancerID\tNb1\tNb2\tNbComon\n" ;
+      Printf.fprintf output "EnhancerID\tNb1\tNb2\tNbCommon\n" ;
       List.iter non_empty_keys ~f:(fun key -> (
           let nb1 = (if (String.Map.mem annot1 key) then (List.length (String.Map.find_exn annot1 key)) else 0) in
           let nb2 = (if (String.Map.mem annot2 key) then (List.length (String.Map.find_exn annot2 key)) else 0) in

@@ -85,3 +85,11 @@ val remove_unannotated_baits :
   contacts:(t list) ->
   bait_annotation:(string list) String.Map.t ->
   (t list)
+
+val get_id_frag : t -> string
+
+val get_id_bait : t -> string
+
+val write_contact : t -> Out_channel.t -> unit
+
+val equal : t -> t -> bool
