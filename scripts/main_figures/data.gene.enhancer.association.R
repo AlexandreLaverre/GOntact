@@ -29,7 +29,14 @@ for(sp in c("human", "mouse")){
       methods=system(paste("ls ", pathResults, sp, "/", data, "/", domain, sep=""), intern=T)
 
       for(method in methods){
-        res.bg=read.table(paste(pathResults, sp, "/", data, "/", domain, "/", method, "/GOntact_element_gene_association_background.txt",sep=""), h=T, sep="\t", quote="\"")
+        path.bg=paste(pathResults, sp, "/", data, "/", domain, "/", method, "/GOntact_element_gene_association_background.txt",sep="")
+
+        if(file.exists(path.bg)){
+          res.bg=read.table(path.bg, h=T, sep="\t", quote="\"")
+        } else{
+          path.bg.gz=paste(pathResults, sp, "/", data, "/", domain, "/", method, "/GOntact_element_gene_association_background.txt.gz",sep="")
+          res.bg=read.table(gzfile(path.bg.gz, open="r"), h=T, sep="\t", quote="\"")
+        }
 
         background.association[[sp]][[data]][[domain]][[method]]=res.bg
 
