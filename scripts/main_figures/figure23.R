@@ -26,8 +26,8 @@ if(prepare){
 
   results=list()
 
-  methods=c("GREAT_upstream5kb_downstream1kb_extend1Mb", "GREAT_fixed_size_upstream1Mb_downstream1Mb", "contacts_mindist0kb_maxdist1Mb",  "shared_contacts_mindist0kb_maxdist1Mb")
-  shortnames=c("GREAT (basal + extension)", "fixed 1Mb window", "GOntact (all PCHi-C data)", "GOntact (common contacts)")
+  methods=c("GREAT_upstream5kb_downstream1kb_extend1Mb", "GREAT_fixed_size_upstream1Mb_downstream1Mb", "contacts_mindist0kb_maxdist1Mb",  "shared_contacts_mindist0kb_maxdist1Mb", "hybrid_mindist25kb_maxdist1Mb")
+  shortnames=c("GREAT (basal + extension)", "fixed 1Mb window", "GOntact (all PCHi-C data)", "GOntact (common contacts)", "GOntact (hybrid)")
 
   for(i in 1:2){
     sp=species[i]
@@ -71,9 +71,9 @@ if(prepare){
 ## 2 columns width 174 mm = 6.85 in
 ## max height: 11 in
 
-pdf(file=paste(pathFigures, "Figure2.pdf",sep=""), width=6.85, height=11)
+pdf(file=paste(pathFigures, "Figure2.pdf",sep=""), width=6.85, height=4.5)
 
-m=matrix(rep(NA, 24*16), nrow=24)
+m=matrix(rep(NA, 12*16), nrow=12)
 
 for(i in 1:6){
   m[i,]=c(rep(1,4), rep(2,4), rep(9,4), rep(10,4))
@@ -83,14 +83,6 @@ for(i in 7:12){
   m[i,]=c(rep(3,4), rep(4,4), rep(11,4), rep(12,4))
 }
 
-for(i in 13:18){
-  m[i,]=c(rep(5,4), rep(6,4), rep(13,4), rep(14,4))
-}
-
-
-for(i in 19:24){
-  m[i,]=c(rep(7,4), rep(8,4), rep(15,4), rep(16,4))
-}
 
 layout(m)
 
@@ -110,7 +102,7 @@ names(label.pos)=c("heart", "midbrain")
 for(sample in c("Vista_heart_vs_ENCODE", "Vista_midbrain_vs_ENCODE")){
   tissue=unlist(strsplit(sample, split="_"))[2]
 
-  for(method in shortnames){
+  for(method in shortnames[1:2]){
 
     enrichment=results[[paste(sp, sample)]][[method]][["enrichment"]]
     signif=results[[paste(sp, sample)]][[method]][["signif"]]
@@ -134,8 +126,8 @@ for(sample in c("Vista_heart_vs_ENCODE", "Vista_midbrain_vs_ENCODE")){
     mtext(labels[i], side=3, at=xlim[1]-diff(xlim)/10, line=-0.5, font=2, cex=1.05)
     mtext("% associated enhancers", side=1, line=1.75, cex=0.75)
 
-    if(i==1){
-      legend("bottomleft", fill=c("indianred", "black"), border=c("indianred", "black"), legend=c("observed", "expected"), inset=c(-0.175, 0.02), cex=0.95, xpd=NA)
+    if(i==8){
+      legend("bottomleft", fill=c("indianred", "black"), border=c("indianred", "black"), legend=c("observed", "expected"), inset=c(-0.25, 0.02), cex=0.95, xpd=NA)
     }
 
     if(sample=="Vista_heart_vs_ENCODE"){
@@ -163,7 +155,100 @@ for(sample in c("Vista_heart_vs_ENCODE", "Vista_midbrain_vs_ENCODE")){
 
   mtext(paste("Vista",tissue), side=3, line=0.25, outer=T, cex=0.85, at=label.pos[tissue], font=2)
 
+}
+
+dev.off()
+
 #####################################################################################
+#####################################################################################
+
+pdf(file=paste(pathFigures, "Figure3.pdf",sep=""), width=6.85, height=6.5)
+
+m=matrix(rep(NA, 18*16), nrow=18)
+
+for(i in 1:6){
+  m[i,]=c(rep(1,4), rep(2,4), rep(9,4), rep(10,4))
+}
+
+for(i in 7:12){
+  m[i,]=c(rep(3,4), rep(4,4), rep(11,4), rep(12,4))
+}
+
+for(i in 13:18){
+  m[i,]=c(rep(5,4), rep(6,4), rep(13,4), rep(14,4))
+}
+
+layout(m)
+
+par(oma=c(0,1,1.5,0))
+
+#####################################################################################
+
+labels=toupper(letters[1:8])
+
+sp="human"
+
+i=1
+
+label.pos=c(0.25,0.75)
+names(label.pos)=c("heart", "midbrain")
+
+for(sample in c("Vista_heart_vs_ENCODE", "Vista_midbrain_vs_ENCODE")){
+  tissue=unlist(strsplit(sample, split="_"))[2]
+
+  for(method in shortnames[3:5]){
+
+    enrichment=results[[paste(sp, sample)]][[method]][["enrichment"]]
+    signif=results[[paste(sp, sample)]][[method]][["signif"]]
+
+    top10=signif[10:1]
+
+    ## barplot, observed vs expected
+    observed=enrichment[top10,"Observed"]
+    expected=enrichment[top10,"Expected"]
+
+    all.values=-100*as.numeric(rbind(expected, observed))
+    xax=pretty(all.values)
+
+    xlim=range(c(xax, all.values))
+
+    par(mar=c(3.5, 1.5, 1, 0.35))
+    b=barplot(all.values, horiz=T, axes=F, col=c("black","indianred"), border=NA, xlim=xlim, space=c(2.25,0.35))
+
+    axis(side=1, mgp=c(3,0.5,0), at=xax, labels=-xax, cex.axis=0.95)
+
+    mtext(labels[i], side=3, at=xlim[1]-diff(xlim)/10, line=-0.5, font=2, cex=1.05)
+    mtext("% associated enhancers", side=1, line=1.75, cex=0.75)
+
+    if(i==8){
+      legend("bottomleft", fill=c("indianred", "black"), border=c("indianred", "black"), legend=c("observed", "expected"), inset=c(-0.25, 0.02), cex=0.95, xpd=NA)
+    }
+
+    if(sample=="Vista_heart_vs_ENCODE"){
+      mtext(method, side=2, cex=0.8, font=1, line=0.5)
+    }
+    ## barplot, log10 FDR
+
+    log10fdr=-log10(enrichment[top10,"FDR"])
+
+    par(mar=c(3.5, 0.35, 1, 1.5))
+    b=barplot(log10fdr, horiz=T, axes=F, col="steelblue", border=NA, space=1, xlim=c(0,10))
+
+    xax=seq(from=0, to=10, by=2)
+    xax.labels=as.character(xax)
+    xax.labels[length(xax.labels)]=">10"
+    axis(side=1, mgp=c(3,0.5,0), cex.axis=0.95, at=xax, labels=xax.labels)
+
+    mtext("-log10 FDR", side=1, line=1.75, cex=0.75)
+
+    text(enrichment[top10, "GOName"], y=b+1, x=0, adj=c(0.5,0.5), cex=0.95, xpd=NA)
+
+    i=i+1
+
+  }
+
+  mtext(paste("Vista",tissue), side=3, line=0.25, outer=T, cex=0.85, at=label.pos[tissue], font=2)
+
 }
 
 dev.off()
