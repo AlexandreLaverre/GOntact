@@ -24,47 +24,50 @@ if(load){
 #####################################################################################
 
 if(prepare){
-
-  assoc.great=background.association[["GREAT_upstream5kb_downstream1kb_extend1Mb"]]
-  assoc.contacts=background.association[["contacts_mindist0kb_maxdist1Mb"]]
-
-  ## enhancer coordinates, GREAT association
-  assoc.great$Chr=unlist(lapply(assoc.great$ElementID, function(x) unlist(strsplit(x, split=":"))[1]))
-  assoc.great$Coords=unlist(lapply(assoc.great$ElementID, function(x) unlist(strsplit(x, split=":"))[2]))
-  assoc.great$Start=as.numeric(unlist(lapply(assoc.great$Coords, function(x) unlist(strsplit(x, split="-"))[1])))
-  assoc.great$End=as.numeric(unlist(lapply(assoc.great$Coords, function(x) unlist(strsplit(x, split="-"))[2])))
-
-  ## enhancer coordinates, contacts
-
-  assoc.contacts$Chr=unlist(lapply(assoc.contacts$ElementID, function(x) unlist(strsplit(x, split=":"))[1]))
-  assoc.contacts$Coords=unlist(lapply(assoc.contacts$ElementID, function(x) unlist(strsplit(x, split=":"))[2]))
-  assoc.contacts$Start=as.numeric(unlist(lapply(assoc.contacts$Coords, function(x) unlist(strsplit(x, split="-"))[1])))
-  assoc.contacts$End=as.numeric(unlist(lapply(assoc.contacts$Coords, function(x) unlist(strsplit(x, split="-"))[2])))
-
   ## regulatory domains
   domains=regulatory.domains[[sp]][[dataset]][[domain]][["GREAT_upstream5kb_downstream1kb_extend1Mb"]]
   domains$Size=domains$End-domains$Start+1
 
-  ## take only genes that have at least 1 enhancer in both datasets
-  common.genes=intersect(assoc.great$GeneSymbol, assoc.contacts$GeneSymbol)
+  ## gene-enhancer association, all ENCODE
 
-  assoc.great.common=assoc.great[which(assoc.great$GeneSymbol%in%common.genes),]
-  assoc.contacts.common=assoc.contacts[which(assoc.contacts$GeneSymbol%in%common.genes),]
+  results=list()
 
-  nbenh.great=table(assoc.great.common$GeneSymbol)
-  nbenh.contacts=table(assoc.contacts.common$GeneSymbol)
+  methods=c("GREAT_upstream5kb_downstream1kb_extend1Mb", "GREAT_fixed_size_upstream1Mb_downstream1Mb", "contacts_mindist0kb_maxdist1Mb",  "shared_contacts_mindist0kb_maxdist1Mb")
+  shortnames=c("GREAT", "fixed size", "GOntact, all data", "GOntact, shared contacts")
 
-  nbgenes.great=table(assoc.great.common$ElementID)
-  nbgenes.contacts=table(assoc.contacts.common$ElementID)
+  names(shortnames)=methods
 
-  mediandist.great=tapply(assoc.great.common$Distance, as.factor(assoc.great.common$GeneSymbol), median)
-  mediandist.contacts=tapply(assoc.contacts.common$Distance, as.factor(assoc.contacts.common$GeneSymbol), median)
+  for(method in methods){
+    print(method)
 
-  assoc.great.common$DistanceClass=cut(assoc.great.common$Distance, breaks=seq(from=0, to=1e6, by=50e3), include.lowest=T)
-  assoc.contacts.common$DistanceClass=cut(assoc.contacts.common$Distance, breaks=seq(from=0, to=1e6, by=50e3), include.lowest=T)
+    assoc=background.association[[method]]
 
-  prop.dist.great=as.numeric(table(assoc.great.common$DistanceClass))/sum(as.numeric(table(assoc.great.common$DistanceClass)))
-  prop.dist.contacts=as.numeric(table(assoc.contacts.common$DistanceClass))/sum(as.numeric(table(assoc.contacts.common$DistanceClass)))
+    ## enhancer coordinates
+
+    if(method=="GREAT_upstream5kb_downstream1kb_extend1Mb" | method=="contacts_mindist0kb_maxdist1Mb"){
+      assoc$Chr=unlist(lapply(assoc$ElementID, function(x) unlist(strsplit(x, split=":"))[1]))
+      assoc$Coords=unlist(lapply(assoc$ElementID, function(x) unlist(strsplit(x, split=":"))[2]))
+      assoc$Start=as.numeric(unlist(lapply(assoc$Coords, function(x) unlist(strsplit(x, split="-"))[1])))
+      assoc$End=as.numeric(unlist(lapply(assoc$Coords, function(x) unlist(strsplit(x, split="-"))[2])))
+    }
+
+    nb.enh=table(assoc$GeneSymbol)
+
+    nb.genes=table(assoc$ElementID)
+
+    assoc$DistanceClass=cut(assoc$Distance, breaks=seq(from=0, to=1e6, by=50e3), include.lowest=T)
+
+    prop.dist=as.numeric(table(assoc$DistanceClass))/sum(as.numeric(table(assoc$DistanceClass)))
+
+    if(method=="GREAT_upstream5kb_downstream1kb_extend1Mb" | method=="contacts_mindist0kb_maxdist1Mb"){
+      results[[method]]=list("assoc"=assoc, "nb.enh"=nb.enh, "nb.genes"=nb.genes, "prop.dist"=prop.dist)
+    } else{
+      results[[method]]=list("nb.enh"=nb.enh, "nb.genes"=nb.genes, "prop.dist"=prop.dist)
+    }
+  }
+
+  assoc.great=results[["GREAT_upstream5kb_downstream1kb_extend1Mb"]][["assoc"]]
+  assoc.contacts=results[["contacts_mindist0kb_maxdist1Mb"]][["assoc"]]
 
   ## example gene
 
@@ -75,8 +78,8 @@ if(prepare){
   this.chr=domains$Chr[which(domains$GeneID==gene)]
   this.strand="-"
 
-  enhancers.great=assoc.great.common[which(assoc.great.common$GeneSymbol==gene),]
-  enhancers.contacts=assoc.contacts.common[which(assoc.contacts.common$GeneSymbol==gene),]
+  enhancers.great=assoc.great[which(assoc.great$GeneSymbol==gene),]
+  enhancers.contacts=assoc.contacts[which(assoc.contacts$GeneSymbol==gene),]
 
   ## axis limits
 
@@ -110,14 +113,14 @@ if(prepare){
 
 pdf(file=paste(pathFigures, "Figure1.pdf",sep=""), width=6.85, height=5.5)
 
-m=matrix(rep(NA, 12*9), nrow=12)
+m=matrix(rep(NA, 12*10), nrow=12)
 
 for(i in 1:5){
-  m[i,]=rep(1,9)
+  m[i,]=rep(1,10)
 }
 
 for(i in 6:12){
-  m[i,]=c(rep(2,2), rep(3,2), rep(4,5))
+  m[i,]=c(rep(2,2), rep(3, 1), rep(4,2), rep(5,1), rep(6,4))
 }
 
 layout(m)
@@ -243,46 +246,94 @@ mtext("A", side=3, line=0.5, at=xlim[1]-diff(xlim)/55, font=2, cex=1.1)
 
 ## boxplot for the number of enhancers per gene
 
-par(mar=c(3.5,4.1,3.1,1.1))
-boxplot(as.numeric(nbenh.great), as.numeric(nbenh.contacts), col="white", border=c("black", "darkorange"),  outline=F, names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T, axes=F, ylim=c(0,200))
-axis(side=2)
-axis(side=1, at=1:2, labels=rep("",2))
+par(mar=c(5.1,3.5,2.1,1.5))
+nb.enh.great=results[["GREAT_upstream5kb_downstream1kb_extend1Mb"]][["nb.enh"]]
+nb.enh.contacts=results[["contacts_mindist0kb_maxdist1Mb"]][["nb.enh"]]
+nb.enh.shared.contacts=results[["shared_contacts_mindist0kb_maxdist1Mb"]][["nb.enh"]]
+nb.enh.fixed=results[["GREAT_fixed_size_upstream1Mb_downstream1Mb"]][["nb.enh"]]
 
-mtext("nb. enhancers per gene", side=2, line=2.75, cex=0.75)
-mtext(c("GREAT", "GOntact"), side=1, at=c(0.9,2.1), line=1, cex=0.75)
+boxplot(as.numeric(nb.enh.great), as.numeric(nb.enh.contacts), as.numeric(nb.enh.shared.contacts),  col="white", border=c("red", "darkorange", "slateblue"),  outline=F, names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T, axes=F, ylim=c(0,200))
+axis(side=2, mgp=c(3,0.75,0))
+axis(side=1, at=1:3, labels=rep("",3))
+
+mtext("nb. enhancers per gene", side=2, line=2.35, cex=0.75)
+
+
+legend("bottomleft", legend=c("GREAT (basal + extension)", "GOntact (all PCHi-C data)"), col=c("red", "darkorange"), lty=1, bty="n", inset=c(-0.5,-0.25), xpd=NA)
+
 
 ## plot label
 
-mtext("B", side=3, line=0.5, at=-0.7, font=2, cex=1.1)
+mtext("B", side=3, line=0.5, at=-1.25, font=2, cex=1.1)
+
+## fixed size
+
+par(mar=c(5.1,0.6,2.1,1))
+boxplot(as.numeric(nb.enh.fixed),  col="white", border=c("black"),  outline=F, names=rep("", 1), lwd=1.25, boxwex=0.75, notch=T, axes=F)
+axis(side=2, mgp=c(3,0.75,0))
+axis(side=1, at=c(0.25,1,1.75), labels=rep("",3))
+
 
 #####################################################################################
 
 ## boxplot for the number of genes per enhancer
 
-par(mar=c(3.5,4.1,3.1,1.1))
-boxplot(as.numeric(nbgenes.great), as.numeric(nbgenes.contacts), col="white", border=c("black", "darkorange"), outline=F,  names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T, axes=F)
+par(mar=c(5.1,3.5,2.1,1.1))
+nb.genes.great=results[["GREAT_upstream5kb_downstream1kb_extend1Mb"]][["nb.genes"]]
+nb.genes.contacts=results[["contacts_mindist0kb_maxdist1Mb"]][["nb.genes"]]
+nb.genes.shared.contacts=results[["shared_contacts_mindist0kb_maxdist1Mb"]][["nb.genes"]]
+nb.genes.fixed=results[["GREAT_fixed_size_upstream1Mb_downstream1Mb"]][["nb.genes"]]
+
+
+boxplot(as.numeric(nb.genes.great), as.numeric(nb.genes.contacts), as.numeric(nb.genes.shared.contacts), col="white", border=c("red", "darkorange", "slateblue"), outline=F,  names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T, axes=F)
 
 axis(side=2)
-axis(side=1, at=1:2, labels=rep("",2))
+axis(side=1, at=1:3, labels=rep("",3))
 
 mtext("nb. genes per enhancer", side=2, line=2.75, cex=0.75)
-mtext(c("GREAT", "GOntact"), side=1, at=c(0.9,2.1), line=1, cex=0.75)
+
+
+legend("bottomleft", legend=c("GOntact (common contacts)", "fixed 1Mb window"), col=c("slateblue", "black"), lty=1, bty="n", inset=c(-0.5,-0.25), xpd=NA)
 
 ## plot label
 
-mtext("C", side=3, line=0.5, at=-0.7, font=2, cex=1.1)
+mtext("C", side=3, line=0.5, at=-1.25, font=2, cex=1.1)
+
+
+## fixed size
+
+par(mar=c(5.1,0.6,2.1,1))
+boxplot(as.numeric(nb.genes.fixed),  col="white", border=c("black"),  outline=F, names=rep("", 1), lwd=1.25, boxwex=0.75, notch=T, axes=F)
+axis(side=2, mgp=c(3,0.75,0))
+axis(side=1, at=c(0.25,1,1.75), labels=rep("",3))
+
 
 #####################################################################################
+
+## distance distribution
+
+prop.dist.great=results[["GREAT_upstream5kb_downstream1kb_extend1Mb"]][["prop.dist"]]
+prop.dist.contacts=results[["contacts_mindist0kb_maxdist1Mb"]][["prop.dist"]]
+prop.dist.shared.contacts=results[["shared_contacts_mindist0kb_maxdist1Mb"]][["prop.dist"]]
+prop.dist.fixed=results[["GREAT_fixed_size_upstream1Mb_downstream1Mb"]][["prop.dist"]]
 
 xpos=1:20
 this.xlim=c(0.5,20.5)
 this.ylim=c(0, 40)
 
-par(mar=c(4.1,4.1,3.1,1.1))
+par(mar=c(4.1,4.1,2.1,1.1))
 
 plot(1, type="n", xlab="", ylab="", xlim=this.xlim, ylim=this.ylim, main="", axes=F)
-points(xpos, 100*prop.dist.great, pch=20, col="black", cex=1.25, type="b")
-points(xpos, 100*prop.dist.contacts, pch=20, col="darkorange", cex=1.25, type="b")
+
+lines(xpos, 100*prop.dist.great, col="red")
+lines(xpos, 100*prop.dist.contacts, col="darkorange")
+lines(xpos, 100*prop.dist.shared.contacts, col="slateblue")
+lines(xpos, 100*prop.dist.fixed,  col="black")
+
+points(xpos, 100*prop.dist.great, pch=20, col="red", cex=1.1)
+points(xpos, 100*prop.dist.contacts, pch=20, col="darkorange", cex=1.1)
+points(xpos, 100*prop.dist.shared.contacts, pch=20, col="slateblue", cex=1.1)
+points(xpos, 100*prop.dist.fixed, pch=20, col="black", cex=1.1)
 
 
 xax=c(1, 5.5, 10.5, 15.5, 20)
@@ -293,11 +344,9 @@ axis(side=2, cex.axis=1.05)
 mtext("% gene-enhancer associations", side=2, line=2.75, cex=0.75)
 mtext("enhancer - TSS distance", side=1, line=2.5, cex=0.75)
 
-legend("topright", legend=c("GREAT", "GOntact"), bty="n", pch=20, col=c("black", "darkorange"), inset=0.025, cex=1.1)
-
 ## plot label
 
-mtext("D", side=3, line=0.5, at=-3.2, font=2, cex=1.1)
+mtext("D", side=3, line=0.5, at=-4.5, font=2, cex=1.1)
 
 #####################################################################################
 
