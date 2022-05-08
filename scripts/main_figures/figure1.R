@@ -260,7 +260,7 @@ axis(side=1, at=1:4, labels=rep("",4))
 mtext("nb. enhancers per gene", side=2, line=2.35, cex=0.75)
 
 legend("bottomleft", legend=c("GREAT (basal + extension)", "GOntact (all PCHi-C data)", "GOntact (common contacts)"), col=c("red", "darkorange", "slateblue"), lty=1, bty="n", inset=c(-0.35,-0.3), xpd=NA)
-legend("bottomleft", legend=c("GOntact (hybrid 25kb)","fixed 1Mb window"), col=c("steelblue", "black"), lty=1, bty="n", inset=c(1,-0.25), xpd=NA)
+legend("bottomleft", legend=c("GOntact (hybrid 25kb)","fixed 2Mb window"), col=c("steelblue", "black"), lty=1, bty="n", inset=c(1,-0.25), xpd=NA)
 
 ## plot label
 

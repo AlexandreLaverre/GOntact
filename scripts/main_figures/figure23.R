@@ -27,7 +27,7 @@ if(prepare){
   results=list()
 
   methods=c("GREAT_upstream5kb_downstream1kb_extend1Mb", "GREAT_fixed_size_upstream1Mb_downstream1Mb", "contacts_mindist0kb_maxdist1Mb",  "shared_contacts_mindist0kb_maxdist1Mb", "hybrid_mindist25kb_maxdist1Mb")
-  shortnames=c("GREAT (basal + extension)", "fixed 1Mb window", "GOntact (all PCHi-C data)", "GOntact (common contacts)", "GOntact (hybrid)")
+  shortnames=c("GREAT (basal + extension)", "fixed 2Mb window", "GOntact (all PCHi-C data)", "GOntact (common contacts)", "GOntact (hybrid)")
 
   for(i in 1:2){
     sp=species[i]
