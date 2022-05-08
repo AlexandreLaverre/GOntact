@@ -35,7 +35,7 @@ if(prepare){
 
     results[[paste(sp, sample)]]=list()
 
-    for(j in 1:4){
+    for(j in 1:length(methods)){
       method=methods[j]
       name=shortnames[j]
 
@@ -71,16 +71,16 @@ if(prepare){
 ## 2 columns width 174 mm = 6.85 in
 ## max height: 11 in
 
-pdf(file=paste(pathFigures, "Figure2.pdf",sep=""), width=6.85, height=4.5)
+pdf(file=paste(pathFigures, "Figure2.pdf",sep=""), width=6.85, height=6)
 
 m=matrix(rep(NA, 12*16), nrow=12)
 
 for(i in 1:6){
-  m[i,]=c(rep(1,4), rep(2,4), rep(9,4), rep(10,4))
+  m[i,]=c(rep(1,4), rep(2,4), rep(5,4), rep(6,4))
 }
 
 for(i in 7:12){
-  m[i,]=c(rep(3,4), rep(4,4), rep(11,4), rep(12,4))
+  m[i,]=c(rep(3,4), rep(4,4), rep(7,4), rep(8,4))
 }
 
 
@@ -123,7 +123,7 @@ for(sample in c("Vista_heart_vs_ENCODE", "Vista_midbrain_vs_ENCODE")){
 
     axis(side=1, mgp=c(3,0.5,0), at=xax, labels=-xax, cex.axis=0.95)
 
-    mtext(labels[i], side=3, at=xlim[1]-diff(xlim)/10, line=-0.5, font=2, cex=1.05)
+    mtext(labels[i], side=3, at=xlim[1]-diff(xlim)/10, line=0.15, font=2, cex=1.05)
     mtext("% associated enhancers", side=1, line=1.75, cex=0.75)
 
     if(i==8){
@@ -162,20 +162,20 @@ dev.off()
 #####################################################################################
 #####################################################################################
 
-pdf(file=paste(pathFigures, "Figure3.pdf",sep=""), width=6.85, height=6.5)
+pdf(file=paste(pathFigures, "Figure3.pdf",sep=""), width=6.85, height=8.2)
 
 m=matrix(rep(NA, 18*16), nrow=18)
 
 for(i in 1:6){
-  m[i,]=c(rep(1,4), rep(2,4), rep(9,4), rep(10,4))
+  m[i,]=c(rep(1,4), rep(2,4), rep(7,4), rep(8,4))
 }
 
 for(i in 7:12){
-  m[i,]=c(rep(3,4), rep(4,4), rep(11,4), rep(12,4))
+  m[i,]=c(rep(3,4), rep(4,4), rep(9,4), rep(10,4))
 }
 
 for(i in 13:18){
-  m[i,]=c(rep(5,4), rep(6,4), rep(13,4), rep(14,4))
+  m[i,]=c(rep(5,4), rep(6,4), rep(11,4), rep(12,4))
 }
 
 layout(m)
@@ -217,7 +217,7 @@ for(sample in c("Vista_heart_vs_ENCODE", "Vista_midbrain_vs_ENCODE")){
 
     axis(side=1, mgp=c(3,0.5,0), at=xax, labels=-xax, cex.axis=0.95)
 
-    mtext(labels[i], side=3, at=xlim[1]-diff(xlim)/10, line=-0.5, font=2, cex=1.05)
+    mtext(labels[i], side=3, at=xlim[1]-diff(xlim)/10, line=0.15, font=2, cex=1.05)
     mtext("% associated enhancers", side=1, line=1.75, cex=0.75)
 
     if(i==8){
@@ -253,4 +253,5 @@ for(sample in c("Vista_heart_vs_ENCODE", "Vista_midbrain_vs_ENCODE")){
 
 dev.off()
 
+#####################################################################################
 #####################################################################################
