@@ -32,8 +32,8 @@ if(prepare){
 
   results=list()
 
-  methods=c("GREAT_upstream5kb_downstream1kb_extend1Mb", "GREAT_fixed_size_upstream1Mb_downstream1Mb", "contacts_mindist0kb_maxdist1Mb",  "shared_contacts_mindist0kb_maxdist1Mb")
-  shortnames=c("GREAT", "fixed size", "GOntact, all data", "GOntact, shared contacts")
+  methods=c("GREAT_upstream5kb_downstream1kb_extend1Mb", "GREAT_fixed_size_upstream1Mb_downstream1Mb", "contacts_mindist0kb_maxdist1Mb",  "shared_contacts_mindist0kb_maxdist1Mb", "hybrid_mindist25kb_maxdist1Mb")
+  shortnames=c("GREAT", "fixed size", "GOntact, all data", "GOntact, shared contacts", "GOntact, hybrid")
 
   names(shortnames)=methods
 
@@ -120,7 +120,7 @@ for(i in 1:5){
 }
 
 for(i in 6:12){
-  m[i,]=c(rep(2,2), rep(3, 1), rep(4,2), rep(5,1), rep(6,4))
+  m[i,]=c(rep(2,3), rep(3, 2),  rep(4,5))
 }
 
 layout(m)
@@ -246,67 +246,35 @@ mtext("A", side=3, line=0.5, at=xlim[1]-diff(xlim)/55, font=2, cex=1.1)
 
 ## boxplot for the number of enhancers per gene
 
-par(mar=c(5.1,3.5,2.1,1.5))
+par(mar=c(5.1, 3.5, 2.1, 1.5))
 nb.enh.great=results[["GREAT_upstream5kb_downstream1kb_extend1Mb"]][["nb.enh"]]
 nb.enh.contacts=results[["contacts_mindist0kb_maxdist1Mb"]][["nb.enh"]]
 nb.enh.shared.contacts=results[["shared_contacts_mindist0kb_maxdist1Mb"]][["nb.enh"]]
+nb.enh.hybrid=results[["hybrid_mindist25kb_maxdist1Mb"]][["nb.enh"]]
 nb.enh.fixed=results[["GREAT_fixed_size_upstream1Mb_downstream1Mb"]][["nb.enh"]]
 
-boxplot(as.numeric(nb.enh.great), as.numeric(nb.enh.contacts), as.numeric(nb.enh.shared.contacts),  col="white", border=c("red", "darkorange", "slateblue"),  outline=F, names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T, axes=F, ylim=c(0,200))
+boxplot(as.numeric(nb.enh.great), as.numeric(nb.enh.contacts), as.numeric(nb.enh.shared.contacts), as.numeric(nb.enh.hybrid),  col="white", border=c("red", "darkorange", "slateblue", "steelblue"),  outline=F, names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T, axes=F, ylim=c(0,200))
 axis(side=2, mgp=c(3,0.75,0))
-axis(side=1, at=1:3, labels=rep("",3))
+axis(side=1, at=1:4, labels=rep("",4))
 
 mtext("nb. enhancers per gene", side=2, line=2.35, cex=0.75)
 
-
-legend("bottomleft", legend=c("GREAT (basal + extension)", "GOntact (all PCHi-C data)"), col=c("red", "darkorange"), lty=1, bty="n", inset=c(-0.5,-0.25), xpd=NA)
-
+legend("bottomleft", legend=c("GREAT (basal + extension)", "GOntact (all PCHi-C data)", "GOntact (common contacts)"), col=c("red", "darkorange", "slateblue"), lty=1, bty="n", inset=c(-0.35,-0.3), xpd=NA)
+legend("bottomleft", legend=c("GOntact (hybrid 25kb)","fixed 1Mb window"), col=c("steelblue", "black"), lty=1, bty="n", inset=c(1,-0.25), xpd=NA)
 
 ## plot label
 
-mtext("B", side=3, line=0.5, at=-1.25, font=2, cex=1.1)
+mtext("B", side=3, line=0.5, at=-0.75, font=2, cex=1.1)
 
 ## fixed size
 
-par(mar=c(5.1,0.6,2.1,1))
+par(mar=c(5.1, 3.5, 2.1, 1))
 boxplot(as.numeric(nb.enh.fixed),  col="white", border=c("black"),  outline=F, names=rep("", 1), lwd=1.25, boxwex=0.75, notch=T, axes=F)
 axis(side=2, mgp=c(3,0.75,0))
 axis(side=1, at=c(0.25,1,1.75), labels=rep("",3))
+mtext("nb. enhancers per gene", side=2, line=2.35, cex=0.75)
 
-
-#####################################################################################
-
-## boxplot for the number of genes per enhancer
-
-par(mar=c(5.1,3.5,2.1,1.1))
-nb.genes.great=results[["GREAT_upstream5kb_downstream1kb_extend1Mb"]][["nb.genes"]]
-nb.genes.contacts=results[["contacts_mindist0kb_maxdist1Mb"]][["nb.genes"]]
-nb.genes.shared.contacts=results[["shared_contacts_mindist0kb_maxdist1Mb"]][["nb.genes"]]
-nb.genes.fixed=results[["GREAT_fixed_size_upstream1Mb_downstream1Mb"]][["nb.genes"]]
-
-
-boxplot(as.numeric(nb.genes.great), as.numeric(nb.genes.contacts), as.numeric(nb.genes.shared.contacts), col="white", border=c("red", "darkorange", "slateblue"), outline=F,  names=rep("", 2), lwd=1.25, boxwex=0.75, notch=T, axes=F)
-
-axis(side=2)
-axis(side=1, at=1:3, labels=rep("",3))
-
-mtext("nb. genes per enhancer", side=2, line=2.75, cex=0.75)
-
-
-legend("bottomleft", legend=c("GOntact (common contacts)", "fixed 1Mb window"), col=c("slateblue", "black"), lty=1, bty="n", inset=c(-0.5,-0.25), xpd=NA)
-
-## plot label
-
-mtext("C", side=3, line=0.5, at=-1.25, font=2, cex=1.1)
-
-
-## fixed size
-
-par(mar=c(5.1,0.6,2.1,1))
-boxplot(as.numeric(nb.genes.fixed),  col="white", border=c("black"),  outline=F, names=rep("", 1), lwd=1.25, boxwex=0.75, notch=T, axes=F)
-axis(side=2, mgp=c(3,0.75,0))
-axis(side=1, at=c(0.25,1,1.75), labels=rep("",3))
-
+mtext("C", side=3, line=0.5, at=-0.05, font=2, cex=1.1)
 
 #####################################################################################
 
@@ -316,6 +284,7 @@ prop.dist.great=results[["GREAT_upstream5kb_downstream1kb_extend1Mb"]][["prop.di
 prop.dist.contacts=results[["contacts_mindist0kb_maxdist1Mb"]][["prop.dist"]]
 prop.dist.shared.contacts=results[["shared_contacts_mindist0kb_maxdist1Mb"]][["prop.dist"]]
 prop.dist.fixed=results[["GREAT_fixed_size_upstream1Mb_downstream1Mb"]][["prop.dist"]]
+prop.dist.hybrid=results[["hybrid_mindist25kb_maxdist1Mb"]][["prop.dist"]]
 
 xpos=1:20
 this.xlim=c(0.5,20.5)
@@ -329,11 +298,13 @@ lines(xpos, 100*prop.dist.great, col="red")
 lines(xpos, 100*prop.dist.contacts, col="darkorange")
 lines(xpos, 100*prop.dist.shared.contacts, col="slateblue")
 lines(xpos, 100*prop.dist.fixed,  col="black")
+lines(xpos, 100*prop.dist.hybrid,  col="steelblue")
 
 points(xpos, 100*prop.dist.great, pch=20, col="red", cex=1.1)
 points(xpos, 100*prop.dist.contacts, pch=20, col="darkorange", cex=1.1)
 points(xpos, 100*prop.dist.shared.contacts, pch=20, col="slateblue", cex=1.1)
 points(xpos, 100*prop.dist.fixed, pch=20, col="black", cex=1.1)
+points(xpos, 100*prop.dist.hybrid, pch=20, col="steelblue", cex=1.1)
 
 
 xax=c(1, 5.5, 10.5, 15.5, 20)
@@ -346,7 +317,7 @@ mtext("enhancer - TSS distance", side=1, line=2.5, cex=0.75)
 
 ## plot label
 
-mtext("D", side=3, line=0.5, at=-4.5, font=2, cex=1.1)
+mtext("D", side=3, line=0.5, at=-3.8, font=2, cex=1.1)
 
 #####################################################################################
 
