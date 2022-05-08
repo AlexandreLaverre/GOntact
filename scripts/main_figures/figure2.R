@@ -27,7 +27,7 @@ if(prepare){
   results=list()
 
   methods=c("GREAT_upstream5kb_downstream1kb_extend1Mb", "GREAT_fixed_size_upstream1Mb_downstream1Mb", "contacts_mindist0kb_maxdist1Mb",  "shared_contacts_mindist0kb_maxdist1Mb")
-  shortnames=c("GREAT", "fixed size", "GOntact, all data", "GOntact, shared contacts")
+  shortnames=c("GREAT (basal + extension)", "fixed 1Mb window", "GOntact (all PCHi-C data)", "GOntact (common contacts)")
 
   for(i in 1:2){
     sp=species[i]
@@ -139,7 +139,7 @@ for(sample in c("Vista_heart_vs_ENCODE", "Vista_midbrain_vs_ENCODE")){
     }
 
     if(sample=="Vista_heart_vs_ENCODE"){
-      mtext(method, side=2, cex=0.85, font=1, line=0.5)
+      mtext(method, side=2, cex=0.8, font=1, line=0.5)
     }
     ## barplot, log10 FDR
 
