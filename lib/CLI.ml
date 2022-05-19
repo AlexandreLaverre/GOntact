@@ -226,7 +226,7 @@ let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg
   let main_result =
     let open Let_syntax.Result in
     let* check_pars = check_required_parameters params in
-    print_endline check_pars ;
+    Logs.info (fun m -> m "%s" check_pars) ;
     let* namespace = Ontology.define_domain domain in
     let* obo = Obo.of_obo_file obo_path in
     let* ontology = Ontology.of_obo obo namespace in
@@ -237,17 +237,17 @@ let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg
     let propagated_fa = Utils.chrono "propagate GO annotations" (Functional_annotation.propagate_annotations fa) ontology in
     let gene_symbols = Functional_annotation.gene_symbols propagated_fa in
     let filtered_annot_bio_gene = Utils.chrono "filter gene biotypes" (Genomic_annotation.filter_gene_biotypes gene_annot) "protein_coding" in (*take only protein_coding genes*)
-    Printf.printf "%d genes after filtering gene biotypes\n" (Genomic_annotation.number_of_genes filtered_annot_bio_gene) ;
+    Logs.info (fun m -> m "%d genes after filtering gene biotypes\n" (Genomic_annotation.number_of_genes filtered_annot_bio_gene)) ;
     let filtered_annot_bio_tx = Utils.chrono "filter transcript biotypes" (Genomic_annotation.filter_transcript_biotypes filtered_annot_bio_gene) "protein_coding" in (*take only protein_coding transcripts*)
-    Printf.printf "%d genes after filtering transcript biotypes\n" (Genomic_annotation.number_of_genes filtered_annot_bio_tx) ;
+    Logs.info (fun m -> m "%d genes after filtering transcript biotypes\n" (Genomic_annotation.number_of_genes filtered_annot_bio_tx)) ;
     let filtered_annot_gene_symbols = Utils.chrono "filter gene symbols" (Genomic_annotation.filter_gene_symbols filtered_annot_bio_tx) gene_symbols in  (*take only genes whose symbols are in functional (GO) annotations*)
-    Printf.printf "%d genes after filtering gene symbols\n" (Genomic_annotation.number_of_genes filtered_annot_gene_symbols) ;
+    Logs.info (fun m -> m "%d genes after filtering gene symbols\n" (Genomic_annotation.number_of_genes filtered_annot_gene_symbols)) ;
     let chr_collection = Utils.chrono "construct chr collection" (fun () -> Genomic_interval_collection.of_chr_size_file chr_sizes ~strip_chr:true) () in
     let chr_set = Genomic_interval_collection.chr_set chr_collection in
     let filtered_annot_chr = Utils.chrono "filter standard chromosomes" (Genomic_annotation.filter_chromosomes filtered_annot_gene_symbols) chr_set in (*take only genes on standard chromosomes*)
-    Printf.printf "%d genes on standard chromosomes\n" (Genomic_annotation.number_of_genes filtered_annot_chr) ;
+    Logs.info (fun m -> m "%d genes on standard chromosomes\n" (Genomic_annotation.number_of_genes filtered_annot_chr)) ;
     let filtered_annot = Utils.chrono "remove duplicated gene symbols" Genomic_annotation.remove_duplicated_gene_symbols filtered_annot_chr in  (*remove duplicated gene symbols*)
-    Printf.printf "%d genes after removing duplicated gene symbols\n" (Genomic_annotation.number_of_genes filtered_annot) ;
+    Logs.info (fun m -> m "%d genes after removing duplicated gene symbols\n" (Genomic_annotation.number_of_genes filtered_annot)) ;
     let unfiltered_foreground = Utils.chrono "read foreground elements" (fun () -> Genomic_interval_collection.of_bed_file fg_path ~strip_chr:true ~format:Base0) () in
     let unfiltered_background = Utils.chrono "read background elements" (fun () -> Genomic_interval_collection.of_bed_file bg_path ~strip_chr:true ~format:Base0) () in
     let foreground = Utils.chrono "removing duplicated foreground elements" Genomic_interval_collection.remove_duplicated_identifiers unfiltered_foreground in
