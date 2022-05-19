@@ -22,13 +22,13 @@ let shared_contacts ibed_paths min_nb_samples path_output =
       let h = H.create () in
       List.iter l ~f:(fun x -> H.add_multi h ~key:x ~data:()) ;
       H.to_alist h |> List.map ~f:(fun (x, y) -> (x, List.length y))
-    in 
+    in
     let contact_list = List.concat_map ibed_files ~f:(fun file -> Chromatin_contact.of_ibed_file file ~strip_chr:false) in
     let contact_table = table contact_list in
     Out_channel.with_file path_output ~append:false ~f:(fun output -> (
         Printf.fprintf output "bait_chr\tbait_start\tbait_end\tbait_name\totherEnd_chr\totherEnd_start\totherEnd_end\totherEnd_name\tN_reads\tscore\n" ;
         List.iter contact_table ~f:(fun (c, nb) -> (if nb >= min_nb_samples then Chromatin_contact.write_contact c output))))
-           
+
 
 let compare_methods_term =
   let open Let_syntax.Cmdliner_term in
@@ -42,7 +42,7 @@ let compare_methods_term =
     let doc = "Path to output." in
     Arg.(required & opt (some string) (Some "output.txt") & info ["path-output"] ~doc ~docv:"PATH")
   in
-  compare_methods path_annot1 path_annot2 path_output 
+  compare_methods path_annot1 path_annot2 path_output
 
 
 let shared_contacts_term =
@@ -57,11 +57,11 @@ let shared_contacts_term =
     let doc = "Path to output." in
     Arg.(required & opt (some string) (Some "output.txt") & info ["path-output"] ~doc ~docv:"PATH")
   in
-  shared_contacts ibed_paths min_nb_samples path_output 
+  shared_contacts ibed_paths min_nb_samples path_output
 
 
 (* commands *)
-    
+
 let info_compare_methods = Cmd.info ~doc:"GOntact utils compare methods" "compare-methods"
 let compare_methods_command = Cmd.v info_compare_methods compare_methods_term
 
@@ -73,4 +73,4 @@ let shared_contacts_command = Cmd.v info_shared_contacts shared_contacts_term
 
 let info = Cmd.info ~doc:"GOntact utils" "gontact-utils"
 
-let command = Cmd.group info [ compare_methods_command ; shared_contacts_command ] 
+let command = Cmd.group info [ compare_methods_command ; shared_contacts_command ]
