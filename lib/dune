@@ -1,6 +1,6 @@
 (library
   (name gontact)
   (public_name gontact)
-  (libraries cmdliner core gsl)
+  (libraries cmdliner core core_unix.sys_unix gsl)
   (inline_tests)
   (preprocess (pps ppx_deriving.show ppx_deriving.ord ppx_sexp_conv ppx_expect)))

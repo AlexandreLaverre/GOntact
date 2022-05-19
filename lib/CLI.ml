@@ -1,6 +1,8 @@
 open Core
 open Cmdliner
 
+module Sys = Sys_unix
+
 type parlist = {
   mode : string ;
   functional_annot : string ;

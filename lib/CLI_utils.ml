@@ -1,6 +1,8 @@
 open Core
 open Cmdliner
 
+module Sys = Sys_unix
+
 let compare_methods path_annot1 path_annot2 path_output =
     let annot1 = Enhancer_annotation.from_gontact_result_file path_annot1 in
     let annot2 = Enhancer_annotation.from_gontact_result_file path_annot2 in
