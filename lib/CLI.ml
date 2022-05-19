@@ -16,7 +16,7 @@ type parlist = {
   downstream : int ;
   extend : int ;
   bait_coords : string ;
-  ibed_path : string ;
+  ibed_files : string list ;
   max_dist_bait_TSS : int ;
   max_dist_element_fragment : int ;
   min_dist_contacts : int ;
@@ -32,8 +32,7 @@ type parlist = {
 let save_parlist pl path =
   Sexp.save_hum path (sexp_of_parlist pl)
 
-let main {mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg_path ; chr_sizes ; upstream ; downstream ; extend ; bait_coords ; ibed_path ; max_dist_bait_TSS ; max_dist_element_fragment ; min_dist_contacts ; max_dist_contacts ; min_score ; output_dir ; output_prefix ; write_elements_foreground ; write_elements_background} =
-
+let check_required_parameters  {mode ;functional_annot ; obo_path ; gene_info ; fg_path ; bg_path ; chr_sizes ; bait_coords ; ibed_files ; _} =
   let found_func_annot = Sys.file_exists functional_annot in
   let found_obo = Sys.file_exists obo_path in
   let found_gene_info = Sys.file_exists gene_info in
@@ -41,35 +40,36 @@ let main {mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg_
   let found_bg = Sys.file_exists bg_path in
   let found_bait_coords = Sys.file_exists bait_coords in
   let found_chr_sizes = Sys.file_exists chr_sizes in
-  let ibed_files = String.split ibed_path ~on:',' in
   let found_ibed_files = List.for_all ibed_files ~f:(fun file ->
-      match (Sys.file_exists file) with
+      match Sys.file_exists file with
       | `Yes -> true
       | _ -> false
     )
   in
-  let check_required_parameters =
-    match mode with
-    | "GREAT" -> (
-        match (found_func_annot, found_obo, found_gene_info, found_fg, found_bg, found_chr_sizes) with
-        | (`Yes, `Yes, `Yes, `Yes, `Yes, `Yes) -> Ok "All required files were found."
-        | _ -> Error "In GREAT mode the following parameters are required: functional-annot, ontology, gene-annot, chr-sizes, foreground, background."
-      )
-    | "contacts" -> (
-        match (found_func_annot, found_obo, found_gene_info, found_fg, found_bg, found_bait_coords, found_ibed_files, found_chr_sizes) with
-        | (`Yes, `Yes, `Yes, `Yes, `Yes, `Yes, true, `Yes) -> Ok "All required files were found."
+  match mode with
+  | "GREAT" -> (
+      match found_func_annot, found_obo, found_gene_info, found_fg, found_bg, found_chr_sizes with
+      | `Yes, `Yes, `Yes, `Yes, `Yes, `Yes -> Ok "All required files were found."
+      | _ -> Error "In GREAT mode the following parameters are required: functional-annot, ontology, gene-annot, chr-sizes, foreground, background."
+    )
+  | "contacts" -> (
+      match found_func_annot, found_obo, found_gene_info, found_fg, found_bg, found_bait_coords, found_ibed_files, found_chr_sizes with
+      | `Yes, `Yes, `Yes, `Yes, `Yes, `Yes, true, `Yes -> Ok "All required files were found."
         | _ -> Error "In contacts mode the following parameters are required: functional-annot, ontology, gene-annot, chr-sizes, foreground, background, bait-coords, ibed-path."
-      )
-    | "hybrid" -> (
-        match (found_func_annot, found_obo, found_gene_info, found_fg, found_bg, found_bait_coords, found_chr_sizes, found_ibed_files) with
-        | (`Yes, `Yes, `Yes, `Yes, `Yes, `Yes, `Yes, true) -> Ok "All required files were found."
-        | _ -> Error "In hybrid mode the following parameters are required: functional-annot, ontology, gene-annot, foreground, background, bait-coords, chr-sizes, ibed-path."
-      )
-    | x -> Error (Printf.sprintf "Mode %s not recognized." x)
-  in
+    )
+  | "hybrid" -> (
+      match found_func_annot, found_obo, found_gene_info, found_fg, found_bg, found_bait_coords, found_chr_sizes, found_ibed_files with
+      | `Yes, `Yes, `Yes, `Yes, `Yes, `Yes, `Yes, true -> Ok "All required files were found."
+      | _ -> Error "In hybrid mode the following parameters are required: functional-annot, ontology, gene-annot, foreground, background, bait-coords, chr-sizes, ibed-path."
+    )
+  | x -> Error (Printf.sprintf "Mode %s not recognized." x)
+
+let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg_path ; chr_sizes ; upstream ; downstream ; extend ; bait_coords ; ibed_files ; max_dist_bait_TSS ; max_dist_element_fragment ; min_dist_contacts ; max_dist_contacts ; min_score ; output_dir ; output_prefix ; write_elements_foreground ; write_elements_background} as params) =
+
   let main_result =
     let open Let_syntax.Result in
-    let* check_pars = check_required_parameters in print_endline check_pars ;
+    let* check_pars = check_required_parameters params in
+    print_endline check_pars ;
     let* namespace = Ontology.define_domain domain in
     let* obo = Obo.of_obo_file obo_path in
     let* ontology = Ontology.of_obo obo namespace in
@@ -329,7 +329,8 @@ let term =
     let doc = "Write output for gene-element association in background." in
     Arg.(value & flag  & info ["write-background"] ~doc)
   in
-  let pl = {mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg_path ; chr_sizes ; upstream ; downstream ; extend ; bait_coords ; ibed_path ; max_dist_bait_TSS ; max_dist_element_fragment ; min_dist_contacts ; max_dist_contacts ; min_score ; output_dir ; output_prefix ; write_elements_foreground ; write_elements_background} in
+  let ibed_files = String.split ibed_path ~on:',' in
+  let pl = {mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg_path ; chr_sizes ; upstream ; downstream ; extend ; bait_coords ; ibed_files ; max_dist_bait_TSS ; max_dist_element_fragment ; min_dist_contacts ; max_dist_contacts ; min_score ; output_dir ; output_prefix ; write_elements_foreground ; write_elements_background} in
   let output_pars = Printf.sprintf "%s/%s_parameters.txt" output_dir output_prefix in
   save_parlist pl output_pars ;
   main pl
