@@ -11,22 +11,22 @@ opam pin add -y gontact https://gitlab.in2p3.fr/anamaria.necsulea/GOntact.git
 
 ## Basic usage
 
-To test GOntact, you can use this example dataset:
+To test GOntact, you can use this example dataset (make sure you don't
+have a `data` directory where you run this!):
 
 ```
-wget http://pbil.univ-lyon1.fr/members/necsulea/GOntact/data.tar.gz 
-tar -xzvf data.tar.gz
+wget http://pbil.univ-lyon1.fr/members/necsulea/GOntact/data.tar.gz
+test ! -d data && tar -xzvf data.tar.gz
 ```
 
 This dataset includes chromatin interactions detected with the
 PCHi-C approach, for human and mouse. This data was described in
 Laverré et al., Genome Research, 2022. Chromatin interactions were
 scored for several cell types for each species and are provided in the
-[ibed format]
-(https://www.bioconductor.org/packages/devel/bioc/vignettes/Chicago/inst/doc/Chicago.html),
-in the data/PCHi-C subfolder. 
+[ibed format](https://www.bioconductor.org/packages/devel/bioc/vignettes/Chicago/inst/doc/Chicago.html),
+in the data/PCHi-C subfolder.
 
-GOntact also needs as a set of gene annotations as an
+GOntact also needs a set of gene annotations as an
 input. Annotations were downloaded from the Ensembl database (release
 102) and are
 provided in the subfolder data/ensembl_annotations. This subfolder
