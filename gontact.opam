@@ -10,8 +10,12 @@ homepage: "https://gitlab.in2p3.fr/anamaria.necsulea/GOntact"
 bug-reports: "https://gitlab.in2p3.fr/anamaria.necsulea/GOntact/-/issues"
 depends: [
   "dune" {>= "3.1"}
+  "cmdliner"
   "core" {>= "0.15.0"}
   "core_unix"
+  "gsl"
+  "logs"
+  "ppx_deriving"
   "odoc" {with-doc}
 ]
 build: [

@@ -12,5 +12,9 @@
   (name gontact)
   (tags (bioinformatics))
   (depends
+    cmdliner
     (core (>= 0.15.0))
-    core_unix))
+    core_unix
+    gsl
+    logs
+    ppx_deriving))
