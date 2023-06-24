@@ -15,11 +15,11 @@ let genomic_interval_collection rdl =
   in
   let il = List.map rdl ~f:interval_of_domain in
   Genomic_interval_collection.of_interval_list il
-  
+
 
 let basal_domain_of_tss (tss:Genomic_interval.t) ~(genomic_annotation:Genomic_annotation.t)  ~upstream:u ~downstream:d ~chromosome_size:cs =
   let (id, chr, tss_pos, strand) = (Genomic_interval.id tss, Genomic_interval.chr tss, Genomic_interval.start_pos tss,  Genomic_interval.strand tss) in  (* start_pos is tss *)
-  let gene_symbol = Genomic_annotation.gene_symbol_exn genomic_annotation id in 
+  let gene_symbol = Genomic_annotation.gene_symbol_exn genomic_annotation id in
   match strand with
   | Genomic_interval.Forward ->
     let new_start = max 1 (tss_pos - u) in
@@ -27,18 +27,18 @@ let basal_domain_of_tss (tss:Genomic_interval.t) ~(genomic_annotation:Genomic_an
     { gene_id = id; gene_symbol; chr ; tss_pos ; start_pos = new_start ; end_pos = new_end }
   | Genomic_interval.Reverse ->
     let new_start = max 1 (tss_pos - d + 1) in
-    let new_end = min (tss_pos + u) cs in  
+    let new_end = min (tss_pos + u) cs in
     { gene_id = id; gene_symbol; chr ; tss_pos ; start_pos = new_start ; end_pos = new_end }
   | Genomic_interval.Unstranded -> invalid_arg "this gene is unstranded!"
-    
+
 let extend_one_domain (d:Genomic_interval.t) ~(genomic_annotation:Genomic_annotation.t) ~left_boundary ~right_boundary ~extend ~upstream ~downstream ~chromosome_size  =
   (*d is a TSS domain domain*)
   let tss = Genomic_interval.start_pos d in
   let chr = Genomic_interval.chr d in
   let id = Genomic_interval.id d in
-  let gene_symbol = Genomic_annotation.gene_symbol_exn genomic_annotation id in 
-  let basal_domain = basal_domain_of_tss d ~genomic_annotation ~upstream ~downstream ~chromosome_size in  
-  let current_start = basal_domain.start_pos in 
+  let gene_symbol = Genomic_annotation.gene_symbol_exn genomic_annotation id in
+  let basal_domain = basal_domain_of_tss d ~genomic_annotation ~upstream ~downstream ~chromosome_size in
+  let current_start = basal_domain.start_pos in
   let current_end = basal_domain.end_pos  in
   let new_start = min current_start (max (tss - extend) (left_boundary + 1)) in
   let new_end = max current_end (min (tss + extend - 1) (right_boundary - 1)) in
@@ -50,12 +50,12 @@ let extend_domains ~genomic_annotation ~ordered_tss ~extend ~upstream ~downstrea
   let rec rec_extend tss_list ~acc ~previous =
     match tss_list with
     | [] -> assert false
-    | [ h ]  ->  (extend_one_domain h ~left_boundary:(previous.end_pos) ~right_boundary:(chromosome_size + 1)) :: acc  
+    | [ h ]  ->  (extend_one_domain h ~left_boundary:(previous.end_pos) ~right_boundary:(chromosome_size + 1)) :: acc
     | i1 :: (i2 :: _ as t) ->
-      let b1 = basal_domain_of_tss i1 in 
-      let b2 = basal_domain_of_tss i2 in 
-      let ext = extend_one_domain i1 ~left_boundary:(previous.end_pos) ~right_boundary:(b2.start_pos) in 
-      rec_extend t ~acc:(ext :: acc) ~previous:b1 
+      let b1 = basal_domain_of_tss i1 in
+      let b2 = basal_domain_of_tss i2 in
+      let ext = extend_one_domain i1 ~left_boundary:(previous.end_pos) ~right_boundary:(b2.start_pos) in
+      rec_extend t ~acc:(ext :: acc) ~previous:b1
   in
   match ordered_tss with
   | [] -> []
@@ -66,7 +66,7 @@ let extend_domains ~genomic_annotation ~ordered_tss ~extend ~upstream ~downstrea
     extend_one_domain i1 ~left_boundary:0 ~right_boundary:(b2.start_pos) :: (rec_extend t ~acc:[] ~previous:b1)
 
 let basal_plus_extension_domains_one_chr  ~chr ~chromosome_size ~genomic_annotation:ga ~upstream ~downstream ~extend =
-  let chr_set = String.Set.singleton chr in 
+  let chr_set = String.Set.singleton chr in
   let filtered_annot_chr = Genomic_annotation.filter_chromosomes ga chr_set in (*take only genes on only one chromosome *)
   let major_isoforms = Genomic_annotation.identify_major_isoforms filtered_annot_chr in      (*canonical isoform for each gene*)
   let major_tss = Genomic_annotation.major_isoform_tss filtered_annot_chr ~major_isoforms in         (*genomic_interval collection TSS coordinates, they are ordered*)
@@ -77,13 +77,13 @@ let basal_plus_extension_domains ~(chromosome_sizes:Genomic_interval_collection.
   let cl = Genomic_interval_collection.interval_list chromosome_sizes in
   List.concat_map cl ~f:(fun i -> basal_plus_extension_domains_one_chr ~chr:(Genomic_interval.chr i) ~chromosome_size:(Genomic_interval.end_pos i) ~genomic_annotation ~upstream ~downstream ~extend)
 
-let go_categories_by_element ~(element_coordinates:Genomic_interval_collection.t) ~(regulatory_domains:Genomic_interval_collection.t) ~(functional_annot:Functional_annotation.t) = 
+let go_categories_by_element ~(element_coordinates:Genomic_interval_collection.t) ~(regulatory_domains:Genomic_interval_collection.t) ~(functional_annot:Functional_annotation.t) =
   (*regulatory domains were constructed for genes that have at least one GO annotation*)
   (*all their IDs should be in the functional annotation*)
   let intersection = Genomic_interval_collection.intersect element_coordinates regulatory_domains in (*dictionary, element ids -> list of gene symbols*)
-  let gocat_by_element = String.Map.map intersection ~f:(fun l -> List.concat_map l ~f:(fun s -> Functional_annotation.extract_terms_exn functional_annot (`Symbol s))) in  
+  let gocat_by_element = String.Map.map intersection ~f:(fun l -> List.concat_map l ~f:(fun s -> Functional_annotation.extract_terms_exn functional_annot (`Symbol s))) in
   String.Map.map gocat_by_element ~f:(fun l -> List.dedup_and_sort ~compare:String.compare l)
-    
+
 let elements_by_go_category unique_gocat_by_element =
   String.Map.fold unique_gocat_by_element ~init:String.Map.empty ~f:(fun ~key:elt ~data:go_cats acc ->
       List.fold go_cats ~init:acc ~f:(fun acc go_cat ->
@@ -94,4 +94,3 @@ let elements_by_go_category unique_gocat_by_element =
 let symbol_elements ~(element_coordinates:Genomic_interval_collection.t) ~(regulatory_domains:Genomic_interval_collection.t) =
    let intersection = Genomic_interval_collection.intersect element_coordinates regulatory_domains in (*dictionary, element ids -> list of gene symbols*)
    intersection
-   

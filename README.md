@@ -31,19 +31,19 @@ input. Annotations were downloaded from the Ensembl database (release
 102) and are
 provided in the subfolder data/ensembl_annotations. This subfolder
 also contains files with chromosome size information, which are needed
-to run GOntact in "GREAT" mode. 
+to run GOntact in "GREAT" mode.
 
 Gene Ontology annotations are provided for human and mouse in the
 data/GeneOntology subfolder (goa_human.gaf for human and mgi.gaf for
 mouse). These files were downloaded on 07/12/2021 from
-geneontology.org. The Gene Ontology hierarchy 
+geneontology.org. The Gene Ontology hierarchy
 
 Example enhancer datasets are also provided in the subfolder
-data/enhancers. 
+data/enhancers.
 
 Here is an example of a command line that runs GOntact in "GREAT" mode,
 using Vista midbrain enhancers as a foreground set and the full set of
-ENCODE enhancers as a background set: 
+ENCODE enhancers as a background set:
 
 ```
 mkdir GREAT_results_bp
@@ -68,7 +68,7 @@ dune exec gontact -- \
 Here is an example of a command line that runs GOntact in "contacts" mode,
 using Vista midbrain enhancers as a foreground set, the full set of
 ENCODE enhancers as a background set, and the set of PCHi-C
-interactions that are shared in at least two samples. 
+interactions that are shared in at least two samples.
 
 ```
 mkdir contacts_results_bp
@@ -86,9 +86,5 @@ dune exec gontact -- \
 --bait-coords=data/PCHi-C/human/hg38.baitmap \
 --output-dir=contacts_results_bp \
 --output-prefix=VistaEnhancers_midbrain \
---domain=biological_process 
+--domain=biological_process
 ```
-
-
-
-
