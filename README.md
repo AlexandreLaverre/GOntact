@@ -48,20 +48,20 @@ ENCODE enhancers as a background set:
 ```
 mkdir GREAT_results_bp
 
-dune exec gontact --
---mode=GREAT
---gene-annot=data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt
---functional-annot=data/GeneOntology/goa_human.gaf
---ontology=data/GeneOntology/go-basic.obo
---foreground=data/enhancers/human/VistaEnhancers_midbrain_hg38.bed
---background=data/enhancers/human/ENCODE.Laverre2022.bed
---chr-sizes=data/ensembl_annotations/human/chr_sizes_hg38.txt
---upstream=5000
---downstream=1000
---extend=1000000
---output-dir=GREAT_results_bp
---output-prefix=VistaEnhancers_midbrain
---domain=biological_process
+dune exec gontact -- \
+--mode=GREAT \
+--gene-annot=data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt \
+--functional-annot=data/GeneOntology/goa_human.gaf \
+--ontology=data/GeneOntology/go-basic.obo \
+--foreground=data/enhancers/human/VistaEnhancers_midbrain_hg38.bed \
+--background=data/enhancers/human/ENCODE.Laverre2022.bed \
+--chr-sizes=data/ensembl_annotations/human/chr_sizes_hg38.txt \
+--upstream=5000 \
+--downstream=1000 \
+--extend=1000000 \
+--output-dir=GREAT_results_bp \
+--output-prefix=VistaEnhancers_midbrain \
+--domain=biological_process \
 ```
 
 
@@ -73,19 +73,20 @@ interactions that are shared in at least two samples.
 ```
 mkdir contacts_results_bp
 
-dune exec gontact --
---mode=contacts
---gene-annot=data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt
---functional-annot=data/GeneOntology/goa_human.gaf
---ontology=data/GeneOntology/go-basic.obo
---foreground=data/enhancers/human/VistaEnhancers_midbrain_hg38.bed
---background=data/enhancers/human/ENCODE.Laverre2022.bed
---chr-sizes=data/ensembl_annotations/human/chr_sizes_hg38.txt
---ibed-path=data/PCHi-C/human/ibed_files/shared_contacts_min2samples.ibed
---bait-coords=data/PCHi-C/human/hg38.baitmap
---output-dir=contacts_results_bp
---output-prefix=VistaEnhancers_midbrain
---domain=biological_process
+dune exec gontact -- \
+--mode=contacts \
+--gene-annot=data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt \
+--functional-annot=data/GeneOntology/goa_human.gaf \
+--ontology=data/GeneOntology/go-basic.obo \
+--foreground=data/enhancers/human/VistaEnhancers_midbrain_hg38.bed \
+--background=data/enhancers/human/ENCODE.Laverre2022.bed \
+--chr-sizes=data/ensembl_annotations/human/chr_sizes_hg38.txt \
+--ibed-path=data/PCHi-C/human/ibed_files/shared_contacts_min2samples.ibed \
+--min-score=0
+--bait-coords=data/PCHi-C/human/hg38.baitmap \
+--output-dir=contacts_results_bp \
+--output-prefix=VistaEnhancers_midbrain \
+--domain=biological_process 
 ```
 
 
