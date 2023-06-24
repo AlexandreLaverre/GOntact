@@ -85,9 +85,11 @@ let go_categories_by_element ~(element_coordinates:Genomic_interval_collection.t
   String.Map.map gocat_by_element ~f:(fun l -> List.dedup_and_sort ~compare:String.compare l)
     
 let elements_by_go_category unique_gocat_by_element =
-  let tuple_gocat_element = String.Map.fold unique_gocat_by_element ~init:[] ~f:(fun ~key ~data acc -> List.append (List.map data ~f:(fun x -> (x, key))) acc) in
-  let map_gocat_element = String.Map.of_alist_multi tuple_gocat_element in
-  map_gocat_element
+  String.Map.fold unique_gocat_by_element ~init:String.Map.empty ~f:(fun ~key:elt ~data:go_cats acc ->
+      List.fold go_cats ~init:acc ~f:(fun acc go_cat ->
+          String.Map.add_multi acc ~key:go_cat ~data:elt
+        )
+    )
 
 let symbol_elements ~(element_coordinates:Genomic_interval_collection.t) ~(regulatory_domains:Genomic_interval_collection.t) =
    let intersection = Genomic_interval_collection.intersect element_coordinates regulatory_domains in (*dictionary, element ids -> list of gene symbols*)
