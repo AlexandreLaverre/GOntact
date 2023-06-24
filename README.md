@@ -82,7 +82,7 @@ dune exec gontact -- \
 --background=data/enhancers/human/ENCODE.Laverre2022.bed \
 --chr-sizes=data/ensembl_annotations/human/chr_sizes_hg38.txt \
 --ibed-path=data/PCHi-C/human/ibed_files/shared_contacts_min2samples.ibed \
---min-score=0
+--min-score=0 \
 --bait-coords=data/PCHi-C/human/hg38.baitmap \
 --output-dir=contacts_results_bp \
 --output-prefix=VistaEnhancers_midbrain \
