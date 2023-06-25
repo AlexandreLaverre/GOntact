@@ -1,7 +1,7 @@
 open Core
 
 module Term = struct
-  module X = struct 
+  module X = struct
     type t = {
       id : string ;
       name : string ;
@@ -9,18 +9,18 @@ module Term = struct
       is_a : string list ;
     }
     [@@deriving show, sexp]
-    
+
     let compare t1 t2 = String.compare t1.id t2.id
   end
 
   include X
-      
+
   let of_obo_term (ot:Obo.term) = {id = ot.id; name = ot.name ; namespace = ot.namespace ; is_a = ot.is_a}
-  
+
   let get_parents t = t.is_a
 
   let get_name t = t.name
-                     
+
   module Set = Set.Make(X)
 
 end
@@ -71,12 +71,12 @@ let of_obo (obo:Obo.t) ns =
     Error (sprintf "Term %s has a unknown parent named %s" term parent_term)
 
 let define_domain domain =
-  match domain with 
+  match domain with
   | "biological_process" -> Ok Biological_process
   | "cellular_component" -> Ok Cellular_component
   | "molecular_function" -> Ok Molecular_function
   | _ -> Error (Printf.sprintf "Unknown GO domain %s, exiting.\n" domain)
- 
+
 let expand_term_list o tl =
   let rec add_term_to_closure ts t =
     if Term.Set.mem ts t then ts
@@ -88,10 +88,10 @@ let expand_term_list o tl =
             | Some tt -> add_term_to_closure term_set tt
           )
       )
-  in  
-  List.fold tl ~init:Term.Set.empty ~f:(fun ts t -> add_term_to_closure ts t)   
+  in
+  List.fold tl ~init:Term.Set.empty ~f:(fun ts t -> add_term_to_closure ts t)
   |> Term.Set.to_list
-       
+
 
 let expand_id_list o il =
   let tl = List.filter_map il ~f:(fun i -> find_term o i) in
