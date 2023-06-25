@@ -31,17 +31,17 @@ let extract_genes ga ~go_id:go i =
   String.Map.find d go
 
 let of_gaf_and_ontology (gaf:Gaf.t) (ont:Ontology.t) =
-  let only_this_namespace = List.filter gaf ~f:(fun ga -> not (Option.is_none (Ontology.find_term ont ga.go_id))) in
+  let only_this_namespace = List.filter gaf ~f:(fun ga -> Option.is_some (Ontology.find_term ont ga.go_id)) in
   let gaf_without_no = List.filter only_this_namespace ~f:(fun ga -> not (String.is_prefix ga.qualifier ~prefix:"NOT")) in
-  let no_empty_symbols = List.filter gaf_without_no ~f:(fun ga -> not (String.equal ga.gene_symbol "")) in
-  let make_dict fg f compare =
+  let no_empty_symbols = List.filter gaf_without_no ~f:(fun ga -> not (String.is_empty ga.gene_symbol)) in
+  let make_dict fg f =
     let m = String.Map.of_alist_multi (List.map fg ~f) in
-    String.Map.map m ~f:(List.dedup_and_sort ~compare)
+    String.Map.map m ~f:(List.dedup_and_sort ~compare:String.compare)
   in
-  let gene_symbol_to_go = make_dict no_empty_symbols (fun ga -> ga.gene_symbol, ga.go_id) String.compare in
-  let gene_id_to_go = make_dict gaf_without_no (fun ga -> (ga.gene_id, ga.go_id)) String.compare in
-  let go_to_gene_id = make_dict gaf_without_no (fun ga -> (ga.go_id,  ga.gene_id)) String.compare in
-  let go_to_gene_symbol = make_dict no_empty_symbols (fun ga -> (ga.go_id,  ga.gene_symbol)) String.compare in
+  let gene_symbol_to_go = make_dict no_empty_symbols (fun ga -> ga.gene_symbol, ga.go_id) in
+  let gene_id_to_go = make_dict gaf_without_no (fun ga -> (ga.gene_id, ga.go_id)) in
+  let go_to_gene_id = make_dict gaf_without_no (fun ga -> (ga.go_id,  ga.gene_id)) in
+  let go_to_gene_symbol = make_dict no_empty_symbols (fun ga -> (ga.go_id,  ga.gene_symbol)) in
   {gene_symbol_to_go ; gene_id_to_go ; go_to_gene_symbol ; go_to_gene_id }
 
 let show fa d =
