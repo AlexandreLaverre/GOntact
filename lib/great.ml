@@ -77,12 +77,36 @@ let basal_plus_extension_domains ~(chromosome_sizes:Genomic_interval_collection.
   let cl = Genomic_interval_collection.interval_list chromosome_sizes in
   List.concat_map cl ~f:(fun i -> basal_plus_extension_domains_one_chr ~chr:(Genomic_interval.chr i) ~chromosome_size:(Genomic_interval.end_pos i) ~genomic_annotation ~upstream ~downstream ~extend)
 
+let sorted_list_union xs ys ~compare =
+  let rec loop acc xs ys =
+    match xs, ys with
+    | [], ys -> List.rev_append acc ys
+    | xs, [] -> List.rev_append acc xs
+    | hx :: tx, hy :: ty ->
+      match compare hx hy with
+      |  0 -> loop (hx :: acc) tx ty
+      | -1 -> loop (hx :: acc) tx ys
+      |  1 -> loop (hy :: acc) xs ty
+      | _ -> assert false
+  in
+  loop [] xs ys
+
 let go_categories_by_element ~(element_coordinates:Genomic_interval_collection.t) ~(regulatory_domains:Genomic_interval_collection.t) ~(functional_annot:Functional_annotation.t) =
   (*regulatory domains were constructed for genes that have at least one GO annotation*)
   (*all their IDs should be in the functional annotation*)
   let intersection = Genomic_interval_collection.intersect element_coordinates regulatory_domains in (*dictionary, element ids -> list of gene symbols*)
-  let gocat_by_element = String.Map.map intersection ~f:(fun l -> List.concat_map l ~f:(fun s -> Functional_annotation.extract_terms_exn functional_annot (`Symbol s))) in
-  String.Map.map gocat_by_element ~f:(fun l -> List.dedup_and_sort ~compare:String.compare l)
+  let gocat_by_element =
+    String.Map.map intersection ~f:(fun l ->
+        let term_list_for_each_regulatory_domain =
+          List.map l ~f:(fun s -> Functional_annotation.extract_terms_exn functional_annot (`Symbol s))
+        in
+        match term_list_for_each_regulatory_domain with
+        | [] -> []
+        | [xs] -> xs
+        | xs ->
+          List.reduce_exn xs ~f:(sorted_list_union ~compare:String.compare)
+      ) in
+  gocat_by_element
 
 let elements_by_go_category unique_gocat_by_element =
   let t = String.Table.create () in
