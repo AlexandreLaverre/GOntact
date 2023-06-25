@@ -27,34 +27,48 @@ end
 
 
 type t = {
-  id_to_term : Term.t String.Map.t ; 
+  terms : Term.t array ;
+  id_index : int String.Map.t ;
+  is_a : int list array ;
 }
 
 type domain = Biological_process | Molecular_function | Cellular_component
 
-let find_term o id = String.Map.find o.id_to_term id 
-
-let has_absent_parents sm =
-  let absent_parents_for_term sm t =
-    List.exists t.Term.is_a ~f:(fun x -> Option.is_none (String.Map.find sm x))
-  in
-  String.Map.exists sm ~f:(fun t -> absent_parents_for_term sm t)
+let find_term o id =
+  match String.Map.find o.id_index id with
+  | None -> None
+  | Some i -> Some o.terms.(i)
 
 let of_obo (obo:Obo.t) ns =
+  let exception Unknown_parent of string * string in
   let nso =
     match ns with
     | Biological_process -> "biological_process"
     | Cellular_component -> "cellular_component"
     | Molecular_function -> "molecular_function"
   in
-  let itt =
+  let terms =
     List.filter obo ~f:(fun ot -> String.equal ot.namespace nso) (*take only this namespace*)
     |> List.map ~f:(fun ot -> Term.of_obo_term ot) (* transform Obo.term in Term.t*)
     |> List.dedup_and_sort ~compare:Term.compare (* remove duplicate terms if any *)
-    |> List.map ~f:(fun (tt:Term.t) -> (tt.id, tt)) (*transform term list in list of tuples (id, term)*)
+  in
+  let id_index =
+    List.mapi terms ~f:(fun i (tt : Term.t) -> (tt.id, i))
     |> String.Map.of_alist_exn (*create string.map, throw exception but safe because of earlier dedup and Term comparison function*)
   in
-  if has_absent_parents itt then Error "obo file is incomplete!" else  Ok {id_to_term = itt} 
+  try
+    let terms = Array.of_list terms in
+    let is_a = Array.map terms ~f:(fun (t : Term.t) ->
+        List.map t.is_a ~f:(fun parent_id ->
+            match String.Map.find id_index parent_id with
+            | None -> raise (Unknown_parent (t.id, parent_id))
+            | Some i -> i
+          )
+      )
+    in
+    Ok { terms ; id_index ; is_a }
+  with Unknown_parent (term, parent_term) ->
+    Error (sprintf "Term %s has a unknown parent named %s" term parent_term)
 
 let define_domain domain =
   match domain with 
@@ -88,6 +102,7 @@ let expand_id_list o il =
 let filter_terms o sl =
   List.filter sl ~f:(fun x -> not (Option.is_none (find_term o x)))
 
-let term_names t =
-  let id_to_term = t.id_to_term in
-  String.Map.map id_to_term ~f:(fun term -> Term.get_name term)  
+let term_names o =
+  Array.map o.terms ~f:(fun t -> t.id, Term.get_name t)
+  |> Array.to_list
+  |> String.Map.of_alist_exn
