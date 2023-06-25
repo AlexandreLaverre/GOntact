@@ -1,12 +1,12 @@
+let time () = (Unix.times ()).Unix.tms_utime
+
 let chrono label f x =
-  let t1 = Unix.time () in
+  let t1 = time () in
   let y = f x in
-  let t2 = Unix.time () in
-  let elapsed = int_of_float (t2 -. t1) in
-  Logs.info (fun m -> m "%d seconds elapsed while running '%s'%!" elapsed label) ;
+  let t2 = time () in
+  Logs.debug (fun m -> m "%.1f seconds elapsed while running '%s'%!" (t2 -. t1) label) ;
   y
 
-let time () = (Unix.times ()).Unix.tms_utime
 let tic, tac =
   let t = ref (time ()) in
   (fun () -> t := time ()),
