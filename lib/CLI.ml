@@ -324,6 +324,9 @@ let term =
   and+ output_prefix =
     let doc = "Prefix for output files." in
     Arg.(value & opt string "GOntact" & info ["output-prefix"] ~doc ~docv:"PATH")
+  and+ verbosity =
+    let doc = "Verbosity level (info, debug)" in
+    Arg.(value & opt (enum Logs.["info", Some Info ; "debug", Some Debug]) None & info ["verbosity"] ~doc)
   and+ write_elements_foreground =
     let doc = "Write output for gene-element association in foreground." in
     Arg.(value & flag  & info ["write-foreground"] ~doc)
@@ -334,6 +337,8 @@ let term =
   let ibed_files = String.split ibed_path ~on:',' in
   let pl = {mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg_path ; chr_sizes ; upstream ; downstream ; extend ; bait_coords ; ibed_files ; max_dist_bait_TSS ; max_dist_element_fragment ; min_dist_contacts ; max_dist_contacts ; min_score ; output_dir ; output_prefix ; write_elements_foreground ; write_elements_background} in
   let output_pars = Printf.sprintf "%s/%s_parameters.txt" output_dir output_prefix in
+  Logs.set_reporter (Logs.format_reporter ());
+  Logs.set_level verbosity ;
   save_parlist pl output_pars ;
   main pl
 
