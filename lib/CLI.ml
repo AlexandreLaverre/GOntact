@@ -74,10 +74,8 @@ let great_mode pl ~chr_collection ~gonames ~filtered_annot ~foreground ~backgrou
   Genomic_interval_collection.write_output domains_int output_path_domains ~append:false;
   let gocat_by_element_foreground = Utils.chrono "GO categories by element foreground" (fun () -> Great.go_categories_by_element ~element_coordinates:foreground ~regulatory_domains:domains_int ~functional_annot:propagated_fa) () in
   let gocat_by_element_background = Utils.chrono "GO categories by element background" (fun () -> Great.go_categories_by_element ~element_coordinates:background ~regulatory_domains:domains_int ~functional_annot:propagated_fa) () in
-  let elements_by_gocat_foreground = Utils.chrono "elements by GO category foreground" Great.elements_by_go_category gocat_by_element_foreground in
-  let elements_by_gocat_background = Utils.chrono "elements by GO category background" Great.elements_by_go_category gocat_by_element_background in
-  let go_frequencies_foreground = Utils.chrono "GO frequencies foreground" (fun () -> Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_foreground ~elements_by_category:elements_by_gocat_foreground) () in
-  let go_frequencies_background = Utils.chrono "GO frequencies background" (fun () -> Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_background ~elements_by_category:elements_by_gocat_background) () in
+  let go_frequencies_foreground = Utils.chrono "GO frequencies foreground" (fun () -> Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_foreground) () in
+  let go_frequencies_background = Utils.chrono "GO frequencies background" (fun () -> Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_background) () in
   let enrichment_results = Utils.chrono "enrichment test" (fun () -> Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background) () in
   let output_path = output_file pl "enrichment_results.txt" in
   Go_enrichment.write_output enrichment_results gonames output_path ;
@@ -87,6 +85,7 @@ let great_mode pl ~chr_collection ~gonames ~filtered_annot ~foreground ~backgrou
     let output_path_isoforms = output_file pl "major_isoforms.txt" in
     Genomic_annotation.write_major_isoforms major_isoforms output_path_isoforms ;
     if pl.write_elements_foreground then (
+      let elements_by_gocat_foreground = Utils.chrono "elements by GO category foreground" Great.elements_by_go_category gocat_by_element_foreground in
       let foreground_map = Utils.chrono "interval map foreground" Genomic_interval_collection.interval_map foreground in
       let symbol_elements_foreground = Utils.chrono "connect foreground elements to genes" (fun () -> Great.symbol_elements ~element_coordinates:foreground ~regulatory_domains:domains_int) () in
       let dist_gene_elements_foreground = Utils.chrono "distance foreground elements to genes" (fun () -> Genomic_annotation.compute_cis_distances symbol_elements_foreground ~element_map:foreground_map ~gene_annotation:filtered_annot ~major_isoforms:major_isoforms) () in
@@ -96,6 +95,7 @@ let great_mode pl ~chr_collection ~gonames ~filtered_annot ~foreground ~backgrou
       Go_enrichment.write_detailed_association elements_by_gocat_foreground output_path_fg_elements_go ;
     ) ;
     if pl.write_elements_background then (
+      let elements_by_gocat_background = Utils.chrono "elements by GO category background" Great.elements_by_go_category gocat_by_element_background in
       let background_map = Utils.chrono "interval map background" Genomic_interval_collection.interval_map background in
       let symbol_elements_background = Utils.chrono "connect background elements to genes" (fun () -> Great.symbol_elements ~element_coordinates:background ~regulatory_domains:domains_int) () in
       let dist_gene_elements_background = Utils.chrono "distance background element to genes" (fun () -> Genomic_annotation.compute_cis_distances symbol_elements_background ~element_map:background_map  ~gene_annotation:filtered_annot ~major_isoforms:major_isoforms) () in
@@ -125,8 +125,8 @@ let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~propagate
   let gocat_by_element_background = Chromatin_contact.annotations_by_element ~element_coordinates:background ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
   let elements_by_gocat_foreground = Chromatin_contact.elements_by_annotation gocat_by_element_foreground in
   let elements_by_gocat_background = Chromatin_contact.elements_by_annotation gocat_by_element_background in
-  let go_frequencies_foreground = Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_foreground ~elements_by_category:elements_by_gocat_foreground in
-  let go_frequencies_background = Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_background ~elements_by_category:elements_by_gocat_background in
+  let go_frequencies_foreground = Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_foreground in
+  let go_frequencies_background = Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_background in
   let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in
   let output_path = output_file pl "enrichment_results.txt" in
   Go_enrichment.write_output enrichment_results gonames output_path ;
@@ -187,8 +187,8 @@ let hybrid_mode pl ~chr_collection ~filtered_annot ~foreground ~background ~prop
   let elements_by_gocat_background = Go_enrichment.combine_maps elements_by_gocat_great_background elements_by_gocat_cc_background in
   let gocat_by_element_foreground = Go_enrichment.combine_maps gocat_by_element_great_foreground gocat_by_element_cc_foreground in
   let gocat_by_element_background = Go_enrichment.combine_maps gocat_by_element_great_background gocat_by_element_cc_background in
-  let go_frequencies_foreground = Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_foreground ~elements_by_category:elements_by_gocat_foreground in
-  let go_frequencies_background = Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_background ~elements_by_category:elements_by_gocat_background in
+  let go_frequencies_foreground = Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_foreground in
+  let go_frequencies_background = Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_background in
   let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in
   let output_path = output_file pl "enrichment_results.txt" in
   Go_enrichment.write_output enrichment_results gonames output_path ;

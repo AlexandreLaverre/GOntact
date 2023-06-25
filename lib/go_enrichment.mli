@@ -24,7 +24,5 @@ val combine_maps :
   (string list) String.Map.t
 
 val go_frequencies :
-  categories_by_element:((string list) String.Map.t) ->
-  elements_by_category:((string list) String.Map.t) ->
-  int String.Map.t 
-
+  categories_by_element:string list String.Map.t ->
+  int String.Map.t

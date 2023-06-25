@@ -36,9 +36,21 @@ let combine_maps gomap1 gomap2 =
   let gomap = String.Map.of_alist_exn gotuples in
   gomap
 
-let go_frequencies ~categories_by_element ~elements_by_category =
+let go_frequencies ~categories_by_element =
   let nb_total = String.Map.length categories_by_element in (* number of elements that have at least one GO category*)
-  let counts = Utils.chrono "count elements for GO" (fun () -> String.Map.map elements_by_category ~f:(fun data -> List.length data)) () in
+  let counts = Utils.chrono "count elements for GO" (fun () ->
+      let table = String.Table.create () in
+      String.Map.iter categories_by_element ~f:(fun categories ->
+          List.iter categories ~f:(fun cat ->
+              String.Table.update table cat ~f:(function
+                  | None -> 1
+                  | Some c -> c + 1
+                )
+            )
+        ) ;
+      String.Table.to_alist table
+      |> String.Map.of_alist_exn
+    ) () in
   let counts_with_total = String.Map.add_exn counts ~key:"total" ~data:nb_total in
   counts_with_total
 
