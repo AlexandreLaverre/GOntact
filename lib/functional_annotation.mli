@@ -2,7 +2,7 @@
 
 type t
 
-(* val show : t -> [ `Gene_id_to_go | `Gene_symbol_to_go | `Go_to_gene_symbol | `Go_to_gene_id ] -> string *)
+val show : t -> [ `Gene_id_to_go | `Gene_symbol_to_go | `Go_to_gene_symbol | `Go_to_gene_id ] -> string
 
 val extract_terms : t -> [ `Id of string | `Symbol of string ] -> Ontology.PKey.t list option
 

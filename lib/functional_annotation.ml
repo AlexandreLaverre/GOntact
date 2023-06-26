@@ -60,12 +60,27 @@ let of_gaf_and_ontology (gaf:Gaf.t) (ont:Ontology.t) =
   let go_to_gene_symbol = make_pkey_dict no_empty_symbols (fun (ga, k) -> (k,  ga.gene_symbol)) in
   { gene_symbol_to_go ; gene_id_to_go ; go_to_gene_symbol ; go_to_gene_id ; ontology = ont }
 
-(* let show fa d = *)
-(*   match d with *)
-(*     | `Gene_id_to_go -> String.Map.to_alist fa.gene_id_to_go |> [%show: (string * string list) list] *)
-(*     | `Gene_symbol_to_go -> String.Map.to_alist fa.gene_symbol_to_go |>  [%show: (string * string list) list] *)
-(*     | `Go_to_gene_id -> String.Map.to_alist fa.go_to_gene_id |>  [%show: (string * string list) list] *)
-(*     | `Go_to_gene_symbol -> String.Map.to_alist fa.go_to_gene_symbol |>  [%show: (string * string list) list] *)
+let show fa d =
+  let get_id pkey = (Ontology.PKey.get_term fa.ontology pkey).id in
+  match d with
+  | `Gene_id_to_go ->
+    String.Map.map fa.gene_id_to_go ~f:(term_names_of_pkeys fa)
+    |> String.Map.to_alist
+    |> [%show: (string * string list) list]
+  | `Gene_symbol_to_go ->
+    String.Map.map fa.gene_symbol_to_go ~f:(term_names_of_pkeys fa)
+    |> String.Map.to_alist
+    |>  [%show: (string * string list) list]
+  | `Go_to_gene_id ->
+    fa.go_to_gene_id
+    |> Ontology.PKey.Map.to_alist
+    |> List.map ~f:(fun (pkey, xs) -> get_id pkey, xs)
+    |> [%show: (string * string list) list]
+  | `Go_to_gene_symbol ->
+    fa.go_to_gene_symbol
+    |> Ontology.PKey.Map.to_alist
+    |> List.map ~f:(fun (pkey, xs) -> get_id pkey, xs)
+    |> [%show: (string * string list) list]
 
 
 let propagate_annotations fa o =
