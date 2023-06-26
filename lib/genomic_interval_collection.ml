@@ -1,5 +1,5 @@
 open Core
-    
+
 type t = {
   int_list : Genomic_interval.t list ;
 }
@@ -8,20 +8,20 @@ type t = {
 type format = Base1 | Base0
 
 let sort_by_coordinate l =
-  List.sort l ~compare:Genomic_interval.compare_intervals  
+  List.sort l ~compare:Genomic_interval.compare_intervals
 
 let reverse_sort_by_coordinate c =
-  let il = c.int_list in 
+  let il = c.int_list in
   let rl =  List.rev il in
   {int_list = rl}
-  
+
 let split_bed_line line ~strip_chr ~format =
   (*typical bed format: 0-based, not included*)
   (*if needed we transform coordinates to 1-based, included*)
   let shift = match format with
     | Base1 -> 0
     | Base0 -> 1
-  in      
+  in
   match String.split line ~on:'\t' with
   | chr :: start_pos :: end_pos :: tl ->
     let (id, strand) = match tl with
@@ -32,8 +32,8 @@ let split_bed_line line ~strip_chr ~format =
         | _ :: strand :: _ -> (id, strand)
         | _ -> (id, ".")
     in
-    let start_1based = (int_of_string start_pos) + shift in  
-    let end_1based = (int_of_string end_pos)  in   
+    let start_1based = (int_of_string start_pos) + shift in
+    let end_1based = (int_of_string end_pos)  in
     let new_strand = (match strand with
       | "+" -> Genomic_interval.Forward
       | "-" -> Genomic_interval.Reverse
@@ -42,10 +42,10 @@ let split_bed_line line ~strip_chr ~format =
       ) in
     let new_chr = (if strip_chr && (String.is_prefix chr ~prefix:"chr") then String.drop_prefix chr 3 else chr) in
     Genomic_interval.make ~id new_chr start_1based end_1based new_strand
-  | _ -> invalid_arg "bed file must have at least three fields " 
-    
+  | _ -> invalid_arg "bed file must have at least three fields "
+
 let of_bed_file path ~strip_chr ~format =
-  let l = In_channel.read_lines path in 
+  let l = In_channel.read_lines path in
   let il = List.map l ~f:(split_bed_line ~strip_chr ~format) in
   let sl = sort_by_coordinate il in
   {int_list = sl}
@@ -56,36 +56,36 @@ let of_chr_size_file path ~strip_chr =
     | chr :: size :: _ ->
       let new_chr = (if strip_chr && (String.is_prefix chr ~prefix:"chr") then String.drop_prefix chr 3 else chr) in
       Genomic_interval.make ~id:chr new_chr 1 (int_of_string size) Genomic_interval.Unstranded
-    | _ -> invalid_arg "chr size file must have at least two fields: chr_name chr_size " 
+    | _ -> invalid_arg "chr size file must have at least two fields: chr_name chr_size "
   in
   let l = In_channel.read_lines path in
   let il = List.map l ~f:split_chr_line in
   let sl = sort_by_coordinate il in
   {int_list = sl}
 
-let of_interval_list il = 
+let of_interval_list il =
   let sl = sort_by_coordinate il in
   {int_list = sl}
 
-let chr_set t = 
+let chr_set t =
   let l = t.int_list in
   let chr_list = List.map l ~f:(fun x -> Genomic_interval.chr x) in
   String.Set.of_list chr_list
 
-let fold_merge l ~init ~f = 
+let fold_merge l ~init ~f =
   let rec aux_merge acc current_interval next_list =
     match next_list with
     | h :: t -> (
         match Genomic_interval.merge current_interval h with
-        | None -> aux_merge (f acc current_interval) h t 
+        | None -> aux_merge (f acc current_interval) h t
         | Some merged_int -> aux_merge acc merged_int t
       )
     | [] -> f acc current_interval
   in
   match l with
   | h :: t ->  aux_merge init h t
-  | [] -> [] 
-  
+  | [] -> []
+
 let merge_coordinates c =
   let merged_list = fold_merge c.int_list ~init:[] ~f:(fun l i -> i :: l) in
   let reordered = List.rev merged_list in
@@ -103,7 +103,7 @@ let intersect_lists l1 l2 =
     (* Printf.printf "i %d j %d startj %d\n" i j startj ; *)
     let l1 = Array.length a1 in
     let l2 = Array.length a2 in
-    if (i < l1 && j < l2) then 
+    if (i < l1 && j < l2) then
       let el1 = Array.get a1 i in
       let el2 = Array.get a2 j in
       let comp = Genomic_interval.check_overlap el1 el2 in
@@ -112,8 +112,8 @@ let intersect_lists l1 l2 =
       | Larger_no_overlap -> intersect_arrays a1 a2 i (j+1) (j+1) init (*same chr, start1 > end2, there cannot be intersection for anything with el2 *)
       | Smaller_overlap | Larger_overlap | Equal  ->
         (*  Printf.printf "found intersection for i %d and j %d\n" i j ; *)
-        let new_init = (Genomic_interval.id el1, Genomic_interval.id el2) :: init in 
-        intersect_arrays a1 a2 i (j+1) startj new_init 
+        let new_init = (Genomic_interval.id el1, Genomic_interval.id el2) :: init in
+        intersect_arrays a1 a2 i (j+1) startj new_init
       | _ -> invalid_arg "we only apply this on intervals on the same chromosome"
     else
       init
@@ -125,8 +125,8 @@ let intersect_lists l1 l2 =
       Array.sort achr2 ~compare:Genomic_interval.compare_intervals ;
       intersect_arrays achr1 achr2 0 0 0 []
     ) in
-   List.join intersection_list 
-        
+   List.join intersection_list
+
 let intersect c1 c2 =
   let (l1, l2) = (c1.int_list, c2.int_list) in (*collections of genomic intervals are necessarily ordered *)
   let tuple_list = intersect_lists l1 l2 in
@@ -145,12 +145,12 @@ let iter c ~f =
 
 let write_output c path ~append =
   let il = c.int_list in
-  Out_channel.with_file path ~append ~f:(fun output -> 
+  Out_channel.with_file path ~append ~f:(fun output ->
       List.iter il  ~f:(fun i -> Printf.fprintf output "%s\t%s\t%d\t%d\t%s\n" (Genomic_interval.id i) (Genomic_interval.chr i) (Genomic_interval.start_pos i) (Genomic_interval.end_pos i) Genomic_interval.(string_of_strand (strand i))))
 
 let length c = List.length c.int_list
 
-let remove_duplicated_identifiers c = 
+let remove_duplicated_identifiers c =
   let il = c.int_list in
   let tuples = List.map il ~f:(fun i -> (Genomic_interval.id i, i)) in
   let multi_map = String.Map.of_alist_multi tuples in
