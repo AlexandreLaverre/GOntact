@@ -36,7 +36,7 @@ let combine_maps gomap1 gomap2 =
   let gomap = String.Map.of_alist_exn gotuples in
   gomap
 
-let go_frequencies ~categories_by_element =
+let go_frequencies_legacy ~categories_by_element =
   let nb_total = String.Map.length categories_by_element in (* number of elements that have at least one GO category*)
   let counts = Utils.chrono "count elements for GO" (fun () ->
       let table = String.Table.create () in
@@ -50,6 +50,24 @@ let go_frequencies ~categories_by_element =
         ) ;
       String.Table.to_alist table
       |> String.Map.of_alist_exn
+    ) () in
+  let counts_with_total = String.Map.add_exn counts ~key:"total" ~data:nb_total in
+  counts_with_total
+
+let go_frequencies ~categories_by_element fa =
+  let nb_total = String.Map.length categories_by_element in (* number of elements that have at least one GO category*)
+  let counts = Utils.chrono "count elements for GO" (fun () ->
+      let table = Functional_annotation.create_term_table fa 0 in
+      String.Map.iter categories_by_element ~f:(fun categories ->
+          List.iter categories ~f:(fun cat ->
+              let c = Ontology.PKey.Table.get table cat in
+              Ontology.PKey.Table.set table cat (c + 1)
+            )
+        ) ;
+      Ontology.PKey.Table.fold table ~init:String.Map.empty ~f:(fun ~term ~value acc ->
+          if value > 0 then String.Map.add_exn acc ~key:term.id ~data:value
+          else acc
+        )
     ) () in
   let counts_with_total = String.Map.add_exn counts ~key:"total" ~data:nb_total in
   counts_with_total

@@ -24,5 +24,10 @@ val combine_maps :
   (string list) String.Map.t
 
 val go_frequencies :
+  categories_by_element:Ontology.PKey.t list String.Map.t ->
+  Functional_annotation.t ->
+  int String.Map.t
+
+val go_frequencies_legacy :
   categories_by_element:string list String.Map.t ->
   int String.Map.t

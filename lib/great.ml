@@ -104,7 +104,7 @@ let go_categories_by_element ~(element_coordinates:Genomic_interval_collection.t
         | [] -> []
         | [xs] -> xs
         | xs ->
-          List.reduce_exn xs ~f:(sorted_list_union ~compare:String.compare)
+          List.reduce_exn xs ~f:(sorted_list_union ~compare:Ontology.PKey.compare)
       ) in
   gocat_by_element
 

@@ -1,11 +1,15 @@
 open Core
 
 type t = {
-  gene_symbol_to_go : string list String.Map.t ;
-  gene_id_to_go : string list String.Map.t ;
-  go_to_gene_id : string list String.Map.t ;
-  go_to_gene_symbol : string list String.Map.t ;
+  gene_symbol_to_go : Ontology.PKey.t list String.Map.t ;
+  gene_id_to_go : Ontology.PKey.t list String.Map.t ;
+  go_to_gene_id : string list Ontology.PKey.Map.t ;
+  go_to_gene_symbol : string list Ontology.PKey.Map.t ;
+  ontology : Ontology.t ;
 }
+
+let term_names_of_pkeys fa xs =
+  List.map xs ~f:(fun pkey -> (Ontology.PKey.get_term fa.ontology pkey).id)
 
 let extract_terms ga is =
   let d, k =
@@ -15,68 +19,86 @@ let extract_terms ga is =
   in
   String.Map.find d k
 
-let extract_terms_exn  ga is =
-  let d, k =
-    match is with
-    | `Id id ->  ga.gene_id_to_go, id
-    | `Symbol sym -> ga.gene_symbol_to_go, sym
-  in
-  String.Map.find_exn d k
+let extract_terms_exn ga is =
+  match extract_terms ga is with
+  | None -> raise Stdlib.Not_found
+  | Some xs -> xs
 
 let extract_genes ga ~go_id:go i =
   let d = match i with
     | `Id -> ga.go_to_gene_id
     | `Symbol -> ga.go_to_gene_symbol
   in
-  String.Map.find d go
+  Ontology.PKey.find_term_by_id ga.ontology go
+  |> Option.bind ~f:(Ontology.PKey.Map.find d)
 
 let of_gaf_and_ontology (gaf:Gaf.t) (ont:Ontology.t) =
-  let only_this_namespace = List.filter gaf ~f:(fun ga -> Option.is_some (Ontology.find_term ont ga.go_id)) in
-  let gaf_without_no = List.filter only_this_namespace ~f:(fun ga -> not (String.is_prefix ga.qualifier ~prefix:"NOT")) in
-  let no_empty_symbols = List.filter gaf_without_no ~f:(fun ga -> not (String.is_empty ga.gene_symbol)) in
-  let make_dict fg f =
-    let m = String.Map.of_alist_multi (List.map fg ~f) in
-    String.Map.map m ~f:(List.dedup_and_sort ~compare:String.compare)
+  let only_this_namespace = List.filter_map gaf ~f:(fun ga ->
+      match Ontology.PKey.find_term_by_id ont ga.go_id with
+      | None -> None
+      | Some key -> Some (ga, key)
+    ) in
+  let gaf_without_no = List.filter only_this_namespace ~f:(fun (ga, _) -> not (String.is_prefix ga.qualifier ~prefix:"NOT")) in
+  let no_empty_symbols = List.filter gaf_without_no ~f:(fun (ga, _) -> not (String.is_empty ga.gene_symbol)) in
+  let make_pkey_dict xs proj =
+    List.fold xs ~init:Ontology.PKey.Map.empty ~f:(fun acc x ->
+        let key, data = proj x in
+        Ontology.PKey.Map.add_multi acc ~key ~data
+      )
+    |> Ontology.PKey.Map.map ~f:(List.dedup_and_sort ~compare:String.compare)
   in
-  let gene_symbol_to_go = make_dict no_empty_symbols (fun ga -> ga.gene_symbol, ga.go_id) in
-  let gene_id_to_go = make_dict gaf_without_no (fun ga -> (ga.gene_id, ga.go_id)) in
-  let go_to_gene_id = make_dict gaf_without_no (fun ga -> (ga.go_id,  ga.gene_id)) in
-  let go_to_gene_symbol = make_dict no_empty_symbols (fun ga -> (ga.go_id,  ga.gene_symbol)) in
-  {gene_symbol_to_go ; gene_id_to_go ; go_to_gene_symbol ; go_to_gene_id }
-
-let show fa d =
-  match d with
-    | `Gene_id_to_go -> String.Map.to_alist fa.gene_id_to_go |> [%show: (string * string list) list]
-    | `Gene_symbol_to_go -> String.Map.to_alist fa.gene_symbol_to_go |>  [%show: (string * string list) list]
-    | `Go_to_gene_id -> String.Map.to_alist fa.go_to_gene_id |>  [%show: (string * string list) list]
-    | `Go_to_gene_symbol -> String.Map.to_alist fa.go_to_gene_symbol |>  [%show: (string * string list) list]
-
-
-let reverse_dict gtg =
-  let al = String.Map.to_alist gtg in (*transform string.map in list of tuples (key, val)*)
-  let flatten_list (k, l) =
-    List.fold l ~init:[] ~f:(fun ll x -> (x, k)::ll)
+  let make_sm_dict xs proj =
+    List.fold xs ~init:String.Map.empty ~f:(fun acc x ->
+        let key, data = proj x in
+        String.Map.add_multi acc ~key ~data
+      )
+    |> String.Map.map ~f:(List.dedup_and_sort ~compare:Ontology.PKey.compare)
   in
-  let reval = List.fold al ~init:[] ~f:(fun ll x -> List.append (flatten_list x) ll) in
-  String.Map.of_alist_multi reval
+  let gene_symbol_to_go = make_sm_dict no_empty_symbols (fun (ga, k) -> ga.gene_symbol, k) in
+  let gene_id_to_go = make_sm_dict gaf_without_no (fun (ga, k) -> (ga.gene_id, k)) in
+  let go_to_gene_id = make_pkey_dict gaf_without_no (fun (ga, k) -> (k,  ga.gene_id)) in
+  let go_to_gene_symbol = make_pkey_dict no_empty_symbols (fun (ga, k) -> (k,  ga.gene_symbol)) in
+  { gene_symbol_to_go ; gene_id_to_go ; go_to_gene_symbol ; go_to_gene_id ; ontology = ont }
+
+(* let show fa d = *)
+(*   match d with *)
+(*     | `Gene_id_to_go -> String.Map.to_alist fa.gene_id_to_go |> [%show: (string * string list) list] *)
+(*     | `Gene_symbol_to_go -> String.Map.to_alist fa.gene_symbol_to_go |>  [%show: (string * string list) list] *)
+(*     | `Go_to_gene_id -> String.Map.to_alist fa.go_to_gene_id |>  [%show: (string * string list) list] *)
+(*     | `Go_to_gene_symbol -> String.Map.to_alist fa.go_to_gene_symbol |>  [%show: (string * string list) list] *)
+
 
 let propagate_annotations fa o =
+  let reverse_dict gtg =
+    String.Map.fold gtg ~init:Ontology.PKey.Map.empty ~f:(fun ~key ~data acc ->
+        List.fold data ~init:acc ~f:(fun acc pkey ->
+            Ontology.PKey.Map.add_multi acc ~key:pkey ~data:key
+          )
+      )
+    |> Ontology.PKey.Map.map ~f:(List.dedup_and_sort ~compare:String.compare)
+  in
   let filter_and_extend dict =
-    let filtered = String.Map.map dict ~f:(fun l -> Ontology.filter_terms o l) in  (* for each gene, extract GO ids that belong to this ontology *)
-    String.Map.map filtered ~f:(fun l -> Ontology.expand_id_list o l) (*expand id list *)
+    String.Map.map dict ~f:(Ontology.PKey.is_a_transitive_closure o) (*expand id list *)
   in
   let extended_gig = filter_and_extend fa.gene_id_to_go in
   let extended_gsg = filter_and_extend fa.gene_symbol_to_go in
   let extended_go_to_gene_id = reverse_dict extended_gig in (*create expanded go id to gene dictionaries *)
   let extended_go_to_gene_symbol = reverse_dict extended_gsg in
-  {gene_symbol_to_go = extended_gsg; gene_id_to_go = extended_gig; go_to_gene_symbol = extended_go_to_gene_symbol; go_to_gene_id = extended_go_to_gene_id}
+  { fa with
+    gene_symbol_to_go = extended_gsg;
+    gene_id_to_go = extended_gig;
+    go_to_gene_symbol = extended_go_to_gene_symbol;
+    go_to_gene_id = extended_go_to_gene_id}
 
 
 let write_annotations fa path =
   let s_to_go = fa.gene_symbol_to_go in
   let output = Out_channel.create ~append:false path in
   let write_entry k l =
-     List.iter l ~f:(Printf.fprintf output "%s\t%s\n" k)
+    List.iter l ~f:(fun pkey ->
+        let term = Ontology.PKey.get_term fa.ontology pkey in
+        Printf.fprintf output "%s\t%s\n" k term.Ontology.Term.id
+      )
   in
   Out_channel.output_string output "GeneSymbol\tGOID\n" ;
   String.Map.iteri s_to_go ~f:(fun ~key:k ~data:l -> write_entry k l) ;
@@ -89,5 +111,8 @@ let gene_symbols fa =
 let go_list_of_gene_symbol fa gs =
   let symbol2go = fa.gene_symbol_to_go in
   match String.Map.find symbol2go gs with
-  | Some l -> l
+  | Some l -> term_names_of_pkeys fa l
   | None -> []
+
+let create_term_table fa v =
+  Ontology.PKey.Table.create fa.ontology v

@@ -48,7 +48,7 @@ val go_annotate_baits :
   genome_annotation:Genomic_annotation.t ->
   max_dist:int ->
   functional_annot:Functional_annotation.t ->
-  (string list) String.Map.t
+  Ontology.PKey.t list String.Map.t
 
 val compare : t -> t -> int
 

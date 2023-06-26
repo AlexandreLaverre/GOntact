@@ -174,7 +174,7 @@ let go_annotate_baits ~bait_collection ~genome_annotation ~max_dist ~functional_
     | _ -> []
   in
   let go_annot = String.Map.map intersection ~f:(fun l -> List.concat_map l ~f:get_terms_symbol) in
-  String.Map.map go_annot ~f:(fun l -> List.dedup_and_sort ~compare:String.compare l)
+  String.Map.map go_annot ~f:(fun l -> List.dedup_and_sort ~compare:Ontology.PKey.compare l)
 
 let output_bait_annotation ~bait_collection ~bait_annotation ~path =
   let bait_list = Genomic_interval_collection.interval_list bait_collection in

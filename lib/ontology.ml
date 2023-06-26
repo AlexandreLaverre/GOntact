@@ -31,6 +31,7 @@ type t = {
   id_index : int String.Map.t ;
   is_a : int list array ;
 }
+type ontology = t
 
 type domain = Biological_process | Molecular_function | Cellular_component
 
@@ -106,3 +107,41 @@ let term_names o =
   Array.map o.terms ~f:(fun t -> t.id, Term.get_name t)
   |> Array.to_list
   |> String.Map.of_alist_exn
+
+module PKey = struct
+  type t = int
+  type pkey = t
+  let compare = Int.compare
+
+  let get_term o i = o.terms.(i)
+
+  let find_term_by_id o id =
+    String.Map.find o.id_index id
+
+  let is_a_transitive_closure o l =
+    let rec traverse acc x =
+      if Int.Set.mem acc x then acc
+      else
+        List.fold o.is_a.(x) ~init:(Int.Set.add acc x) ~f:traverse
+    in
+    let leaves = Int.Set.of_list l in
+    Int.Set.fold leaves ~init:Int.Set.empty ~f:traverse
+    |> Int.Set.to_list
+
+  module Map = Int.Map
+
+  module Table = struct
+    type 'a t = {
+      values : 'a array ;
+      terms : Term.t array ;
+    }
+    let create (ontology : ontology) v = {
+      values = Array.create ~len:(Array.length ontology.terms) v ;
+      terms = ontology.terms ;
+    }
+    let get t i = t.values.(i)
+    let set t i v = t.values.(i) <- v
+    let fold t ~init ~f =
+      Array.fold2_exn t.terms t.values ~init ~f:(fun acc term value -> f ~term ~value acc)
+  end
+end
