@@ -460,18 +460,18 @@ my %bgelements;
 
 if($parameters{"pathBackgroundElements"} ne "NA"){
     $usingbg=1;
-    
+
     print "Reading genomic coordinates for background elements...\n";
-    
-    
+
+
     readElementCoordinates($parameters{"pathBackgroundElements"}, \%okchromo, \%bgelements);
-    
+
     $nbelbg=keys %bgelements;
-    
+
     print "Found ".$nbelbg." background elements.\n";
-    
+
     orderCoordinates(\%bgelements, \%orderedbgelements);
-    
+
     print "Done.\n";
 }
 
@@ -492,9 +492,9 @@ my %overlapbg;
 
 if($usingbg==1){
     overlapCoordinates(\%orderedbgelements, \%orderedregions, \%overlapbg);
-    
+
     $nbovbg=keys %overlapbg;
-    
+
     print "There are ".$nbovbg." background elements that overlap with regions.\n";
 }
 
@@ -587,21 +587,21 @@ if($usingbg==1){
 foreach my $space (keys %gocat){
     foreach my $go (@{$gocat{$space}}){
 	my $nbinputel=0;
-	
+
 	if(exists $elgo{$go}){
 	    $nbinputel=keys %{$elgo{$go}};
-	    
+
 	    print $outputassoc $go."\t".join(",", keys %{$elgo{$go}})."\n";
 	}
 
 	if($usingbg==1){
-	    
+
 	    my $nbbgel=0;
-	    
+
 	    if(exists $bgelgo{$go}){
 		$nbbgel=keys %{$bgelgo{$go}};
 	    }
-	    
+
 	    print $output $go."\t".$space."\t".$nbinputel."\t".$nbbgel."\n";
 	} else{
 	    print $output $go."\t".$space."\t".$nbinputel."\n";
