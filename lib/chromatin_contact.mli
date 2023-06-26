@@ -1,12 +1,12 @@
 open Core
-    
+
 type t
 [@@deriving sexp]
-  
+
 val of_ibed_file :
   string ->
   strip_chr:bool->
-  t list 
+  t list
 
 val of_ibed_file_filtered :
   string ->
@@ -15,7 +15,7 @@ val of_ibed_file_filtered :
   max_dist:float ->
   min_score:float ->
   bait_map:(String.Set.t) ->
-  t list 
+  t list
 
 val select_min_score :
   t list ->
@@ -57,7 +57,7 @@ val hash : t -> int
 val fragment_to_baits :
   contacts:(t list) ->
   (string list) String.Map.t
-    
+
 val contacted_fragment_collection :
   contacts:(t list) ->
   Genomic_interval_collection.t
@@ -76,7 +76,7 @@ val annotations_by_element :
 
 val elements_by_annotation :
   (string list) String.Map.t ->
-  (string list) String.Map.t 
+  (string list) String.Map.t
 
 val output_bait_annotation :
   bait_collection:Genomic_interval_collection.t ->

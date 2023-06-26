@@ -1,10 +1,10 @@
 open Core
 
-type regulatory_domain 
+type regulatory_domain
 
 val genomic_interval_collection :
   regulatory_domain list ->
-  Genomic_interval_collection.t 
+  Genomic_interval_collection.t
 
 val basal_plus_extension_domains_one_chr :
   chr:string ->
@@ -29,10 +29,9 @@ val go_categories_by_element :
   functional_annot:Functional_annotation.t ->
   Ontology.PKey.t list String.Map.t
 
-val elements_by_go_category : (string list) String.Map.t -> (string list) String.Map.t 
+val elements_by_go_category : (string list) String.Map.t -> (string list) String.Map.t
 
-val symbol_elements : 
+val symbol_elements :
   element_coordinates:Genomic_interval_collection.t ->
   regulatory_domains:Genomic_interval_collection.t ->
   (string list) String.Map.t
-
