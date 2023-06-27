@@ -38,39 +38,37 @@ let combine_maps gomap1 gomap2 =
 
 let go_frequencies_legacy ~categories_by_element =
   let nb_total = String.Map.length categories_by_element in (* number of elements that have at least one GO category*)
-  let counts = Utils.chrono "count elements for GO" (fun () ->
-      let table = String.Table.create () in
-      String.Map.iter categories_by_element ~f:(fun categories ->
-          List.iter categories ~f:(fun cat ->
-              String.Table.update table cat ~f:(function
-                  | None -> 1
-                  | Some c -> c + 1
-                )
-            )
-        ) ;
-      String.Table.to_alist table
-      |> String.Map.of_alist_exn
-    ) () in
-  let counts_with_total = String.Map.add_exn counts ~key:"total" ~data:nb_total in
-  counts_with_total
+  let counts =
+    let table = String.Table.create () in
+    String.Map.iter categories_by_element ~f:(fun categories ->
+        List.iter categories ~f:(fun cat ->
+            String.Table.update table cat ~f:(function
+                | None -> 1
+                | Some c -> c + 1
+              )
+          )
+      ) ;
+    String.Table.to_alist table
+    |> String.Map.of_alist_exn
+  in
+  String.Map.add_exn counts ~key:"total" ~data:nb_total
 
 let go_frequencies ~categories_by_element fa =
-  let nb_total = String.Map.length categories_by_element in (* number of elements that have at least one GO category*)
-  let counts = Utils.chrono "count elements for GO" (fun () ->
-      let table = Functional_annotation.create_term_table fa 0 in
-      String.Map.iter categories_by_element ~f:(fun categories ->
-          List.iter categories ~f:(fun cat ->
-              let c = Ontology.PKey.Table.get table cat in
-              Ontology.PKey.Table.set table cat (c + 1)
-            )
-        ) ;
-      Ontology.PKey.Table.fold table ~init:String.Map.empty ~f:(fun ~term ~value acc ->
-          if value > 0 then String.Map.add_exn acc ~key:term.id ~data:value
-          else acc
-        )
-    ) () in
-  let counts_with_total = String.Map.add_exn counts ~key:"total" ~data:nb_total in
-  counts_with_total
+  let nb_total = List.length categories_by_element in (* number of elements that have at least one GO category*)
+  let counts =
+    let table = Functional_annotation.create_term_table fa 0 in
+    List.iter categories_by_element ~f:(fun (_, categories) ->
+        List.iter categories ~f:(fun cat ->
+            let c = Ontology.PKey.Table.get table cat in
+            Ontology.PKey.Table.set table cat (c + 1)
+          )
+      ) ;
+    Ontology.PKey.Table.fold table ~init:String.Map.empty ~f:(fun ~term ~value acc ->
+        if value > 0 then String.Map.add_exn acc ~key:term.id ~data:value
+        else acc
+      )
+  in
+  String.Map.add_exn counts ~key:"total" ~data:nb_total
 
 let foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background =
   let total_bg = String.Map.find_exn go_frequencies_background "total" in

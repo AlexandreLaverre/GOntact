@@ -24,7 +24,7 @@ val combine_maps :
   (string list) String.Map.t
 
 val go_frequencies :
-  categories_by_element:Ontology.PKey.t list String.Map.t ->
+  categories_by_element:(Genomic_interval.t * Ontology.PKey.t list) list ->
   Functional_annotation.t ->
   int String.Map.t
 

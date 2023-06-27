@@ -95,23 +95,26 @@ let go_categories_by_element ~(element_coordinates:Genomic_interval_collection.t
   (*regulatory domains were constructed for genes that have at least one GO annotation*)
   (*all their IDs should be in the functional annotation*)
   let intersection = Genomic_interval_collection.intersect element_coordinates regulatory_domains in (*dictionary, element ids -> list of gene symbols*)
-  let gocat_by_element =
-    String.Map.map intersection ~f:(fun l ->
-        let term_list_for_each_regulatory_domain =
-          List.map l ~f:(fun s -> Functional_annotation.extract_terms_exn functional_annot (`Symbol s))
-        in
+  List.map intersection ~f:(fun (elt, neighboors) ->
+      let term_list_for_each_regulatory_domain =
+        List.map neighboors ~f:(fun n ->
+            let s = Genomic_interval.id n in
+            Functional_annotation.extract_terms_exn functional_annot (`Symbol s))
+      in
+      let annotation =
         match term_list_for_each_regulatory_domain with
         | [] -> []
         | [xs] -> xs
         | xs ->
           List.reduce_exn xs ~f:(sorted_list_union ~compare:Ontology.PKey.compare)
-      ) in
-  gocat_by_element
+      in
+      elt, annotation
+    )
 
 let elements_by_go_category unique_gocat_by_element =
   let t = String.Table.create () in
-  String.Map.iteri unique_gocat_by_element ~f:(fun ~key:elt ~data:go_cats ->
-      List.iter go_cats ~f:(fun go_cat -> String.Table.add_multi t ~key:go_cat ~data:elt)
+  List.iter unique_gocat_by_element ~f:(fun (elt, go_cats) ->
+      List.iter go_cats ~f:(fun go_cat -> String.Table.add_multi t ~key:go_cat ~data:(Genomic_interval.id elt))
     ) ;
   String.Table.to_alist t
   |> String.Map.of_alist_exn

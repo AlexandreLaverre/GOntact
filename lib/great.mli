@@ -27,11 +27,11 @@ val go_categories_by_element :
   element_coordinates:Genomic_interval_collection.t ->
   regulatory_domains:Genomic_interval_collection.t ->
   functional_annot:Functional_annotation.t ->
-  Ontology.PKey.t list String.Map.t
+  (Genomic_interval.t * Ontology.PKey.t list) list
 
-val elements_by_go_category : (string list) String.Map.t -> (string list) String.Map.t
+val elements_by_go_category : (Genomic_interval.t * string list) list -> string list String.Map.t
 
 val symbol_elements :
   element_coordinates:Genomic_interval_collection.t ->
   regulatory_domains:Genomic_interval_collection.t ->
-  (string list) String.Map.t
+  (Genomic_interval.t * Genomic_interval.t list) list

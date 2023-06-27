@@ -35,7 +35,9 @@ let _test_overlap_coordinates () =
   let baits = Genomic_interval_collection.of_bed_file "data/PCHi-C/human/hg38.baitmap" ~strip_chr:false ~format:Base1 in
   let tss = Genomic_interval_collection.of_bed_file "tss_coords_1000.txt" ~strip_chr:false ~format:Base1 in
   let intersect = Genomic_interval_collection.intersect baits tss in
-  String.Map.iteri intersect ~f:(fun ~key ~data -> Printf.printf "%s\t%s\n" key (String.concat ~sep:"," data)) ;
+  List.iter intersect ~f:(fun (bait, tss_list) ->
+      Printf.printf "%s\t%s\n" (Genomic_interval.id bait) (String.concat ~sep:"," (List.map tss_list ~f:Genomic_interval.id))
+    ) ;
   Genomic_interval_collection.write_output baits "ordered_baits.txt" ~append:false ;
   Genomic_interval_collection.write_output tss "ordered_tss.txt" ~append:false
 
@@ -56,7 +58,9 @@ let _test_interval_intersection () =
   let cc1 = Genomic_interval_collection.of_bed_file "test1.bed" ~strip_chr:false ~format:Base1 in
   let cc2 = Genomic_interval_collection.of_bed_file "test2.bed" ~strip_chr:false ~format:Base1 in
   let int = Genomic_interval_collection.intersect cc1 cc2 in
-  String.Map.iteri int ~f:(fun ~key:k ~data:d -> (List.iter d ~f:(fun x -> Printf.printf "%s intersects with %s\n" k x)))
+  List.iter int ~f:(fun (u, neighboors) ->
+      List.iter neighboors ~f:(fun x -> Printf.printf "%s intersects with %s\n" (Genomic_interval.id u) (Genomic_interval.id x))
+    )
 
 let _test_regulatory_domains () =
   let open Let_syntax.Result in

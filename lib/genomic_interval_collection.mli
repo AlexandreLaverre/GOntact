@@ -17,7 +17,7 @@ val chr_set :  t -> String.Set.t
 
 val merge_coordinates : t -> t
 
-val intersect : t -> t -> string list String.Map.t
+val intersect : t -> t -> (Genomic_interval.t * Genomic_interval.t list) list
 
 val map : t -> f:(Genomic_interval.t -> Genomic_interval.t) -> t
 

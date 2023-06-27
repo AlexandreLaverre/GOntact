@@ -103,23 +103,21 @@ let intersect { int_list = il1 } { int_list = il2 } =
         | Larger_no_overlap
         | Larger_chr -> merge acc il1 t2
         | Smaller_overlap | Equal | Larger_overlap ->
-          (* printf "add_neighbours %s %s\n%!" (Genomic_interval.show h1) (Genomic_interval.show h2) ; *)
-          let acc' = add_neighbours ((h1, h2) :: acc) h1 t2 in
+          let n = find_neighbours [] h1 t2 in
+          let acc' = (h1, h2 :: n) :: acc in
           merge acc' t1 il2
       )
-  and add_neighbours acc x = function
-    | [] -> acc
+  and find_neighbours acc x = function
+    | [] -> List.rev acc
     | y :: ys ->
       match Genomic_interval.check_overlap x y with
       | Smaller_no_overlap | Smaller_chr -> acc
       | Smaller_overlap | Equal | Larger_overlap ->
-        add_neighbours ((x, y) :: acc) x ys
+        find_neighbours (y :: acc) x ys
       | Larger_no_overlap | Larger_chr ->
-        add_neighbours acc x ys
+        find_neighbours acc x ys
   in
   merge [] il1 il2
-  |> List.map ~f:(Tuple2.map ~f:Genomic_interval.id)
-  |> String.Map.of_alist_multi
 
 let interval_list c = c.int_list
 

@@ -151,7 +151,11 @@ let select_unbaited l ~bait_collection =
 
 let symbol_annotate_baits ~bait_collection ~genome_annotation ~max_dist =
   let tss_intervals = Genomic_annotation.all_tss_intervals genome_annotation max_dist in
-  let intersection = Genomic_interval_collection.intersect bait_collection tss_intervals in (*String.Map - key = bait ids ; values = list of gene_id:gene_symbol mixed id*)
+  let intersection = (*String.Map - key = bait ids ; values = list of gene_id:gene_symbol mixed id*)
+    Genomic_interval_collection.intersect bait_collection tss_intervals
+    |> List.map ~f:(fun (elt, fragments) -> Genomic_interval.id elt, List.map fragments ~f:Genomic_interval.id)
+    |> String.Map.of_alist_exn
+  in
   let get_symbol id =
     match String.split id ~on:':' with
     | [ _ ; symbol ] -> Some symbol
@@ -162,7 +166,11 @@ let symbol_annotate_baits ~bait_collection ~genome_annotation ~max_dist =
 
 let go_annotate_baits ~bait_collection ~genome_annotation ~max_dist ~functional_annot =
   let tss_intervals = Genomic_annotation.all_tss_intervals genome_annotation max_dist in
-  let intersection = Genomic_interval_collection.intersect bait_collection tss_intervals in (*String.Map - key = bait ids ; values = list of gene_id:gene_symbol mixed id*)
+  let intersection = (*String.Map - key = bait ids ; values = list of gene_id:gene_symbol mixed id*)
+    Genomic_interval_collection.intersect bait_collection tss_intervals
+    |> List.map ~f:(fun (elt, fragments) -> Genomic_interval.id elt, List.map fragments ~f:Genomic_interval.id)
+    |> String.Map.of_alist_exn
+  in
   let get_terms_symbol id =
     match String.split id ~on:':' with
     | [ _ ; symbol ] -> (
@@ -212,9 +220,23 @@ let fragment_to_baits ~contacts =
 
 let annotations_by_element ~(element_coordinates:Genomic_interval_collection.t) ~(fragments:Genomic_interval_collection.t) ~fragment_to_baits ~annotated_baits =
   (* for each element, find the list of annotations - gene symbols or GO categories - associated with it *)
-  let intersection = Genomic_interval_collection.intersect element_coordinates fragments in
-  let elbaits = String.Map.map intersection ~f:(fun l -> List.dedup_and_sort ~compare:String.compare (List.join (List.filter_map l ~f:(fun frag -> String.Map.find fragment_to_baits frag)))) in
-  String.Map.map elbaits ~f:(fun l -> List.dedup_and_sort ~compare:String.compare (List.join (List.filter_map l ~f:(fun bait -> String.Map.find annotated_baits bait))))
+  let intersection =
+    Genomic_interval_collection.intersect element_coordinates fragments
+    |> List.map ~f:(fun (elt, fragments) -> Genomic_interval.id elt, List.map fragments ~f:Genomic_interval.id)
+    |> String.Map.of_alist_exn
+  in
+  let elbaits =
+    String.Map.map intersection ~f:(fun l ->
+        List.filter_map l ~f:(fun frag -> String.Map.find fragment_to_baits frag)
+        |> List.join
+        |> List.dedup_and_sort ~compare:String.compare
+      )
+  in
+  String.Map.map elbaits ~f:(fun l ->
+      List.filter_map l ~f:(fun bait -> String.Map.find annotated_baits bait)
+      |> List.join
+      |> List.dedup_and_sort ~compare:String.compare
+    )
 
 let elements_by_annotation elannot =
   let elgolist = String.Map.to_alist elannot in
