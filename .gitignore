@@ -5,7 +5,7 @@
 data
 results
 _build
-server/img/GOntact_cropped.png
+server/img/GOntact*cropped.png
 server/img/*pdf
 server/img/*pptx
 server/css/marx.min.css
