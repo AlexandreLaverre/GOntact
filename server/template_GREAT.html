@@ -20,34 +20,15 @@
     <img src="img/GOntact_logo.png" width=600 alt="GOntact logo"> 
     </header>
     
-    <h1><small><center> Gene Ontology enrichments based on chromatin
-    contacts for noncoding
-    elements</center> </small></h1>
-
+   
     <hr>
     <p style="text-align:justify;">
-
-      GOntact aims to evaluate Gene Ontology (GO) enrichments for sets of
-      noncoding elements. To do this, GOntact uses chromatin contacts determined
-      with the promoter capture Hi-C (PCHi-C) approach. GO categories
-      are "transmitted" to noncoding elements from the genes that they
-      are contacted by in the PCHi-C data. The statistical
-      significance of GO enrichments is evaluated
-      with binomial tests, which compare the frequency of elements
-      associated with a given GO category in a foreground set with the
-      frequency of elements associated with the same GO category in a
-      background set.
-      By default, the coordinates of enhancer elements predicted by
-      ENCODE are used as a background set. For the GOntact webserver, PCHi-C chromatin contacts
-      are those compiled by Laverre <i>et al.</i>, Genome Research,
-      2022. The data used in this version of the GOntact webserver are
-      described <a href="GOntact_data_current.html">here</a>.
-      If you want to run GOntact on a different organism or a
-      different set of PCHi-C samples, please see our command-line
-      version on GitLab. If you want to run GREAT using the same 
-       genome annotations and Gene Ontology data, you can do so <a href="template_GREAT.html">here</a>.
-
-      
+      This page allows you to compare the results obtained with GOntact with
+      the results you would obtain
+      with <a href="http://great.stanford.edu/public/html/">GREAT</a>
+      using the same genomic annotations and the same set of Gene
+      Ontology annotations. As for GOntact, by default, the coordinates of enhancer elements predicted by
+      ENCODE are used as a background set of noncoding elements.
     </p>
 <hr>
 <form>
@@ -94,73 +75,50 @@
       <br>
       <input type="file" id="background_file" name="background_file">
 
-      <!-- Chromatin contact parameters-->
+      <!-- GREAT domain parameters-->
 
       <br>
       <hr>
-      Selection of <b>chromatin interactions</b>:
+      Definition of <b>regulatory domains</b>:
       <br>
     	<table padding="0px">
 
 	  <!-- nb samples-->
 	  <tr>
 	    <td>
-           <label for="min-samples"> Minimum number
-	of PCHi-C samples: </label>
+           <label for="upstream"> Basal regulatory domain, upstream
+           region (bp): </label>
 	    </td>
 	    <td>
 	      <input type="text"
-		     name="min-samples"  value="1" style="width: 100px">
+		     name="basal-upstream"  value="5000" style="width: 100px">
 	    </td>
 	  </tr>
 
 	   <!-- nb samples-->
 	  <tr>
 	    <td>
-              <label for="min-score"> Minimum CHiCAGO score: </label>
+              <label for="downstream">  Basal regulatory domain,
+              downstream region (bp):</label>
 	    </td>
 	    <td>
 	      <input type="text"
-		     name="min-score"  value="5" style="width: 100px">
+		     name="basal-downstream"  value="1000" style="width: 100px">
 	    </td>
 	  </tr>
 
-	  <!-- min distance-->
+	  <!-- extension-->
 	  <tr>
 	    <td>
-	      <label for="min-dist-contacts"> Minimum distance between
-	      contacted regions (bp):</label>
+	      <label for="extension"> Regulatory domain extension size (bp):</label>
 	    </td>
 	     <td>
 	      <input type="text"
-		     name="min-dist-contacts" value="25000" style="width: 100px">
+		     name="extension" value="1000000" style="width: 100px">
 	     </td>
 	  </tr>
 
-	  <!-- max distance-->
-	  <tr>
-	    <td>
-	      <label for="max-dist-contacts"> Maximum distance between
-	      contacted regions (bp):</label>
-	    </td>
-	     <td>
-	      <input type="text"
-		     name="max-dist-contacts"  value="1000000" style="width: 100px">
-	     </td>
-	     </tr>
-
-	  <!-- max overlap-->
-	  <tr>
-	    <td>
-	      <label for="max-dist-element-fragment"> Maximum distance between
-	      foreground regions and contacted fragments (bp):</label>
-	    </td>
-	     <td>
-	      <input type="text"
-		     name="max-dist-element-fragment"  value="5000" style="width: 100px">
-	     </td>
-	     </tr>
-
+	 
 	  
 	  </table>
     
