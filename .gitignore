@@ -5,10 +5,10 @@
 data
 results
 _build
-img/GOntact_cropped.png
-img/*pdf
-img/*pptx
-css/marx.min.css
+server/img/GOntact_cropped.png
+server/img/*pdf
+server/img/*pptx
+server/css/marx.min.css
 scripts/GO_enrichment_GREAT
 **/.merlin
 
