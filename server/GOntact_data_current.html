@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>GOntact</title>
+
+  <!-- Marx CSS -->
+  <link rel="stylesheet" href="css/marx.css">
+</head>
+
+<body>
+  <!-- main is the container -->
+
+  <main>
+
+    <header>
+    <img src="img/GOntact_logo.png" width=600 alt="GOntact logo"> 
+    </header>
+    
+  
+    <hr>
+
+    <h3><small> Datasets used in the GOntact webserver (version 1.0) </small></h3>
+
+    <h4><small> Genome annotations </small></h4>
+    Genome annotations were downloaded from the <a href="http://nov2020.archive.ensembl.org/index.html">Ensembl database,
+    release 102</a>. They correspond to the hg38 and mm10 genome
+    assemblies. Gene and transcript coordinates were retrieved using
+    BioMart. These coordinates are used to determine regulatory
+    domains for the GREAT approach and to annotate baited restriction
+    fragments for the GOntact approach. 
+ 
+    <h4><small> Gene Ontology annotations </small></h4>
+    Gene Ontology annotations were downloaded
+    from <a href="http://geneontology.org">http://geneontology.org</a>. They
+    correspond to the release 2021-11-16, which includes 43,791 GO
+    terms and 7,865,018 annotations. We used the Mouse Genome Informatics
+    (MGI) annotations for mouse  and the EBI Gene Ontology Annotation
+    Database for human. We used the "basic" version of the GO database
+    (go-basic.obo) to analyze the hierachical structure of GO
+    annotations and to propagate GO annotations upstream in the graph.
+     
+    <h4><small> Promoter Capture Hi-C data </small></h4>
+
+    <p style="text-align:justify;">
+      The data used here were taken from the publication by
+      <a href="https://pubmed.ncbi.nlm.nih.gov/34930799/">Laverr&eacute; <i>et al.</i>, Genome Research,
+      2022</a>. The raw PCHi-C data was combined from multiple sources,
+      listed below. The data was processed with a pipeline based on
+      <a href="https://pubmed.ncbi.nlm.nih.gov/26835000/">HiCUP</a>
+      and <a href="https://pubmed.ncbi.nlm.nih.gov/27306882/">CHiCAGO</a>. 
+
+      <table>
+	<!-- header-->
+	<tr>
+	  <td>
+	    <b>species</b>
+	  </td>
+	    <td>
+	    <b>identifier</b>
+	    </td>
+
+	     <td>
+	    <b>tissue/cell type</b>
+	     </td>
+
+	  <td>
+	   <b>data source</b>
+	  </td>
+	</tr>
+	<tr><td> human </td> <td> NB </td> <td> naïve B
+	  lymphocytes </td> <td>  <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">
+	  Javierre <i>et al.</i>, 2016 </a></td></tr>
+	
+	 <tr><td> human </td> <td> TB </td> <td> total B
+	 lymphocytes </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">Javierre <i>et al.</i>, 2016</a> </td> </tr>     
+	 <tr> <td> human </td> <td> cardio </td> <td>
+	 cardiomyocytes </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/29955040/">Choy <i>et al.</i>, 2018 </a></td>       </tr>                                         
+ 	 <tr> <td> human </td> <td> hESC </td> <td> embryonic stem
+ 	 cells </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/28332981/">Freire-Pritchett <i>et al.</i>, 2017</a> </td>   </tr>                             
+  	 <tr><td> human </td> <td> EP </td> <td> endothelial precursors </td> <td>  <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">Javierre <i>et al.</i>, 2016 </a></td>              </tr>                          
+  	 <tr><td> human </td> <td> Ery </td> <td> erythroblasts </td> <td>  <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">Javierre <i>et al.</i>, 2016 </a></td>       </tr>                                         
+  	 <tr><td> human </td> <td> FoeT </td> <td> fetal thymus </td> <td>  <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">Javierre <i>et al.</i>, 2016 </a></td>       </tr>                                         
+ 	 <tr> <td> human </td> <td> CD34 </td> <td> CD34+ lymphocytes,
+ 	 hematopoietic progenitors, ex vivo </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/25938943/">Mifsud <i>et al.</i>, 2015 </a></td>       </tr>  
+  	 <tr><td> human </td> <td> PEK_early </td> <td> differentiated
+  	 primary epidermal keratinocytes </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/28805829/">Rubin <i>et al.</i>, 2017 </a></td> </tr>           
+	 <tr> <td> human </td> <td> PEK_late </td> <td> differentiated primary epidermal keratinocytes </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/28805829/">Rubin <i>et al.</i>, 2017 </a></td>  </tr>           
+	 <tr><td> human </td> <td> PEK_undiff </td> <td> primary epidermal keratinocytes </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/28805829/">Rubin <i>et al.</i>, 2017 </a></td>       </tr>                   
+	 <tr> <td> human </td> <td> Bcell </td> <td> B lymphocytes,
+	 EBV-transformed </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/25938943/">Mifsud
+	 <i>et al.</i>, 2015  </a></td>     </tr>                          
+	 <tr> <td> human </td> <td> Mac0 </td> <td> macrophages M0 </td> <td>  <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">Javierre <i>et al.</i>, 2016</a> </td>  </tr>                                            
+	 <tr> <td> human </td> <td> Mac1 </td> <td> macrophages M1 </td> <td>
+	   <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">Javierre <i>et al.</i>, 2016 </a></td></tr>
+	 <tr>	<td> human </td> <td> Mac2 </td> <td> macrophages M2 </td> <td>  <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">Javierre <i>et al.</i>, 2016 </a></td>  </tr>                                            
+ 	 <tr><td> human </td> <td> MK </td> <td> megakaryocytes </td> <td>  <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">Javierre <i>et al.</i>, 2016 </a></td>    </tr>                                            
+	 <tr> <td> human </td> <td> Mon </td> <td>
+	 monocytes </td> <td>  <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">
+	 Javierre <i>et al.</i>, 2016 </a></td>     </tr>                                               
+	 <tr> <td> human </td> <td> hNEC </td> <td> neuroepithelial
+	 cells </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/28332981/">Freire-Pritchett <i>et al.</i>, 2017</a> </td>       </tr>                        
+	 <tr> <td> human </td> <td> Neu </td> <td>
+	 neutrophils </td> <td>  <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">
+	 Javierre <i>et al.</i>, 2016 </a></td>      </tr>                                            
+ 	 <tr><td> human </td> <td> pre_adipo </td> <td> primary white
+ 	     preadipocytes </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/29666371/">Pan <i>et al.</i>, 2018</a> </td> </tr>
+           <tr><td> human </td>	 <td> NCD4 </td> <td> naive CD4 T lymphocytes </td> <td>  <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">Javierre <i>et al.</i>, 2016 </a></td>   </tr>                                  
+ 	 <tr><td> human </td> <td> NCD8 </td> <td> naive CD8 T lymphocytes </td> <td>  <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">Javierre <i>et al.</i>, 2016</a></td>       </tr>                              
+ 	 <tr><td> human </td> <td> TCD4Act </td> <td> activated total CD4 T lymphocytes </td> <td>  <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">Javierre <i>et al.</i>, 2016 </a></td>    </tr>                    
+ 	 <tr><td> human </td> <td> TCD4MF </td> <td> total CD4 T lymphocytes </td> <td>  <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">Javierre <i>et al.</i>, 2016 </a></td>      </tr>                             
+	 <tr> <td> human </td> <td> TCD4Non </td> <td> non-activated total CD4 T lymphocytes </td> <td>  <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">Javierre <i>et al.</i>, 2016 </a></td>     </tr>               
+ 	 <tr><td> human </td> <td> TCD8 </td> <td> total CD8 T lymphocytes </td> <td>  <a href="https://pubmed.ncbi.nlm.nih.gov/27863249/">Javierre <i>et al.</i>, 2016</a> </td>        </tr>                             
+ 	 <tr><td> mouse </td> <td> preB_aged </td> <td> pre-B
+ 	 cells </td> <td><a href="https://pubmed.ncbi.nlm.nih.gov/30180872/"> Koohy <i>et al.</i>, 2018 </a></td>     </tr>                                          
+ 	 <tr><td> mouse </td> <td> preB_young </td> <td> pre-B cells </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/30180872/">Koohy <i>et al.</i>, 2018 </a></td>     </tr>                                         
+ 	 <tr><td> mouse </td> <td> ESC </td> <td> embryonic stem
+ 	 cells </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/25752748/">Schoenfelder <i>et al.</i>, 2015 </a></td>  </tr>                                   
+ 	 <tr><td> mouse </td> <td> ESC_18 </td> <td> embryonic stem
+ 	 cells </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/30305613/">Schoenfelder <i>et al.</i>, 2018 </a></td>      </tr>                            
+ 	 <tr><td> mouse </td> <td> ESC_wild </td> <td> embryonic stem
+ 	 cells </td> <td><a href="https://pubmed.ncbi.nlm.nih.gov/29514091/"> Novo <i>et al.</i>, 2018 </a></td>     </tr>                                   
+ 	 <tr><td> mouse </td> <td> ESC_NKO </td> <td> embryonic stem cells, Nanog deficient </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/29514091/">Novo <i>et al.</i>, 2018</a></td>  </tr>                      
+ 	 <tr><td> mouse </td> <td> EpiSC </td> <td> epiblast stem cells </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/29514091/">Novo <i>et al.</i>, 2018 </a></td>  </tr>                                          
+ 	 <tr><td> mouse </td> <td> ESd_starved </td> <td> ES-derived
+ 	 multipotent hematopoietic progenitor cells </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/29429976/">Comoglio <i>et al.</i>, 2018</a> </td></tr>
+	 <tr> <td> mouse </td> <td> ESd_TPO </td> <td> ES-derived multipotent hematopoietic progenitor cells </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/29429976/">Comoglio <i>et al.</i>, 2018 </i></td>   </tr> 
+	 <tr> <td> mouse </td> <td> FLC </td> <td> fetal liver cells </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/25752748/">Schoenfelder <i>et al.</i>, 2015 </a></td>    </tr>                                    
+	 <tr> <td> mouse </td> <td> preadip_4H </td> <td>
+	 pre-adipocytes </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/28475875/">Siersback <i>et al.</i>, 2017 </a></td>  </tr>                                     
+ 	 <tr><td> mouse </td> <td> preadip_D0 </td> <td> pre-adipocytes </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/28475875/">Siersback <i>et al.</i>, 2017</a> </td>   </tr>                                    
+ 	 <tr><td> mouse </td> <td> preadip_D2 </td> <td> pre-adipocytes </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/28475875/">Siersback <i>et al.</i>, 2017 </a></td>   </tr>                                    
+ 	 <tr><td> mouse </td> <td> TSC </td> <td> trophoblast stem
+ 	 cells </td> <td> <a href="https://pubmed.ncbi.nlm.nih.gov/30305613/">Schoenfelder <i>et al.</i>, 2018 </a></td>   </tr>
+	
+	
+</table>
+
+    </p>
+
+  </main>
+
+</body>
+</html>
