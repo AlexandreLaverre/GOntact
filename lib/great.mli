@@ -23,11 +23,17 @@ val basal_plus_extension_domains :
   extend:int ->
   regulatory_domain list
 
+module GO_term_set : sig
+  type t
+  val to_sorted_list : t -> Ontology.PKey.t list
+  val iter : t -> f:(Ontology.PKey.t -> unit) -> unit
+end
+
 val go_categories_by_element :
   element_coordinates:Genomic_interval_collection.t ->
   regulatory_domains:Genomic_interval_collection.t ->
   functional_annot:Functional_annotation.t ->
-  (Genomic_interval.t * Ontology.PKey.t list) list
+  (Genomic_interval.t * GO_term_set.t) list
 
 val elements_by_go_category : (Genomic_interval.t * string list) list -> string list String.Map.t
 

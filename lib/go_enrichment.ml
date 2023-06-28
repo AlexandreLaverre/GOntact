@@ -58,7 +58,7 @@ let go_frequencies ~categories_by_element fa =
   let counts =
     let table = Functional_annotation.create_term_table fa 0 in
     List.iter categories_by_element ~f:(fun (_, categories) ->
-        List.iter categories ~f:(fun cat ->
+        Great.GO_term_set.iter categories ~f:(fun cat ->
             let c = Ontology.PKey.Table.get table cat in
             Ontology.PKey.Table.set table cat (c + 1)
           )

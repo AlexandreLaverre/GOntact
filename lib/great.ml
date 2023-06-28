@@ -91,24 +91,79 @@ let sorted_list_union xs ys ~compare =
   in
   loop [] xs ys
 
+module GO_term_set = struct
+  (* invariant: list of sorted lists *)
+  type t = Union of Ontology.PKey.t list list
+
+  let to_sorted_list (Union u) =
+    match u with
+    | [] -> []
+    | [xs] -> xs
+    | xs ->
+      List.reduce_exn xs ~f:(sorted_list_union ~compare:Ontology.PKey.compare)
+
+  (* let rec sort_lists_by_head = function *)
+  (*   | [] -> [] *)
+  (*   | [] :: t -> sort_lists_by_head t *)
+  (*   | (h1 :: _ as l1) :: t -> *)
+  (*     match sort_lists_by_head t with *)
+  (*     | [] -> [ l1 ] *)
+  (*     | [] :: _ -> assert false *)
+  (*     | (h2 :: _ as l2) :: t as sorted_t -> *)
+  (*       if Ontology.PKey.compare h1 h2 <= 0 then l1 :: sorted_t *)
+  (*       else l2 :: (l1 :: t) *)
+
+  let iter (Union u) ~f =
+    let rec traverse u =
+      match find_next u with
+      | None -> ()
+      | Some (e, u') ->
+        f e ; traverse u'
+    and find_next = function
+      | [] -> None
+      | [] :: rest -> find_next rest
+      | (h :: t as l0) :: rest ->
+        match find_better_candidate h rest with
+        | None, rest' -> Some (h, t :: rest')
+        | Some h', rest' -> Some (h', l0 :: rest')
+    and find_better_candidate x = function
+      | [] -> None, []
+      | [] :: rest -> find_better_candidate x rest
+      | (h :: t as l) :: rest ->
+        match Ontology.PKey.compare x h with
+        | -1 -> (
+            let ans, rest' = find_better_candidate x rest in
+            ans, l :: rest'
+          )
+        | 0 -> (
+            let ans, rest' = find_better_candidate x rest in
+            match ans with
+            | None -> None, t :: rest'
+            | Some _ -> ans, l :: rest'
+          )
+        | 1 -> (
+            let ans, rest' = find_better_candidate h rest in
+            match ans with
+            | None -> Some h, t :: rest'
+            | Some _ -> ans, l :: rest'
+          )
+        | _ -> assert false
+    in
+    traverse u
+end
+
 let go_categories_by_element ~(element_coordinates:Genomic_interval_collection.t) ~(regulatory_domains:Genomic_interval_collection.t) ~(functional_annot:Functional_annotation.t) =
   (*regulatory domains were constructed for genes that have at least one GO annotation*)
   (*all their IDs should be in the functional annotation*)
   let intersection = Genomic_interval_collection.intersect element_coordinates regulatory_domains in (*dictionary, element ids -> list of gene symbols*)
-  List.map intersection ~f:(fun (elt, neighboors) ->
-      let term_list_for_each_regulatory_domain =
+  List.Assoc.map intersection ~f:(fun neighboors ->
+      let cat_lists =
         List.map neighboors ~f:(fun n ->
             let s = Genomic_interval.id n in
-            Functional_annotation.extract_terms_exn functional_annot (`Symbol s))
+            Functional_annotation.extract_terms_exn functional_annot (`Symbol s)
+          )
       in
-      let annotation =
-        match term_list_for_each_regulatory_domain with
-        | [] -> []
-        | [xs] -> xs
-        | xs ->
-          List.reduce_exn xs ~f:(sorted_list_union ~compare:Ontology.PKey.compare)
-      in
-      elt, annotation
+      GO_term_set.Union cat_lists
     )
 
 let elements_by_go_category unique_gocat_by_element =

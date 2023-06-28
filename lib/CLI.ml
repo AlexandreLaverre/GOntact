@@ -85,7 +85,10 @@ let great_mode pl ~chr_collection ~gonames ~filtered_annot ~foreground ~backgrou
     let output_path_isoforms = output_file pl "major_isoforms.txt" in
     Genomic_annotation.write_major_isoforms major_isoforms output_path_isoforms ;
     if pl.write_elements_foreground then (
-      let gocat_by_element_foreground = List.Assoc.map gocat_by_element_foreground ~f:(Functional_annotation.term_names_of_pkeys propagated_fa) in
+      let gocat_by_element_foreground = List.Assoc.map gocat_by_element_foreground ~f:(fun go_term_set ->
+          Great.GO_term_set.to_sorted_list go_term_set
+          |> Functional_annotation.term_names_of_pkeys propagated_fa
+        ) in
       let elements_by_gocat_foreground = Utils.chrono "elements by GO category foreground" Great.elements_by_go_category gocat_by_element_foreground in
       let foreground_map = Utils.chrono "interval map foreground" Genomic_interval_collection.interval_map foreground in
       let symbol_elements_foreground = Utils.chrono "connect foreground elements to genes" (fun () -> Great.symbol_elements ~element_coordinates:foreground ~regulatory_domains:domains_int) () in
@@ -101,7 +104,10 @@ let great_mode pl ~chr_collection ~gonames ~filtered_annot ~foreground ~backgrou
       Go_enrichment.write_detailed_association elements_by_gocat_foreground output_path_fg_elements_go ;
     ) ;
     if pl.write_elements_background then (
-      let gocat_by_element_background = List.Assoc.map gocat_by_element_background ~f:(Functional_annotation.term_names_of_pkeys propagated_fa) in
+      let gocat_by_element_background = List.Assoc.map gocat_by_element_background ~f:(fun go_term_set ->
+          Great.GO_term_set.to_sorted_list go_term_set
+          |> Functional_annotation.term_names_of_pkeys propagated_fa
+        ) in
       let elements_by_gocat_background = Utils.chrono "elements by GO category background" Great.elements_by_go_category gocat_by_element_background in
       let background_map = Utils.chrono "interval map background" Genomic_interval_collection.interval_map background in
       let symbol_elements_background = Utils.chrono "connect background elements to genes" (fun () -> Great.symbol_elements ~element_coordinates:background ~regulatory_domains:domains_int) () in
@@ -179,11 +185,11 @@ let hybrid_mode pl ~chr_collection ~filtered_annot ~foreground ~background ~prop
   let gocat_by_element_great_foreground =
     Utils.chrono "GO categories by element foreground" (fun () ->
         Great.go_categories_by_element ~element_coordinates:foreground ~regulatory_domains:domains_int ~functional_annot:propagated_fa
-      |> List.map ~f:(fun (elt, cats) -> elt, Functional_annotation.term_names_of_pkeys propagated_fa cats)
+        |> List.map ~f:(fun (elt, cats) -> elt, Functional_annotation.term_names_of_pkeys propagated_fa (Great.GO_term_set.to_sorted_list cats))
       ) () in
   let gocat_by_element_great_background = Utils.chrono "GO categories by element background" (fun () ->
       Great.go_categories_by_element ~element_coordinates:background ~regulatory_domains:domains_int ~functional_annot:propagated_fa
-      |> List.map ~f:(fun (elt, cats) -> elt, Functional_annotation.term_names_of_pkeys propagated_fa cats)
+      |> List.map ~f:(fun (elt, cats) -> elt, Functional_annotation.term_names_of_pkeys propagated_fa (Great.GO_term_set.to_sorted_list cats))
     ) () in
   let elements_by_gocat_great_foreground = Utils.chrono "elements by GO category foreground" Great.elements_by_go_category gocat_by_element_great_foreground in
   let elements_by_gocat_great_background = Utils.chrono "elements by GO category foreground" Great.elements_by_go_category gocat_by_element_great_background in
