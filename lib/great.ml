@@ -113,43 +113,58 @@ module GO_term_set = struct
   (*       if Ontology.PKey.compare h1 h2 <= 0 then l1 :: sorted_t *)
   (*       else l2 :: (l1 :: t) *)
 
+  let rec traverse u ~f =
+    match find_next u with
+    | None -> ()
+    | Some (e, u') ->
+      f e ; traverse u' ~f
+  and find_next = function
+    | [] -> None
+    | [] :: rest -> find_next rest
+    | (h :: t as l0) :: rest ->
+      match find_better_candidate h rest with
+      | None, rest' -> Some (h, t :: rest')
+      | Some h', rest' -> Some (h', l0 :: rest')
+  and find_better_candidate x = function
+    | [] -> None, []
+    | [] :: rest -> find_better_candidate x rest
+    | (h :: t as l) :: rest ->
+      match Ontology.PKey.compare x h with
+      | -1 -> (
+          let ans, rest' = find_better_candidate x rest in
+          ans, l :: rest'
+        )
+      | 0 -> (
+          let ans, rest' = find_better_candidate x rest in
+          match ans with
+          | None -> None, t :: rest'
+          | Some _ -> ans, l :: rest'
+        )
+      | 1 -> (
+          let ans, rest' = find_better_candidate h rest in
+          match ans with
+          | None -> Some h, t :: rest'
+          | Some _ -> ans, l :: rest'
+        )
+      | _ -> assert false
+
+  let rec traverse2 xs ys ~f =
+    match xs, ys with
+    | [], _ -> List.iter ys ~f
+    | _, [] -> List.iter xs ~f
+    | h_x :: t_x, h_y :: t_y ->
+      match Ontology.PKey.compare h_x h_y with
+      | -1 -> f h_x ; traverse2 t_x ys ~f
+      |  0 -> f h_x ; traverse2 t_x t_y ~f
+      |  1 -> f h_y ; traverse2 xs t_y ~f
+      | _ -> assert false
+
   let iter (Union u) ~f =
-    let rec traverse u =
-      match find_next u with
-      | None -> ()
-      | Some (e, u') ->
-        f e ; traverse u'
-    and find_next = function
-      | [] -> None
-      | [] :: rest -> find_next rest
-      | (h :: t as l0) :: rest ->
-        match find_better_candidate h rest with
-        | None, rest' -> Some (h, t :: rest')
-        | Some h', rest' -> Some (h', l0 :: rest')
-    and find_better_candidate x = function
-      | [] -> None, []
-      | [] :: rest -> find_better_candidate x rest
-      | (h :: t as l) :: rest ->
-        match Ontology.PKey.compare x h with
-        | -1 -> (
-            let ans, rest' = find_better_candidate x rest in
-            ans, l :: rest'
-          )
-        | 0 -> (
-            let ans, rest' = find_better_candidate x rest in
-            match ans with
-            | None -> None, t :: rest'
-            | Some _ -> ans, l :: rest'
-          )
-        | 1 -> (
-            let ans, rest' = find_better_candidate h rest in
-            match ans with
-            | None -> Some h, t :: rest'
-            | Some _ -> ans, l :: rest'
-          )
-        | _ -> assert false
-    in
-    traverse u
+    match u with
+    | [] -> ()
+    | [xs] -> List.iter xs ~f
+    | [xs ; ys] -> traverse2 xs ys ~f
+    | _ -> traverse u ~f
 end
 
 let go_categories_by_element ~(element_coordinates:Genomic_interval_collection.t) ~(regulatory_domains:Genomic_interval_collection.t) ~(functional_annot:Functional_annotation.t) =
