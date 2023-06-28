@@ -42,23 +42,6 @@ let combine_GO_maps xs ys =
       gi_x, GO_term_set.union cats_x cats_y
     )
 
-let go_frequencies_legacy ~categories_by_element =
-  let nb_total = String.Map.length categories_by_element in (* number of elements that have at least one GO category*)
-  let counts =
-    let table = String.Table.create () in
-    String.Map.iter categories_by_element ~f:(fun categories ->
-        List.iter categories ~f:(fun cat ->
-            String.Table.update table cat ~f:(function
-                | None -> 1
-                | Some c -> c + 1
-              )
-          )
-      ) ;
-    String.Table.to_alist table
-    |> String.Map.of_alist_exn
-  in
-  String.Map.add_exn counts ~key:"total" ~data:nb_total
-
 let go_frequencies ~categories_by_element fa =
   let nb_total = List.length categories_by_element in (* number of elements that have at least one GO category*)
   let counts =
