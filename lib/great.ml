@@ -95,12 +95,16 @@ module GO_term_set = struct
   (* invariant: list of sorted lists *)
   type t = Union of Ontology.PKey.t list list
 
+  let of_sorted_lists_unsafe xs = Union xs
+
   let to_sorted_list (Union u) =
     match u with
     | [] -> []
     | [xs] -> xs
     | xs ->
       List.reduce_exn xs ~f:(sorted_list_union ~compare:Ontology.PKey.compare)
+
+  let union (Union u) (Union v) = Union (u @ v)
 
   (* let rec sort_lists_by_head = function *)
   (*   | [] -> [] *)

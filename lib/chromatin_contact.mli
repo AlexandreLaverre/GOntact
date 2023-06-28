@@ -67,6 +67,13 @@ val extend_fragments :
   margin:int ->
   Genomic_interval_collection.t
 
+val go_categories_by_element :
+  element_coordinates:Genomic_interval_collection.t ->
+  fragments: Genomic_interval_collection.t ->
+  fragment_to_baits:(string list) String.Map.t ->
+  annotated_baits:Ontology.PKey.t list String.Map.t ->
+  (Genomic_interval.t * Great.GO_term_set.t) list
+
 val annotations_by_element :
   element_coordinates:Genomic_interval_collection.t ->
   fragments: Genomic_interval_collection.t ->
@@ -75,8 +82,8 @@ val annotations_by_element :
   (string list) String.Map.t
 
 val elements_by_annotation :
-  (string list) String.Map.t ->
-  (string list) String.Map.t
+  (Genomic_interval.t * string list) list ->
+  string list String.Map.t
 
 val output_bait_annotation :
   bait_collection:Genomic_interval_collection.t ->
@@ -85,9 +92,9 @@ val output_bait_annotation :
   unit
 
 val remove_unannotated_baits :
-  contacts:(t list) ->
-  bait_annotation:(string list) String.Map.t ->
-  (t list)
+  contacts:t list ->
+  bait_annotation:_ String.Map.t ->
+  t list
 
 val get_id_frag : t -> string
 

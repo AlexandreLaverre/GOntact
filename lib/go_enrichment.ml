@@ -36,6 +36,12 @@ let combine_maps gomap1 gomap2 =
   let gomap = String.Map.of_alist_exn gotuples in
   gomap
 
+let combine_GO_maps xs ys =
+  List.map2_exn xs ys ~f:(fun (gi_x, cats_x) (gi_y, cats_y) ->
+      assert Genomic_interval.(String.equal (id gi_x) (id gi_y)) ;
+      gi_x, Great.GO_term_set.union cats_x cats_y
+    )
+
 let go_frequencies_legacy ~categories_by_element =
   let nb_total = String.Map.length categories_by_element in (* number of elements that have at least one GO category*)
   let counts =

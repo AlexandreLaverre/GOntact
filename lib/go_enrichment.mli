@@ -23,6 +23,11 @@ val combine_maps :
   (string list) String.Map.t ->
   (string list) String.Map.t
 
+val combine_GO_maps :
+  (Genomic_interval.t * Great.GO_term_set.t) list ->
+  (Genomic_interval.t * Great.GO_term_set.t) list ->
+  (Genomic_interval.t * Great.GO_term_set.t) list
+
 val go_frequencies :
   categories_by_element:(Genomic_interval.t * Great.GO_term_set.t) list ->
   Functional_annotation.t ->
