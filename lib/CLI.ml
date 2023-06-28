@@ -69,7 +69,7 @@ let output_file {output_dir ; output_prefix ; _} suff =
 
 let expand_go_term_sets go_terms_by_elt fa =
   List.Assoc.map go_terms_by_elt ~f:(fun go_term_set ->
-      Great.GO_term_set.to_sorted_list go_term_set
+      GO_term_set.to_sorted_list go_term_set
       |> Functional_annotation.term_names_of_pkeys fa
     )
 
@@ -243,7 +243,7 @@ let hybrid_mode pl ~chr_collection ~filtered_annot ~foreground ~background ~prop
 
     if pl.write_elements_background then (
       let gocat_by_element_great_background = List.Assoc.map gocat_by_element_great_background ~f:(fun go_term_set ->
-          Great.GO_term_set.to_sorted_list go_term_set
+          GO_term_set.to_sorted_list go_term_set
           |> Functional_annotation.term_names_of_pkeys propagated_fa
         ) in
       let symbol_elements_cc_background = Chromatin_contact.annotations_by_element ~element_coordinates:background ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits:symbol_annotated_baits in

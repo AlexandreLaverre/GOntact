@@ -72,7 +72,7 @@ val go_categories_by_element :
   fragments: Genomic_interval_collection.t ->
   fragment_to_baits:(string list) String.Map.t ->
   annotated_baits:Ontology.PKey.t list String.Map.t ->
-  (Genomic_interval.t * Great.GO_term_set.t) list
+  (Genomic_interval.t * GO_term_set.t) list
 
 val annotations_by_element :
   element_coordinates:Genomic_interval_collection.t ->

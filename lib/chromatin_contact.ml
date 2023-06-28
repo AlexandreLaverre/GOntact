@@ -232,7 +232,7 @@ let go_categories_by_element ~(element_coordinates:Genomic_interval_collection.t
   in
   List.Assoc.map elbaits ~f:(fun l ->
       List.filter_map l ~f:(fun bait -> String.Map.find annotated_baits bait)
-      |> Great.GO_term_set.of_sorted_lists_unsafe
+      |> GO_term_set.of_sorted_lists_unsafe
     )
 
 let annotations_by_element ~(element_coordinates:Genomic_interval_collection.t) ~(fragments:Genomic_interval_collection.t) ~fragment_to_baits ~annotated_baits =

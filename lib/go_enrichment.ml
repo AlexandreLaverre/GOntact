@@ -39,7 +39,7 @@ let combine_maps gomap1 gomap2 =
 let combine_GO_maps xs ys =
   List.map2_exn xs ys ~f:(fun (gi_x, cats_x) (gi_y, cats_y) ->
       assert Genomic_interval.(String.equal (id gi_x) (id gi_y)) ;
-      gi_x, Great.GO_term_set.union cats_x cats_y
+      gi_x, GO_term_set.union cats_x cats_y
     )
 
 let go_frequencies_legacy ~categories_by_element =
@@ -64,7 +64,7 @@ let go_frequencies ~categories_by_element fa =
   let counts =
     let table = Functional_annotation.create_term_table fa 0 in
     List.iter categories_by_element ~f:(fun (_, categories) ->
-        Great.GO_term_set.iter categories ~f:(fun cat ->
+        GO_term_set.iter categories ~f:(fun cat ->
             let c = Ontology.PKey.Table.get table cat in
             Ontology.PKey.Table.set table cat (c + 1)
           )
