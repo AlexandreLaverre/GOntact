@@ -130,8 +130,7 @@ let great_mode pl ~chr_collection ~gonames ~filtered_annot ~foreground ~backgrou
       let output_path_bg_elements_go = output_file pl "element_GO_association_background.txt" in
       Go_enrichment.write_detailed_association elements_by_gocat_background output_path_bg_elements_go ;
     ) ;
-  ) ;
-  Ok "GREAT computation finished successfully."
+  )
 
 let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~propagated_fa =
   let bait_collection = Genomic_interval_collection.of_bed_file pl.bait_coords ~strip_chr:true ~format:Base1 in
@@ -187,8 +186,7 @@ let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~propagate
       let elements_by_gocat_background = Chromatin_contact.elements_by_annotation gocat_by_element_background in
       Go_enrichment.write_detailed_association elements_by_gocat_background output_path_bg_elements_go ;
     ) ;
-  ) ;
-  Ok "GOntact computation finished successfully."
+  )
 
 let hybrid_mode pl ~chr_collection ~filtered_annot ~foreground ~background ~propagated_fa ~gonames =
   let domains = Great.basal_plus_extension_domains ~chromosome_sizes:chr_collection ~genomic_annotation:filtered_annot ~upstream:pl.upstream ~downstream:pl.downstream ~extend:0 in
@@ -271,8 +269,7 @@ let hybrid_mode pl ~chr_collection ~filtered_annot ~foreground ~background ~prop
       let elements_by_gocat_background = Go_enrichment.combine_maps elements_by_gocat_great_background elements_by_gocat_cc_background in
       Go_enrichment.write_detailed_association elements_by_gocat_background output_path_bg_elements_go ;
     ) ;
-  ) ;
-  Ok "GOntact hybrid computation finished successfully."
+  )
 
 let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg_path ; chr_sizes ; _} as params) =
   let main_result =
@@ -283,7 +280,7 @@ let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg
     let* obo = Obo.of_obo_file obo_path in
     let* ontology = Ontology.of_obo obo namespace in
     let* gaf = Gaf.of_gaf_file functional_annot in
-    let* gene_annot = Utils.chrono "read genome annotations" Genomic_annotation.of_ensembl_biomart_file gene_info in
+    let+ gene_annot = Utils.chrono "read genome annotations" Genomic_annotation.of_ensembl_biomart_file gene_info in
     let gonames = Ontology.term_names ontology in
     let fa = Functional_annotation.of_gaf_and_ontology gaf ontology in
     let propagated_fa = Utils.chrono "propagate GO annotations" (Functional_annotation.propagate_annotations fa) ontology in
@@ -310,7 +307,7 @@ let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg
     | Hybrid -> hybrid_mode params ~background ~foreground ~chr_collection ~filtered_annot ~gonames ~propagated_fa
   in
   match main_result with
-  | Ok m -> print_endline m
+  | Ok () -> ()
   | Error e -> print_endline e
 
 let parse_mode_or_die = function
