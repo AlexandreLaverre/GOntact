@@ -3,8 +3,15 @@ open Cmdliner
 
 module Sys = Sys_unix
 
+let dief fmt =
+  Printf.ksprintf (fun msg ->
+      prerr_endline msg ;
+      exit 1
+    )
+    fmt
+
 type parlist = {
-  mode : string ;
+  mode : mode ;
   functional_annot : string ;
   obo_path : string ;
   domain : string ;
@@ -27,6 +34,7 @@ type parlist = {
   write_elements_foreground : bool ;
   write_elements_background : bool ;
 }
+and mode = GREAT | Contacts | Hybrid
 [@@deriving sexp]
 
 let save_parlist pl path =
@@ -47,22 +55,21 @@ let check_required_parameters  {mode ;functional_annot ; obo_path ; gene_info ; 
     )
   in
   match mode with
-  | "GREAT" -> (
+  | GREAT -> (
       match found_func_annot, found_obo, found_gene_info, found_fg, found_bg, found_chr_sizes with
       | `Yes, `Yes, `Yes, `Yes, `Yes, `Yes -> Ok "All required files were found."
       | _ -> Error "In GREAT mode the following parameters are required: functional-annot, ontology, gene-annot, chr-sizes, foreground, background."
     )
-  | "contacts" -> (
+  | Contacts -> (
       match found_func_annot, found_obo, found_gene_info, found_fg, found_bg, found_bait_coords, found_ibed_files, found_chr_sizes with
       | `Yes, `Yes, `Yes, `Yes, `Yes, `Yes, true, `Yes -> Ok "All required files were found."
         | _ -> Error "In contacts mode the following parameters are required: functional-annot, ontology, gene-annot, chr-sizes, foreground, background, bait-coords, ibed-path."
     )
-  | "hybrid" -> (
+  | Hybrid -> (
       match found_func_annot, found_obo, found_gene_info, found_fg, found_bg, found_bait_coords, found_chr_sizes, found_ibed_files with
       | `Yes, `Yes, `Yes, `Yes, `Yes, `Yes, `Yes, true -> Ok "All required files were found."
       | _ -> Error "In hybrid mode the following parameters are required: functional-annot, ontology, gene-annot, foreground, background, bait-coords, chr-sizes, ibed-path."
     )
-  | x -> Error (Printf.sprintf "Mode %s not recognized." x)
 
 let output_file {output_dir ; output_prefix ; _} suff =
   Printf.sprintf "%s/%s_%s" output_dir output_prefix suff
@@ -298,14 +305,19 @@ let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg
     let foreground = Utils.chrono "removing duplicated foreground elements" Genomic_interval_collection.remove_duplicated_identifiers unfiltered_foreground in
     let background = Utils.chrono "removing duplicated background elements" Genomic_interval_collection.remove_duplicated_identifiers unfiltered_background in
     match mode with
-    | "GREAT" -> great_mode params ~background ~chr_collection ~foreground ~filtered_annot ~gonames ~propagated_fa
-    | "contacts" -> contacts_mode params ~background ~foreground ~filtered_annot ~gonames ~propagated_fa
-    | "hybrid" -> hybrid_mode params ~background ~foreground ~chr_collection ~filtered_annot ~gonames ~propagated_fa
-    | _ -> Error (Printf.sprintf "mode %s not recognized" mode)
+    | GREAT -> great_mode params ~background ~chr_collection ~foreground ~filtered_annot ~gonames ~propagated_fa
+    | Contacts -> contacts_mode params ~background ~foreground ~filtered_annot ~gonames ~propagated_fa
+    | Hybrid -> hybrid_mode params ~background ~foreground ~chr_collection ~filtered_annot ~gonames ~propagated_fa
   in
   match main_result with
   | Ok m -> print_endline m
   | Error e -> print_endline e
+
+let parse_mode_or_die = function
+  | "GREAT" -> GREAT
+  | "contacts" -> Contacts
+  | "hybrid" -> Hybrid
+  | s -> dief "mode %s not recognized" s
 
 let term =
   let open Let_syntax.Cmdliner_term in
@@ -380,6 +392,7 @@ let term =
     Arg.(value & flag  & info ["write-background"] ~doc)
   in
   let ibed_files = String.split ibed_path ~on:',' in
+  let mode = parse_mode_or_die mode in
   let pl = {mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg_path ; chr_sizes ; upstream ; downstream ; extend ; bait_coords ; ibed_files ; max_dist_bait_TSS ; max_dist_element_fragment ; min_dist_contacts ; max_dist_contacts ; min_score ; output_dir ; output_prefix ; write_elements_foreground ; write_elements_background} in
   let output_pars = Printf.sprintf "%s/%s_parameters.txt" output_dir output_prefix in
   Logs.set_reporter (Logs.format_reporter ());
