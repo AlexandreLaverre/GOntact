@@ -80,16 +80,35 @@ let expand_go_term_sets go_terms_by_elt fa =
       |> Functional_annotation.term_names_of_pkeys fa
     )
 
-let great_mode pl ~chr_collection ~gonames ~filtered_annot ~foreground ~background ~propagated_fa =
-  let domains = Utils.chrono "construct GREAT domains" (fun () -> Great.basal_plus_extension_domains ~chromosome_sizes:chr_collection ~genomic_annotation:filtered_annot ~upstream:pl.upstream ~downstream:pl.downstream ~extend:pl.extend) () in
+type gocat_assignment = {
+  foreground : (Genomic_interval.t * GO_term_set.t) list ;
+  background : (Genomic_interval.t * GO_term_set.t) list ;
+}
+
+let enrichment { foreground ; background } propagated_fa =
+  let go_frequencies_foreground = Go_enrichment.go_frequencies ~categories_by_element:foreground propagated_fa in
+  let go_frequencies_background = Go_enrichment.go_frequencies ~categories_by_element:background propagated_fa in
+  Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background
+
+let great_gocat_assignment ~chromosome_sizes ~genomic_annotation ~upstream ~downstream ~extend ~foreground ~background ~propagated_fa =
+  let domains = Great.basal_plus_extension_domains ~chromosome_sizes ~genomic_annotation ~upstream ~downstream ~extend in
   let domains_int = Great.genomic_interval_collection domains in
+  let assign element_coordinates =
+    Great.go_categories_by_element ~element_coordinates ~regulatory_domains:domains_int
+                                   ~functional_annot:propagated_fa in
+  { foreground = assign foreground ; background = assign background },
+  domains_int
+
+let great_mode pl ~chromosome_sizes ~gonames ~filtered_annot ~foreground ~background ~propagated_fa =
+  let gocat_assignment, domains_int =
+    great_gocat_assignment
+      ~chromosome_sizes ~genomic_annotation:filtered_annot
+      ~upstream:pl.upstream ~downstream:pl.downstream ~extend:pl.extend
+      ~foreground ~background ~propagated_fa
+  in
   let output_path_domains = output_file pl "regulatory_domains.txt" in
   Genomic_interval_collection.write_output domains_int output_path_domains ~append:false;
-  let gocat_by_element_foreground = Utils.chrono "GO categories by element foreground" (fun () -> Great.go_categories_by_element ~element_coordinates:foreground ~regulatory_domains:domains_int ~functional_annot:propagated_fa) () in
-  let gocat_by_element_background = Utils.chrono "GO categories by element background" (fun () -> Great.go_categories_by_element ~element_coordinates:background ~regulatory_domains:domains_int ~functional_annot:propagated_fa) () in
-  let go_frequencies_foreground = Utils.chrono "GO frequencies foreground" (fun () -> Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_foreground propagated_fa) () in
-  let go_frequencies_background = Utils.chrono "GO frequencies background" (fun () -> Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_background propagated_fa) () in
-  let enrichment_results = Utils.chrono "enrichment test" (fun () -> Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background) () in
+  let enrichment_results = enrichment gocat_assignment propagated_fa in
   let output_path = output_file pl "enrichment_results.txt" in
   Go_enrichment.write_output enrichment_results gonames output_path ;
 
@@ -98,7 +117,7 @@ let great_mode pl ~chr_collection ~gonames ~filtered_annot ~foreground ~backgrou
     let output_path_isoforms = output_file pl "major_isoforms.txt" in
     Genomic_annotation.write_major_isoforms major_isoforms output_path_isoforms ;
     if pl.write_elements_foreground then (
-      let gocat_by_element_foreground = expand_go_term_sets gocat_by_element_foreground propagated_fa in
+      let gocat_by_element_foreground = expand_go_term_sets gocat_assignment.foreground propagated_fa in
       let elements_by_gocat_foreground = Utils.chrono "elements by GO category foreground" Great.elements_by_go_category gocat_by_element_foreground in
       let foreground_map = Utils.chrono "interval map foreground" Genomic_interval_collection.interval_map foreground in
       let symbol_elements_foreground = Utils.chrono "connect foreground elements to genes" (fun () -> Great.symbol_elements ~element_coordinates:foreground ~regulatory_domains:domains_int) () in
@@ -114,7 +133,7 @@ let great_mode pl ~chr_collection ~gonames ~filtered_annot ~foreground ~backgrou
       Go_enrichment.write_detailed_association elements_by_gocat_foreground output_path_fg_elements_go ;
     ) ;
     if pl.write_elements_background then (
-      let gocat_by_element_background = expand_go_term_sets gocat_by_element_background propagated_fa in
+      let gocat_by_element_background = expand_go_term_sets gocat_assignment.background propagated_fa in
       let elements_by_gocat_background = Utils.chrono "elements by GO category background" Great.elements_by_go_category gocat_by_element_background in
       let background_map = Utils.chrono "interval map background" Genomic_interval_collection.interval_map background in
       let symbol_elements_background = Utils.chrono "connect background elements to genes" (fun () -> Great.symbol_elements ~element_coordinates:background ~regulatory_domains:domains_int) () in
@@ -188,16 +207,13 @@ let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~propagate
     ) ;
   )
 
-let hybrid_mode pl ~chr_collection ~filtered_annot ~foreground ~background ~propagated_fa ~gonames =
-  let domains = Great.basal_plus_extension_domains ~chromosome_sizes:chr_collection ~genomic_annotation:filtered_annot ~upstream:pl.upstream ~downstream:pl.downstream ~extend:0 in
-  let domains_int = Great.genomic_interval_collection domains in
-  let gocat_by_element_great_foreground =
-    Utils.chrono "GO categories by element foreground" (fun () ->
-        Great.go_categories_by_element ~element_coordinates:foreground ~regulatory_domains:domains_int ~functional_annot:propagated_fa
-      ) () in
-  let gocat_by_element_great_background = Utils.chrono "GO categories by element background" (fun () ->
-      Great.go_categories_by_element ~element_coordinates:background ~regulatory_domains:domains_int ~functional_annot:propagated_fa
-    ) () in
+let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~propagated_fa ~gonames =
+  let great_gocat_assignment, domains_int =
+    great_gocat_assignment
+      ~chromosome_sizes ~genomic_annotation:filtered_annot
+      ~upstream:pl.upstream ~downstream:pl.downstream ~extend:0
+      ~foreground ~background ~propagated_fa
+  in
   let bait_collection = Genomic_interval_collection.of_bed_file pl.bait_coords ~strip_chr:true ~format:Base1 in
   let annotated_baits = Chromatin_contact.go_annotate_baits ~bait_collection ~genome_annotation:filtered_annot ~max_dist:pl.max_dist_bait_TSS ~functional_annot:propagated_fa in
   let output_path_baits = output_file pl "bait_annotation.txt" in
@@ -212,8 +228,8 @@ let hybrid_mode pl ~chr_collection ~filtered_annot ~foreground ~background ~prop
   let fragment_to_baits = Chromatin_contact.fragment_to_baits ~contacts:all_contacts in
   let gocat_by_element_cc_foreground = Chromatin_contact.go_categories_by_element ~element_coordinates:foreground ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
   let gocat_by_element_cc_background = Chromatin_contact.go_categories_by_element ~element_coordinates:background ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits in
-  let gocat_by_element_foreground = Go_enrichment.combine_GO_maps gocat_by_element_great_foreground gocat_by_element_cc_foreground in
-  let gocat_by_element_background = Go_enrichment.combine_GO_maps gocat_by_element_great_background gocat_by_element_cc_background in
+  let gocat_by_element_foreground = Go_enrichment.combine_GO_maps great_gocat_assignment.foreground gocat_by_element_cc_foreground in
+  let gocat_by_element_background = Go_enrichment.combine_GO_maps great_gocat_assignment.background gocat_by_element_cc_background in
   let go_frequencies_foreground = Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_foreground propagated_fa in
   let go_frequencies_background = Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_background propagated_fa in
   let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in
@@ -238,8 +254,8 @@ let hybrid_mode pl ~chr_collection ~filtered_annot ~foreground ~background ~prop
       let output_path_fg_elements = output_file pl "element_gene_association_foreground.txt" in
       Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_foreground output_path_fg_elements ;
       let output_path_fg_elements_go = output_file pl "element_GO_association_foreground.txt" in
-      let gocat_by_element_great_foreground = expand_go_term_sets gocat_by_element_great_foreground propagated_fa in
-      let gocat_by_element_cc_foreground = expand_go_term_sets gocat_by_element_cc_foreground propagated_fa in
+      let gocat_by_element_great_foreground = expand_go_term_sets great_gocat_assignment.foreground propagated_fa in
+      let gocat_by_element_cc_foreground = expand_go_term_sets great_gocat_assignment.background propagated_fa in
       let elements_by_gocat_great_foreground = Great.elements_by_go_category gocat_by_element_great_foreground in
       let elements_by_gocat_cc_foreground = Chromatin_contact.elements_by_annotation gocat_by_element_cc_foreground in
       let elements_by_gocat_foreground = Go_enrichment.combine_maps elements_by_gocat_great_foreground elements_by_gocat_cc_foreground in
@@ -247,7 +263,7 @@ let hybrid_mode pl ~chr_collection ~filtered_annot ~foreground ~background ~prop
     ) ;
 
     if pl.write_elements_background then (
-      let gocat_by_element_great_background = List.Assoc.map gocat_by_element_great_background ~f:(fun go_term_set ->
+      let gocat_by_element_great_background = List.Assoc.map great_gocat_assignment.background ~f:(fun go_term_set ->
           GO_term_set.to_sorted_list go_term_set
           |> Functional_annotation.term_names_of_pkeys propagated_fa
         ) in
@@ -291,8 +307,8 @@ let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg
     Logs.info (fun m -> m "%d genes after filtering transcript biotypes" (Genomic_annotation.number_of_genes filtered_annot_bio_tx)) ;
     let filtered_annot_gene_symbols = Utils.chrono "filter gene symbols" (Genomic_annotation.filter_gene_symbols filtered_annot_bio_tx) gene_symbols in  (*take only genes whose symbols are in functional (GO) annotations*)
     Logs.info (fun m -> m "%d genes after filtering gene symbols" (Genomic_annotation.number_of_genes filtered_annot_gene_symbols)) ;
-    let chr_collection = Utils.chrono "construct chr collection" (fun () -> Genomic_interval_collection.of_chr_size_file chr_sizes ~strip_chr:true) () in
-    let chr_set = Genomic_interval_collection.chr_set chr_collection in
+    let chromosome_sizes = Utils.chrono "construct chr collection" (fun () -> Genomic_interval_collection.of_chr_size_file chr_sizes ~strip_chr:true) () in
+    let chr_set = Genomic_interval_collection.chr_set chromosome_sizes in
     let filtered_annot_chr = Utils.chrono "filter standard chromosomes" (Genomic_annotation.filter_chromosomes filtered_annot_gene_symbols) chr_set in (*take only genes on standard chromosomes*)
     Logs.info (fun m -> m "%d genes on standard chromosomes" (Genomic_annotation.number_of_genes filtered_annot_chr)) ;
     let filtered_annot = Utils.chrono "remove duplicated gene symbols" Genomic_annotation.remove_duplicated_gene_symbols filtered_annot_chr in  (*remove duplicated gene symbols*)
@@ -302,9 +318,9 @@ let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg
     let foreground = Utils.chrono "removing duplicated foreground elements" Genomic_interval_collection.remove_duplicated_identifiers unfiltered_foreground in
     let background = Utils.chrono "removing duplicated background elements" Genomic_interval_collection.remove_duplicated_identifiers unfiltered_background in
     match mode with
-    | GREAT -> great_mode params ~background ~chr_collection ~foreground ~filtered_annot ~gonames ~propagated_fa
+    | GREAT -> great_mode params ~background ~chromosome_sizes ~foreground ~filtered_annot ~gonames ~propagated_fa
     | Contacts -> contacts_mode params ~background ~foreground ~filtered_annot ~gonames ~propagated_fa
-    | Hybrid -> hybrid_mode params ~background ~foreground ~chr_collection ~filtered_annot ~gonames ~propagated_fa
+    | Hybrid -> hybrid_mode params ~background ~foreground ~chromosome_sizes ~filtered_annot ~gonames ~propagated_fa
   in
   match main_result with
   | Ok () -> ()

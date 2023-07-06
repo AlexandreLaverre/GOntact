@@ -27,7 +27,7 @@ and mode = GREAT | Contacts | Hybrid
 
 val great_mode :
   parlist ->
-  chr_collection:Genomic_interval_collection.t ->
+  chromosome_sizes:Genomic_interval_collection.t ->
   gonames:string Core.String.Map.t ->
   filtered_annot:Genomic_annotation.t ->
   foreground:Genomic_interval_collection.t ->
@@ -46,7 +46,7 @@ val contacts_mode :
 
 val hybrid_mode :
   parlist ->
-  chr_collection:Genomic_interval_collection.t ->
+  chromosome_sizes:Genomic_interval_collection.t ->
   filtered_annot:Genomic_annotation.t ->
   foreground:Genomic_interval_collection.t ->
   background:Genomic_interval_collection.t ->
