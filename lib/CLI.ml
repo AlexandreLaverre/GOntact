@@ -99,6 +99,14 @@ let great_gocat_assignment ~chromosome_sizes ~genomic_annotation ~upstream ~down
   { foreground = assign foreground ; background = assign background },
   domains_int
 
+let output_domains pl domains_int =
+  let output_path_domains = output_file pl "regulatory_domains.txt" in
+  Genomic_interval_collection.write_output domains_int output_path_domains ~append:false
+
+let output_enrichment pl enrichment_results gonames =
+  let output_path = output_file pl "enrichment_results.txt" in
+  Go_enrichment.write_output enrichment_results gonames output_path
+
 let great_mode pl ~chromosome_sizes ~gonames ~filtered_annot ~foreground ~background ~propagated_fa =
   let gocat_assignment, domains_int =
     great_gocat_assignment
@@ -106,11 +114,9 @@ let great_mode pl ~chromosome_sizes ~gonames ~filtered_annot ~foreground ~backgr
       ~upstream:pl.upstream ~downstream:pl.downstream ~extend:pl.extend
       ~foreground ~background ~propagated_fa
   in
-  let output_path_domains = output_file pl "regulatory_domains.txt" in
-  Genomic_interval_collection.write_output domains_int output_path_domains ~append:false;
   let enrichment_results = enrichment gocat_assignment propagated_fa in
-  let output_path = output_file pl "enrichment_results.txt" in
-  Go_enrichment.write_output enrichment_results gonames output_path ;
+  output_domains pl domains_int ;
+  output_enrichment pl enrichment_results gonames ;
 
   if (pl.write_elements_foreground || pl.write_elements_background) then (
     let major_isoforms = Utils.chrono "extract major isoforms symbols" Genomic_annotation.identify_major_isoforms_symbols filtered_annot in
@@ -171,10 +177,9 @@ let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~propagate
   let go_frequencies_foreground = Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_foreground propagated_fa in
   let go_frequencies_background = Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_background propagated_fa in
   let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in
-  let output_path = output_file pl "enrichment_results.txt" in
   let annotated_baits = String.Map.map annotated_baits ~f:(Functional_annotation.term_names_of_pkeys propagated_fa) in
   Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:annotated_baits ~path:output_path_GO_baits ;
-  Go_enrichment.write_output enrichment_results gonames output_path ;
+  output_enrichment pl enrichment_results gonames ;
 
   if (pl.write_elements_foreground || pl.write_elements_background) then (
     let major_isoforms = Utils.chrono "extract major isoforms symbols" Genomic_annotation.identify_major_isoforms_symbols filtered_annot in
@@ -233,10 +238,9 @@ let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~pr
   let go_frequencies_foreground = Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_foreground propagated_fa in
   let go_frequencies_background = Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_background propagated_fa in
   let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in
-  let output_path = output_file pl "enrichment_results.txt" in
   let annotated_baits = String.Map.map annotated_baits ~f:(Functional_annotation.term_names_of_pkeys propagated_fa) in
   Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:annotated_baits ~path:output_path_baits ;
-  Go_enrichment.write_output enrichment_results gonames output_path ;
+  output_enrichment pl enrichment_results gonames ;
   if (pl.write_elements_foreground || pl.write_elements_background) then (
     let major_isoforms = Utils.chrono "extract major isoforms symbols" Genomic_annotation.identify_major_isoforms_symbols filtered_annot in
     let symbol_annotated_baits = Chromatin_contact.symbol_annotate_baits ~bait_collection ~genome_annotation:filtered_annot ~max_dist:pl.max_dist_bait_TSS in
