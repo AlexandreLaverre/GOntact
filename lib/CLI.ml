@@ -85,6 +85,12 @@ type gocat_assignment = {
   background : (Genomic_interval.t * GO_term_set.t) list ;
 }
 
+let gocat_assignment_combine a1 a2 =
+  {
+    foreground = Go_enrichment.combine_GO_maps a1.foreground a2.foreground ;
+    background = Go_enrichment.combine_GO_maps a1.background a2.background ;
+  }
+
 let enrichment { foreground ; background } propagated_fa =
   let go_frequencies_foreground = Go_enrichment.go_frequencies ~categories_by_element:foreground propagated_fa in
   let go_frequencies_background = Go_enrichment.go_frequencies ~categories_by_element:background propagated_fa in
@@ -217,7 +223,7 @@ let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~propagate
   )
 
 let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~propagated_fa ~gonames =
-  let great_gocat_assignment, domains_int =
+  let gocat_assignment_great, domains_int =
     great_gocat_assignment
       ~chromosome_sizes ~genomic_annotation:filtered_annot
       ~upstream:pl.upstream ~downstream:pl.downstream ~extend:0
@@ -236,11 +242,8 @@ let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~pr
   let contacted_fragments = Chromatin_contact.extend_fragments ~contacts:all_contacts ~margin:pl.max_dist_element_fragment in
   let fragment_to_baits = Chromatin_contact.fragment_to_baits ~contacts:all_contacts in
   let gocat_assignment_cc = contacts_gocat_assignment ~annotated_baits ~background ~contacted_fragments ~foreground ~fragment_to_baits in
-  let gocat_by_element_foreground = Go_enrichment.combine_GO_maps great_gocat_assignment.foreground gocat_assignment_cc.foreground in
-  let gocat_by_element_background = Go_enrichment.combine_GO_maps great_gocat_assignment.background gocat_assignment_cc.background in
-  let go_frequencies_foreground = Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_foreground propagated_fa in
-  let go_frequencies_background = Go_enrichment.go_frequencies ~categories_by_element:gocat_by_element_background propagated_fa in
-  let enrichment_results = Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background in
+  let gocat_assignment = gocat_assignment_combine gocat_assignment_great gocat_assignment_cc in
+  let enrichment_results = enrichment gocat_assignment propagated_fa in
   let annotated_baits = String.Map.map annotated_baits ~f:(Functional_annotation.term_names_of_pkeys propagated_fa) in
   Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:annotated_baits ~path:output_path_baits ;
   output_enrichment pl enrichment_results gonames ;
@@ -261,8 +264,8 @@ let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~pr
       let output_path_fg_elements = output_file pl "element_gene_association_foreground.txt" in
       Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_foreground output_path_fg_elements ;
       let output_path_fg_elements_go = output_file pl "element_GO_association_foreground.txt" in
-      let gocat_by_element_great_foreground = expand_go_term_sets great_gocat_assignment.foreground propagated_fa in
-      let gocat_by_element_cc_foreground = expand_go_term_sets great_gocat_assignment.background propagated_fa in
+      let gocat_by_element_great_foreground = expand_go_term_sets gocat_assignment_great.foreground propagated_fa in
+      let gocat_by_element_cc_foreground = expand_go_term_sets gocat_assignment_great.background propagated_fa in
       let elements_by_gocat_great_foreground = Great.elements_by_go_category gocat_by_element_great_foreground in
       let elements_by_gocat_cc_foreground = Chromatin_contact.elements_by_annotation gocat_by_element_cc_foreground in
       let elements_by_gocat_foreground = Go_enrichment.combine_maps elements_by_gocat_great_foreground elements_by_gocat_cc_foreground in
@@ -270,7 +273,7 @@ let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~pr
     ) ;
 
     if pl.write_elements_background then (
-      let gocat_by_element_great_background = List.Assoc.map great_gocat_assignment.background ~f:(fun go_term_set ->
+      let gocat_by_element_great_background = List.Assoc.map gocat_assignment_great.background ~f:(fun go_term_set ->
           GO_term_set.to_sorted_list go_term_set
           |> Functional_annotation.term_names_of_pkeys propagated_fa
         ) in
