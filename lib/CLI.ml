@@ -113,6 +113,25 @@ let output_enrichment pl enrichment_results gonames =
   let output_path = output_file pl "enrichment_results.txt" in
   Go_enrichment.write_output enrichment_results gonames output_path
 
+let output_major_isoforms pl major_isoforms =
+  let output_path_isoforms = output_file pl "major_isoforms.txt" in
+  Genomic_annotation.write_major_isoforms major_isoforms output_path_isoforms
+
+let great_gene_distance_by_element elements ~domains ~filtered_annot ~major_isoforms =
+  let element_map = Genomic_interval_collection.interval_map elements in
+  let symbol_elements =
+    Great.symbol_elements ~element_coordinates:elements ~regulatory_domains:domains
+    |> List.map ~f:(fun (elt, neighboors) ->
+        Genomic_interval.id elt,
+        List.map neighboors ~f:Genomic_interval.id)
+    |> String.Map.of_alist_exn
+  in
+  Genomic_annotation.compute_cis_distances
+    symbol_elements
+    ~element_map
+    ~gene_annotation:filtered_annot
+    ~major_isoforms:major_isoforms
+
 let great_mode pl ~chromosome_sizes ~gonames ~filtered_annot ~foreground ~background ~propagated_fa =
   let gocat_assignment, domains_int =
     great_gocat_assignment
@@ -126,19 +145,12 @@ let great_mode pl ~chromosome_sizes ~gonames ~filtered_annot ~foreground ~backgr
 
   if (pl.write_elements_foreground || pl.write_elements_background) then (
     let major_isoforms = Utils.chrono "extract major isoforms symbols" Genomic_annotation.identify_major_isoforms_symbols filtered_annot in
-    let output_path_isoforms = output_file pl "major_isoforms.txt" in
-    Genomic_annotation.write_major_isoforms major_isoforms output_path_isoforms ;
+    output_major_isoforms pl major_isoforms ;
     if pl.write_elements_foreground then (
       let gocat_by_element_foreground = expand_go_term_sets gocat_assignment.foreground propagated_fa in
       let elements_by_gocat_foreground = Utils.chrono "elements by GO category foreground" Great.elements_by_go_category gocat_by_element_foreground in
-      let foreground_map = Utils.chrono "interval map foreground" Genomic_interval_collection.interval_map foreground in
-      let symbol_elements_foreground = Utils.chrono "connect foreground elements to genes" (fun () -> Great.symbol_elements ~element_coordinates:foreground ~regulatory_domains:domains_int) () in
-      let dist_gene_elements_foreground = Utils.chrono "distance foreground elements to genes" (fun () ->
-          let symbol_elements_foreground =
-            List.map symbol_elements_foreground ~f:(fun (elt, neighboors) -> Genomic_interval.id elt, List.map neighboors ~f:Genomic_interval.id)
-            |> String.Map.of_alist_exn
-          in
-          Genomic_annotation.compute_cis_distances symbol_elements_foreground ~element_map:foreground_map ~gene_annotation:filtered_annot ~major_isoforms:major_isoforms) () in
+      let dist_gene_elements_foreground =
+        great_gene_distance_by_element foreground ~domains:domains_int ~filtered_annot ~major_isoforms in
       let output_path_fg_elements = output_file pl "element_gene_association_foreground.txt" in
       Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_foreground output_path_fg_elements ;
       let output_path_fg_elements_go = output_file pl "element_GO_association_foreground.txt" in
@@ -147,15 +159,9 @@ let great_mode pl ~chromosome_sizes ~gonames ~filtered_annot ~foreground ~backgr
     if pl.write_elements_background then (
       let gocat_by_element_background = expand_go_term_sets gocat_assignment.background propagated_fa in
       let elements_by_gocat_background = Utils.chrono "elements by GO category background" Great.elements_by_go_category gocat_by_element_background in
-      let background_map = Utils.chrono "interval map background" Genomic_interval_collection.interval_map background in
-      let symbol_elements_background = Utils.chrono "connect background elements to genes" (fun () -> Great.symbol_elements ~element_coordinates:background ~regulatory_domains:domains_int) () in
-      let dist_gene_elements_background = Utils.chrono "distance background element to genes" (fun () ->
-          let symbol_elements_background =
-            List.map symbol_elements_background ~f:(fun (elt, neighboors) -> Genomic_interval.id elt, List.map neighboors ~f:Genomic_interval.id)
-            |> String.Map.of_alist_exn
-          in
-          Genomic_annotation.compute_cis_distances symbol_elements_background ~element_map:background_map  ~gene_annotation:filtered_annot ~major_isoforms:major_isoforms
-        ) () in
+      let dist_gene_elements_background =
+        great_gene_distance_by_element background ~domains:domains_int ~filtered_annot ~major_isoforms
+      in
       let output_path_bg_elements = output_file pl "element_gene_association_background.txt" in
       Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_background output_path_bg_elements ;
       let output_path_bg_elements_go = output_file pl "element_GO_association_background.txt" in
@@ -169,6 +175,22 @@ let contacts_gocat_assignment ~contacted_fragments ~fragment_to_baits ~annotated
       ~element_coordinates ~fragments:contacted_fragments
       ~fragment_to_baits ~annotated_baits in
   { foreground = assign foreground ; background = assign background }
+
+let contact_gene_distance_by_element
+    elements ~filtered_annot ~major_isoforms
+    ~contacted_fragments ~fragment_to_baits ~symbol_annotated_baits =
+  let symbol_elements =
+    Chromatin_contact.annotations_by_element
+      ~element_coordinates:elements
+      ~fragments:contacted_fragments
+      ~fragment_to_baits
+      ~annotated_baits:symbol_annotated_baits
+  in
+  let element_map = Genomic_interval_collection.interval_map elements in
+  Genomic_annotation.compute_cis_distances
+    symbol_elements
+    ~element_map
+    ~gene_annotation:filtered_annot ~major_isoforms
 
 let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~propagated_fa =
   let bait_collection = Genomic_interval_collection.of_bed_file pl.bait_coords ~strip_chr:true ~format:Base1 in
@@ -197,10 +219,13 @@ let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~propagate
     let output_path_gene_baits = output_file pl "bait_gene_annotation.txt" in
     Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:symbol_annotated_baits ~path:output_path_gene_baits ;
 
+    let gene_distance_by_element elements =
+      contact_gene_distance_by_element
+          elements ~filtered_annot ~major_isoforms
+          ~contacted_fragments ~fragment_to_baits ~symbol_annotated_baits
+    in
     if pl.write_elements_foreground then (
-      let symbol_elements_foreground = Chromatin_contact.annotations_by_element ~element_coordinates:foreground ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits:symbol_annotated_baits in
-      let foreground_map = Utils.chrono "interval map foreground" Genomic_interval_collection.interval_map foreground in
-      let dist_gene_elements_foreground = Utils.chrono "distance foreground elements to genes" (fun () -> Genomic_annotation.compute_cis_distances symbol_elements_foreground ~element_map:foreground_map ~gene_annotation:filtered_annot ~major_isoforms:major_isoforms) () in
+      let dist_gene_elements_foreground = gene_distance_by_element foreground in
       let output_path_fg_elements = output_file pl "element_gene_association_foreground.txt" in
       Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_foreground output_path_fg_elements ;
       let output_path_fg_elements_go = output_file pl "element_GO_association_foreground.txt" in
@@ -210,9 +235,7 @@ let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~propagate
     ) ;
 
     if pl.write_elements_background then (
-      let symbol_elements_background = Chromatin_contact.annotations_by_element ~element_coordinates:background ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits:symbol_annotated_baits in
-      let background_map = Utils.chrono "interval map background" Genomic_interval_collection.interval_map background in
-      let dist_gene_elements_background = Utils.chrono "distance background elements to genes" (fun () -> Genomic_annotation.compute_cis_distances symbol_elements_background ~element_map:background_map ~gene_annotation:filtered_annot ~major_isoforms:major_isoforms) () in
+      let dist_gene_elements_background = gene_distance_by_element background in
       let output_path_bg_elements = output_file pl "element_gene_association_background.txt" in
       Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_background output_path_bg_elements ;
       let output_path_bg_elements_go = output_file pl "element_GO_association_background.txt" in
@@ -221,6 +244,22 @@ let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~propagate
       Go_enrichment.write_detailed_association elements_by_gocat_background output_path_bg_elements_go ;
     ) ;
   )
+
+let hybrid_gene_distance_by_element
+    elements ~domains ~contacted_fragments ~fragment_to_baits
+    ~symbol_annotated_baits ~filtered_annot ~major_isoforms =
+  let symbol_elements_cc =
+    Chromatin_contact.annotations_by_element
+      ~element_coordinates:elements ~fragments:contacted_fragments
+      ~fragment_to_baits ~annotated_baits:symbol_annotated_baits in
+  let symbol_elements_great =
+    Great.symbol_elements ~element_coordinates:elements ~regulatory_domains:domains
+    |> List.map ~f:(fun (elt, neighboors) -> Genomic_interval.id elt, List.map neighboors ~f:Genomic_interval.id)
+    |> String.Map.of_alist_exn
+  in
+  let symbol_elements_hybrid = Go_enrichment.combine_maps symbol_elements_cc symbol_elements_great in
+  let element_map =  Genomic_interval_collection.interval_map elements in
+  Genomic_annotation.compute_cis_distances symbol_elements_hybrid ~element_map ~gene_annotation:filtered_annot ~major_isoforms:major_isoforms
 
 let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~propagated_fa ~gonames =
   let gocat_assignment_great, domains_int =
@@ -251,16 +290,12 @@ let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~pr
     let major_isoforms = Utils.chrono "extract major isoforms symbols" Genomic_annotation.identify_major_isoforms_symbols filtered_annot in
     let symbol_annotated_baits = Chromatin_contact.symbol_annotate_baits ~bait_collection ~genome_annotation:filtered_annot ~max_dist:pl.max_dist_bait_TSS in
 
+    let gene_distance_by_element elements =
+      hybrid_gene_distance_by_element elements
+        ~domains:domains_int ~contacted_fragments ~filtered_annot
+        ~fragment_to_baits ~symbol_annotated_baits ~major_isoforms in
     if pl.write_elements_foreground then (
-      let symbol_elements_cc_foreground = Chromatin_contact.annotations_by_element ~element_coordinates:foreground ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits:symbol_annotated_baits in
-      let symbol_elements_great_foreground =
-        Great.symbol_elements ~element_coordinates:foreground ~regulatory_domains:domains_int
-        |> List.map ~f:(fun (elt, neighboors) -> Genomic_interval.id elt, List.map neighboors ~f:Genomic_interval.id)
-        |> String.Map.of_alist_exn
-      in
-      let symbol_elements_hybrid_foreground = Go_enrichment.combine_maps symbol_elements_cc_foreground symbol_elements_great_foreground in
-      let foreground_map =  Genomic_interval_collection.interval_map foreground in
-      let dist_gene_elements_foreground = Genomic_annotation.compute_cis_distances symbol_elements_hybrid_foreground ~element_map:foreground_map ~gene_annotation:filtered_annot ~major_isoforms:major_isoforms in
+      let dist_gene_elements_foreground = gene_distance_by_element foreground in
       let output_path_fg_elements = output_file pl "element_gene_association_foreground.txt" in
       Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_foreground output_path_fg_elements ;
       let output_path_fg_elements_go = output_file pl "element_GO_association_foreground.txt" in
@@ -273,22 +308,11 @@ let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~pr
     ) ;
 
     if pl.write_elements_background then (
-      let gocat_by_element_great_background = List.Assoc.map gocat_assignment_great.background ~f:(fun go_term_set ->
-          GO_term_set.to_sorted_list go_term_set
-          |> Functional_annotation.term_names_of_pkeys propagated_fa
-        ) in
-      let symbol_elements_cc_background = Chromatin_contact.annotations_by_element ~element_coordinates:background ~fragments:contacted_fragments ~fragment_to_baits ~annotated_baits:symbol_annotated_baits in
-      let symbol_elements_great_background =
-        Great.symbol_elements ~element_coordinates:background ~regulatory_domains:domains_int
-        |> List.map ~f:(fun (elt, neighboors) -> Genomic_interval.id elt, List.map neighboors ~f:Genomic_interval.id)
-        |> String.Map.of_alist_exn
-      in
-      let symbol_elements_hybrid_background = Go_enrichment.combine_maps symbol_elements_cc_background symbol_elements_great_background in
-      let background_map = Genomic_interval_collection.interval_map background in
-      let dist_gene_elements_background = Genomic_annotation.compute_cis_distances symbol_elements_hybrid_background ~element_map:background_map ~gene_annotation:filtered_annot ~major_isoforms:major_isoforms in
+      let dist_gene_elements_background = gene_distance_by_element background in
       let output_path_bg_elements = output_file pl "element_gene_association_background.txt" in
       Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_background output_path_bg_elements ;
       let output_path_bg_elements_go = output_file pl "element_GO_association_background.txt" in
+      let gocat_by_element_great_background = expand_go_term_sets gocat_assignment_great.background propagated_fa in
       let gocat_by_element_cc_background = expand_go_term_sets gocat_assignment_cc.background propagated_fa in
       let elements_by_gocat_great_background = Great.elements_by_go_category gocat_by_element_great_background in
       let elements_by_gocat_cc_background = Chromatin_contact.elements_by_annotation gocat_by_element_cc_background in
