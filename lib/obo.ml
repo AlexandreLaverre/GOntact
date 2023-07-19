@@ -1,5 +1,5 @@
 open Core
-    
+
 type term = {
   id : string ;
   name : string ;
@@ -20,25 +20,25 @@ type parsed_line =
   | Pair of (string * string)
   | Header of stanza_type
   | Empty_line
-                   
+
 let remove_comment s =
   Stdlib.String.trim (
     match String.lsplit2 s ~on:'!' with
     | Some (x, _) -> x
     | None -> s
   )
-    
+
 let parsed_line_of_string s =
   match remove_comment s with
   | "" -> Ok Empty_line
   | "[Term]" -> Ok (Header Term)
   | "[Typedef]" -> Ok (Header Typedef)
   | "[Instance]" -> Ok (Header Instance)
-  | uc  -> 
+  | uc  ->
     match String.lsplit2 uc ~on:':' with
     | Some (x, y) -> Ok (Pair (x, Stdlib.String.trim y))
     | None -> Error "not an obo file"
-                
+
 let parse_lines l =
   Result.all (List.map l ~f:parsed_line_of_string)
 
@@ -58,14 +58,14 @@ let get_exactly_one_field l k =
   | [x] -> Ok x
   | [] -> Error "nothing found"
   | _ -> Error "more than one"
-  
+
 let term_of_list l =
-  let open Let_syntax.Result in 
+  let open Let_syntax.Result in
   let* id = get_exactly_one_field l "id" in
   let* name = get_exactly_one_field l "name" in
   let+ namespace = get_exactly_one_field l "namespace" in
   let  is_a = get_field l "is_a" in
-  {id ; name ; namespace ; is_a } 
+  {id ; name ; namespace ; is_a }
 
 let break_between_lines l1 l2 =
   match (l1, l2) with
