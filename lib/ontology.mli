@@ -4,6 +4,7 @@ type t
 type ontology = t
 
 type domain = Biological_process | Molecular_function | Cellular_component
+[@@ deriving sexp]
 
 module Term : sig
   type t = {
@@ -30,8 +31,6 @@ val expand_id_list : t -> string list -> string list
 val filter_terms : t -> string list -> string list
 
 val of_obo : Obo.t -> domain -> (t, string) result
-
-val define_domain : string -> (domain, string) result
 
 val term_names : t -> string String.Map.t
 

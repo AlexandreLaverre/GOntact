@@ -7,7 +7,7 @@ type parlist = {
   mode : mode ;
   functional_annot : string ;
   obo_path : string ;
-  domain : string ;
+  domain : Ontology.domain ;
   gene_info : string ;
   fg_path : string ;
   bg_path : string ;
@@ -326,9 +326,8 @@ let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg
     let open Let_syntax.Result in
     let* check_pars = check_required_parameters params in
     Logs.info (fun m -> m "%s" check_pars) ;
-    let* namespace = Ontology.define_domain domain in
     let* obo = Obo.of_obo_file obo_path in
-    let* ontology = Ontology.of_obo obo namespace in
+    let* ontology = Ontology.of_obo obo domain in
     let* gaf = Gaf.of_gaf_file functional_annot in
     let+ gene_annot = Utils.chrono "read genome annotations" Genomic_annotation.of_ensembl_biomart_file gene_info in
     let gonames = Ontology.term_names ontology in
@@ -382,8 +381,18 @@ let term =
     let doc = "Path to gene ontology definition in OBO format." in
     Arg.(required & opt (some non_dir_file) None & info ["ontology"] ~doc ~docv:"PATH")
   and+ domain =
-    let doc = "Gene ontology domain. Can be \"biological_process\", \"molecular_function\" or \"cellular_component\"." in
-    Arg.(value & opt string "biological_process" & info ["domain"] ~doc ~docv:"INT")
+    let biological_process_label = "biological_process" in
+    let molecular_function_label = "molecular_function" in
+    let cellular_component_label = "cellular_component" in
+    let domains = Ontology.[
+        biological_process_label, Biological_process ;
+        molecular_function_label, Molecular_function ;
+        cellular_component_label, Cellular_component
+      ] in
+    let doc =
+      sprintf "Gene ontology domain. Can be '%s', '%s' or '%s'."
+        biological_process_label molecular_function_label cellular_component_label in
+    Arg.(value & opt (enum domains) Biological_process & info ["domain"] ~doc ~docv:"INT")
   and+ gene_info =
     let doc = "Path to gene annotation file extracted from Ensembl BioMart." in
     Arg.(required & opt (some non_dir_file) None & info ["gene-annot"] ~doc ~docv:"PATH")

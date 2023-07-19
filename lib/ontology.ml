@@ -34,6 +34,7 @@ type t = {
 type ontology = t
 
 type domain = Biological_process | Molecular_function | Cellular_component
+[@@deriving sexp]
 
 let find_term o id =
   match String.Map.find o.id_index id with
@@ -70,13 +71,6 @@ let of_obo (obo:Obo.t) ns =
     Ok { terms ; id_index ; is_a }
   with Unknown_parent (term, parent_term) ->
     Error (sprintf "Term %s has a unknown parent named %s" term parent_term)
-
-let define_domain domain =
-  match domain with
-  | "biological_process" -> Ok Biological_process
-  | "cellular_component" -> Ok Cellular_component
-  | "molecular_function" -> Ok Molecular_function
-  | _ -> Error (Printf.sprintf "Unknown GO domain %s, exiting.\n" domain)
 
 let expand_term_list o tl =
   let rec add_term_to_closure ts t =

@@ -2,7 +2,7 @@ type parlist = {
   mode : mode ;
   functional_annot : string ;
   obo_path : string ;
-  domain : string ;
+  domain : Ontology.domain ;
   gene_info : string ;
   fg_path : string ;
   bg_path : string ;
