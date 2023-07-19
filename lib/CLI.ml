@@ -192,24 +192,32 @@ let contact_gene_distance_by_element
     ~element_map
     ~gene_annotation:filtered_annot ~major_isoforms
 
+let all_contacts_of_beds beds ~bait_annotation ~bait_collection ~min_dist_contacts ~max_dist_contacts ~min_score =
+  let contact_list = List.map beds ~f:(fun file -> Chromatin_contact.of_ibed_file file ~strip_chr:true) in
+  let with_annotated_baits = List.map contact_list ~f:(fun cc ->
+      Chromatin_contact.remove_unannotated_baits ~contacts:cc ~bait_annotation
+    ) in
+  let cis_contacts = List.map with_annotated_baits ~f:(fun cc -> Chromatin_contact.select_cis cc) in
+  let range_contacts = List.map cis_contacts ~f:(fun cc -> Chromatin_contact.select_distance cc ~min_dist:min_dist_contacts ~max_dist:max_dist_contacts) in
+  let score_contacts = List.map range_contacts ~f:(fun cc -> Chromatin_contact.select_min_score cc ~min_score) in
+  let unbaited_contacts = List.map score_contacts ~f:(fun cc -> Chromatin_contact.select_unbaited cc ~bait_collection) in
+  List.dedup_and_sort ~compare:Chromatin_contact.compare (List.join unbaited_contacts)
+
 let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~propagated_fa =
   let bait_collection = Genomic_interval_collection.of_bed_file pl.bait_coords ~strip_chr:true ~format:Base1 in
   let annotated_baits = Chromatin_contact.go_annotate_baits ~bait_collection ~genome_annotation:filtered_annot ~max_dist:pl.max_dist_bait_TSS ~functional_annot:propagated_fa in
-  let output_path_GO_baits = output_file pl "bait_GO_annotation.txt" in
-  let contact_list = List.map pl.ibed_files ~f:(fun file -> Chromatin_contact.of_ibed_file file ~strip_chr:true) in
-  let with_annotated_baits = List.map contact_list ~f:(fun cc ->
-      Chromatin_contact.remove_unannotated_baits ~contacts:cc ~bait_annotation:annotated_baits
-    ) in
-  let cis_contacts = List.map with_annotated_baits ~f:(fun cc -> Chromatin_contact.select_cis cc) in
-  let range_contacts = List.map cis_contacts ~f:(fun cc -> Chromatin_contact.select_distance cc ~min_dist:(float_of_int pl.min_dist_contacts) ~max_dist:(float_of_int pl.max_dist_contacts)) in
-  let score_contacts = List.map range_contacts ~f:(fun cc -> Chromatin_contact.select_min_score cc ~min_score:pl.min_score) in
-  let unbaited_contacts = List.map score_contacts ~f:(fun cc -> Chromatin_contact.select_unbaited cc ~bait_collection) in
-  let all_contacts = List.dedup_and_sort ~compare:Chromatin_contact.compare (List.join unbaited_contacts) in
+  let all_contacts =
+    all_contacts_of_beds pl.ibed_files
+      ~bait_annotation:annotated_baits ~bait_collection
+      ~min_dist_contacts:(float_of_int pl.min_dist_contacts)
+      ~max_dist_contacts:(float_of_int pl.max_dist_contacts)
+      ~min_score:pl.min_score in
   let contacted_fragments = Chromatin_contact.extend_fragments ~contacts:all_contacts ~margin:pl.max_dist_element_fragment in
   let fragment_to_baits = Chromatin_contact.fragment_to_baits ~contacts:all_contacts in
   let gocat_assignment = contacts_gocat_assignment ~contacted_fragments ~fragment_to_baits ~annotated_baits ~foreground ~background in
   let enrichment_results = enrichment gocat_assignment propagated_fa in
   let annotated_baits = String.Map.map annotated_baits ~f:(Functional_annotation.term_names_of_pkeys propagated_fa) in
+  let output_path_GO_baits = output_file pl "bait_GO_annotation.txt" in
   Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:annotated_baits ~path:output_path_GO_baits ;
   output_enrichment pl enrichment_results gonames ;
 
@@ -270,20 +278,19 @@ let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~pr
   in
   let bait_collection = Genomic_interval_collection.of_bed_file pl.bait_coords ~strip_chr:true ~format:Base1 in
   let annotated_baits = Chromatin_contact.go_annotate_baits ~bait_collection ~genome_annotation:filtered_annot ~max_dist:pl.max_dist_bait_TSS ~functional_annot:propagated_fa in
-  let output_path_baits = output_file pl "bait_annotation.txt" in
-  let contact_list = List.map pl.ibed_files ~f:(fun file -> Chromatin_contact.of_ibed_file file ~strip_chr:true) in
-  let with_annotated_baits = List.map contact_list ~f:(fun cc -> Chromatin_contact.remove_unannotated_baits ~contacts:cc ~bait_annotation:annotated_baits) in
-  let cis_contacts = List.map with_annotated_baits ~f:(fun cc -> Chromatin_contact.select_cis cc) in
-  let range_contacts = List.map cis_contacts ~f:(fun cc -> Chromatin_contact.select_distance cc ~min_dist:(float_of_int pl.min_dist_contacts) ~max_dist:(float_of_int pl.max_dist_contacts)) in
-  let score_contacts = List.map range_contacts ~f:(fun cc -> Chromatin_contact.select_min_score cc ~min_score:pl.min_score) in
-  let unbaited_contacts = List.map score_contacts ~f:(fun cc -> Chromatin_contact.select_unbaited cc ~bait_collection) in
-  let all_contacts = List.dedup_and_sort ~compare:Chromatin_contact.compare (List.join unbaited_contacts) in
+  let all_contacts =
+    all_contacts_of_beds pl.ibed_files
+      ~bait_annotation:annotated_baits ~bait_collection
+      ~min_dist_contacts:(float_of_int pl.min_dist_contacts)
+      ~max_dist_contacts:(float_of_int pl.max_dist_contacts)
+      ~min_score:pl.min_score in
   let contacted_fragments = Chromatin_contact.extend_fragments ~contacts:all_contacts ~margin:pl.max_dist_element_fragment in
   let fragment_to_baits = Chromatin_contact.fragment_to_baits ~contacts:all_contacts in
   let gocat_assignment_cc = contacts_gocat_assignment ~annotated_baits ~background ~contacted_fragments ~foreground ~fragment_to_baits in
   let gocat_assignment = gocat_assignment_combine gocat_assignment_great gocat_assignment_cc in
   let enrichment_results = enrichment gocat_assignment propagated_fa in
   let annotated_baits = String.Map.map annotated_baits ~f:(Functional_annotation.term_names_of_pkeys propagated_fa) in
+  let output_path_baits = output_file pl "bait_annotation.txt" in
   Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:annotated_baits ~path:output_path_baits ;
   output_enrichment pl enrichment_results gonames ;
   if (pl.write_elements_foreground || pl.write_elements_background) then (
