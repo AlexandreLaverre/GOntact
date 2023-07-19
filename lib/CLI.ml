@@ -329,7 +329,7 @@ let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg
     let* obo = Obo.of_obo_file obo_path in
     let* ontology = Ontology.of_obo obo domain in
     let* gaf = Gaf.of_gaf_file functional_annot in
-    let+ gene_annot = Utils.chrono "read genome annotations" Genomic_annotation.of_ensembl_biomart_file gene_info in
+    let+ gene_annot = Genomic_annotation.of_ensembl_biomart_file gene_info in
     let gonames = Ontology.term_names ontology in
     let fa = Functional_annotation.of_gaf_and_ontology gaf ontology in
     let propagated_fa = Utils.chrono "propagate GO annotations" (Functional_annotation.propagate_annotations fa) ontology in

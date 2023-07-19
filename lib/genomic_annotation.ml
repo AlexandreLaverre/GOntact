@@ -97,21 +97,21 @@ let compare_gene_tuples g1 g2 =
   String.compare g1id g2id
 
 let of_ensembl_biomart_file path =
-  let lines = In_channel.read_lines path in
+  let open Let_syntax.Result in
+  let* lines = Utils.read_lines path in
   match lines with
   | h :: t -> (
       let open Let_syntax.Result in
       let+ header = extract_ensembl_biomart_header h in
       let gene_list = List.map t ~f:(fun line -> gene_annot_of_line line header) in
-      let dedup_gene_list = List.dedup_and_sort ~compare:compare_gene_tuples gene_list in  
+      let dedup_gene_list = List.dedup_and_sort ~compare:compare_gene_tuples gene_list in
       let transcript_list = List.map t ~f:(fun line -> transcript_annot_of_line line header) in
       let genes = String.Map.of_alist_exn dedup_gene_list in
       let transcripts = String.Map.of_alist_exn transcript_list in
       let isoforms = isoforms_of_transcripts transcripts in
       {genes ; transcripts; isoforms}
     )
-  | [] -> Error "File is empty."
-
+  | [] -> Error "File is empty"
 
 let filter_transcript_biotypes ga biotype =
   let genes = ga.genes in

@@ -14,3 +14,7 @@ let tic, tac =
      let t' = time () in
      Logs.info (fun m -> m "%.1fs elapsed" (t' -. !t)) ;
      t := t')
+
+let read_lines fn =
+  try Ok (Core.In_channel.read_lines fn)
+  with Sys_error msg -> Error msg
