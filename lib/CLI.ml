@@ -3,13 +3,6 @@ open Cmdliner
 
 module Sys = Sys_unix
 
-let dief fmt =
-  Printf.ksprintf (fun msg ->
-      prerr_endline msg ;
-      exit 1
-    )
-    fmt
-
 type parlist = {
   mode : mode ;
   functional_annot : string ;
@@ -367,17 +360,15 @@ let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg
   | Ok () -> ()
   | Error e -> print_endline e
 
-let parse_mode_or_die = function
-  | "GREAT" -> GREAT
-  | "contacts" -> Contacts
-  | "hybrid" -> Hybrid
-  | s -> dief "mode %s not recognized" s
-
 let term =
   let open Let_syntax.Cmdliner_term in
   let+ mode =
-    let doc = "Run mode. Can be 'contacts', 'GREAT' or 'hybrid'" in
-    Arg.(value & opt string "contacts" & info ["mode"] ~doc ~docv:"STRING")
+    let contacts_label = "contacts" in
+    let great_label = "GREAT" in
+    let hybrid_label = "hybrid" in
+    let modes = [contacts_label, Contacts ; great_label, GREAT ; hybrid_label, Hybrid] in
+    let doc = sprintf "Run mode. Can be '%s', '%s' or '%s'" contacts_label great_label hybrid_label in
+    Arg.(value & opt (enum modes) Contacts & info ["mode"] ~doc ~docv:"STRING")
   and+ fg_path =
     let doc = "Path to foreground elements, in BED format (0-based, open-ended intervals)." in
     Arg.(required & opt (some non_dir_file) None & info ["foreground"] ~doc ~docv:"PATH")
@@ -446,7 +437,6 @@ let term =
     Arg.(value & flag  & info ["write-background"] ~doc)
   in
   let ibed_files = String.split ibed_path ~on:',' in
-  let mode = parse_mode_or_die mode in
   let pl = {mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg_path ; chr_sizes ; upstream ; downstream ; extend ; bait_coords ; ibed_files ; max_dist_bait_TSS ; max_dist_element_fragment ; min_dist_contacts ; max_dist_contacts ; min_score ; output_dir ; output_prefix ; write_elements_foreground ; write_elements_background} in
   let output_pars = Printf.sprintf "%s/%s_parameters.txt" output_dir output_prefix in
   Logs.set_reporter (Logs.format_reporter ());
