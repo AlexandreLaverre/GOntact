@@ -10,7 +10,7 @@ type parlist = {
   upstream : int ;
   downstream : int ;
   extend : int ;
-  bait_coords : string ;
+  bait_coords : string option ;
   ibed_files : string list ;
   max_dist_bait_TSS : int ;
   max_dist_element_fragment : int ;
@@ -42,6 +42,8 @@ val contacts_mode :
   foreground:Genomic_interval_collection.t ->
   background:Genomic_interval_collection.t ->
   propagated_fa:Functional_annotation.t ->
+  bait_collection:Genomic_interval_collection.t ->
+  annotated_baits:Ontology.PKey.t list Core.String.Map.t ->
   unit
 
 val hybrid_mode :
@@ -52,6 +54,8 @@ val hybrid_mode :
   background:Genomic_interval_collection.t ->
   propagated_fa:Functional_annotation.t ->
   gonames:string Core.String.Map.t ->
+  bait_collection:Genomic_interval_collection.t ->
+  annotated_baits:Ontology.PKey.t list Core.String.Map.t ->
   unit
 
 val command : unit Cmdliner.Cmd.t

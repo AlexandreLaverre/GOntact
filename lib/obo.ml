@@ -81,18 +81,17 @@ let process_block_of_lines l =
   match l with
   | Header Term :: t -> Some (term_of_list (List.filter_map t ~f:process_pair))
   | _  -> None
-   
-let process_list l = 
+
+let process_list l =
   List.group l ~break:break_between_lines
   |> List.filter_map ~f:process_block_of_lines
   |> Result.all
- 
+
 let of_obo_file path =
   let open Let_syntax.Result in
-  let* l = In_channel.read_lines path |> parse_lines
-  in process_list l
-             
+  let* raw_lines = Utils.read_lines path in
+  let* parsed_lines = parse_lines raw_lines in
+  process_list parsed_lines
+
 let filter_namespace o ~namespace =
   List.filter o ~f:(fun t -> String.equal t.namespace namespace)
-
-

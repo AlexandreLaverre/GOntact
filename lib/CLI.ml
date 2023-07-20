@@ -1,7 +1,12 @@
 open Core
 open Cmdliner
 
-module Sys = Sys_unix
+let dief fmt =
+  Printf.ksprintf (fun msg ->
+      prerr_endline msg ;
+      exit 1
+    )
+    fmt
 
 type parlist = {
   mode : mode ;
@@ -15,7 +20,7 @@ type parlist = {
   upstream : int ;
   downstream : int ;
   extend : int ;
-  bait_coords : string ;
+  bait_coords : string option ;
   ibed_files : string list ;
   max_dist_bait_TSS : int ;
   max_dist_element_fragment : int ;
@@ -32,37 +37,6 @@ and mode = GREAT | Contacts | Hybrid
 
 let save_parlist pl path =
   Sexp.save_hum path (sexp_of_parlist pl)
-
-let check_required_parameters  {mode ;functional_annot ; obo_path ; gene_info ; fg_path ; bg_path ; chr_sizes ; bait_coords ; ibed_files ; _} =
-  let found_func_annot = Sys.file_exists functional_annot in
-  let found_obo = Sys.file_exists obo_path in
-  let found_gene_info = Sys.file_exists gene_info in
-  let found_fg = Sys.file_exists fg_path in
-  let found_bg = Sys.file_exists bg_path in
-  let found_bait_coords = Sys.file_exists bait_coords in
-  let found_chr_sizes = Sys.file_exists chr_sizes in
-  let found_ibed_files = List.for_all ibed_files ~f:(fun file ->
-      match Sys.file_exists file with
-      | `Yes -> true
-      | _ -> false
-    )
-  in
-  match mode with
-  | GREAT -> (
-      match found_func_annot, found_obo, found_gene_info, found_fg, found_bg, found_chr_sizes with
-      | `Yes, `Yes, `Yes, `Yes, `Yes, `Yes -> Ok "All required files were found."
-      | _ -> Error "In GREAT mode the following parameters are required: functional-annot, ontology, gene-annot, chr-sizes, foreground, background."
-    )
-  | Contacts -> (
-      match found_func_annot, found_obo, found_gene_info, found_fg, found_bg, found_bait_coords, found_ibed_files, found_chr_sizes with
-      | `Yes, `Yes, `Yes, `Yes, `Yes, `Yes, true, `Yes -> Ok "All required files were found."
-        | _ -> Error "In contacts mode the following parameters are required: functional-annot, ontology, gene-annot, chr-sizes, foreground, background, bait-coords, ibed-path."
-    )
-  | Hybrid -> (
-      match found_func_annot, found_obo, found_gene_info, found_fg, found_bg, found_bait_coords, found_chr_sizes, found_ibed_files with
-      | `Yes, `Yes, `Yes, `Yes, `Yes, `Yes, `Yes, true -> Ok "All required files were found."
-      | _ -> Error "In hybrid mode the following parameters are required: functional-annot, ontology, gene-annot, foreground, background, bait-coords, chr-sizes, ibed-path."
-    )
 
 let output_file {output_dir ; output_prefix ; _} suff =
   Printf.sprintf "%s/%s_%s" output_dir output_prefix suff
@@ -196,9 +170,7 @@ let all_contacts_of_beds beds ~bait_annotation ~bait_collection ~min_dist_contac
   let unbaited_contacts = List.map score_contacts ~f:(fun cc -> Chromatin_contact.select_unbaited cc ~bait_collection) in
   List.dedup_and_sort ~compare:Chromatin_contact.compare (List.join unbaited_contacts)
 
-let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~propagated_fa =
-  let bait_collection = Genomic_interval_collection.of_bed_file pl.bait_coords ~strip_chr:true ~format:Base1 in
-  let annotated_baits = Chromatin_contact.go_annotate_baits ~bait_collection ~genome_annotation:filtered_annot ~max_dist:pl.max_dist_bait_TSS ~functional_annot:propagated_fa in
+let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~propagated_fa ~bait_collection ~annotated_baits =
   let all_contacts =
     all_contacts_of_beds pl.ibed_files
       ~bait_annotation:annotated_baits ~bait_collection
@@ -262,15 +234,13 @@ let hybrid_gene_distance_by_element
   let element_map =  Genomic_interval_collection.interval_map elements in
   Genomic_annotation.compute_cis_distances symbol_elements_hybrid ~element_map ~gene_annotation:filtered_annot ~major_isoforms:major_isoforms
 
-let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~propagated_fa ~gonames =
+let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~propagated_fa ~gonames ~bait_collection ~annotated_baits =
   let gocat_assignment_great, domains_int =
     great_gocat_assignment
       ~chromosome_sizes ~genomic_annotation:filtered_annot
       ~upstream:pl.upstream ~downstream:pl.downstream ~extend:0
       ~foreground ~background ~propagated_fa
   in
-  let bait_collection = Genomic_interval_collection.of_bed_file pl.bait_coords ~strip_chr:true ~format:Base1 in
-  let annotated_baits = Chromatin_contact.go_annotate_baits ~bait_collection ~genome_annotation:filtered_annot ~max_dist:pl.max_dist_bait_TSS ~functional_annot:propagated_fa in
   let all_contacts =
     all_contacts_of_beds pl.ibed_files
       ~bait_annotation:annotated_baits ~bait_collection
@@ -321,11 +291,22 @@ let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~pr
     ) ;
   )
 
+let contact_data_prepare pl ~genome_annotation ~functional_annot =
+  match pl.bait_coords with
+  | None -> dief "Bait coordinates required, use option --bait-coords"
+  | Some bait_coords_path ->
+    let bait_collection =
+      Genomic_interval_collection.of_bed_file bait_coords_path ~strip_chr:true ~format:Base1 in
+    let annotated_baits =
+      Chromatin_contact.go_annotate_baits
+        ~bait_collection ~genome_annotation
+        ~max_dist:pl.max_dist_bait_TSS
+        ~functional_annot in
+    bait_collection, annotated_baits
+
 let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg_path ; chr_sizes ; _} as params) =
   let main_result =
     let open Let_syntax.Result in
-    let* check_pars = check_required_parameters params in
-    Logs.info (fun m -> m "%s" check_pars) ;
     let* obo = Obo.of_obo_file obo_path in
     let* ontology = Ontology.of_obo obo domain in
     let* gaf = Gaf.of_gaf_file functional_annot in
@@ -340,7 +321,9 @@ let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg
     Logs.info (fun m -> m "%d genes after filtering transcript biotypes" (Genomic_annotation.number_of_genes filtered_annot_bio_tx)) ;
     let filtered_annot_gene_symbols = Utils.chrono "filter gene symbols" (Genomic_annotation.filter_gene_symbols filtered_annot_bio_tx) gene_symbols in  (*take only genes whose symbols are in functional (GO) annotations*)
     Logs.info (fun m -> m "%d genes after filtering gene symbols" (Genomic_annotation.number_of_genes filtered_annot_gene_symbols)) ;
-    let chromosome_sizes = Utils.chrono "construct chr collection" (fun () -> Genomic_interval_collection.of_chr_size_file chr_sizes ~strip_chr:true) () in
+    let chromosome_sizes =
+      Genomic_interval_collection.of_chr_size_file chr_sizes ~strip_chr:true
+    in
     let chr_set = Genomic_interval_collection.chr_set chromosome_sizes in
     let filtered_annot_chr = Utils.chrono "filter standard chromosomes" (Genomic_annotation.filter_chromosomes filtered_annot_gene_symbols) chr_set in (*take only genes on standard chromosomes*)
     Logs.info (fun m -> m "%d genes on standard chromosomes" (Genomic_annotation.number_of_genes filtered_annot_chr)) ;
@@ -350,10 +333,21 @@ let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg
     let unfiltered_background = Utils.chrono "read background elements" (fun () -> Genomic_interval_collection.of_bed_file bg_path ~strip_chr:true ~format:Base0) () in
     let foreground = Utils.chrono "removing duplicated foreground elements" Genomic_interval_collection.remove_duplicated_identifiers unfiltered_foreground in
     let background = Utils.chrono "removing duplicated background elements" Genomic_interval_collection.remove_duplicated_identifiers unfiltered_background in
+    let with_contact_data f =
+      let bait_collection, annotated_baits =
+        contact_data_prepare
+          params
+          ~functional_annot:propagated_fa
+          ~genome_annotation:filtered_annot
+      in
+      f ~bait_collection ~annotated_baits
+    in
     match mode with
     | GREAT -> great_mode params ~background ~chromosome_sizes ~foreground ~filtered_annot ~gonames ~propagated_fa
-    | Contacts -> contacts_mode params ~background ~foreground ~filtered_annot ~gonames ~propagated_fa
-    | Hybrid -> hybrid_mode params ~background ~foreground ~chromosome_sizes ~filtered_annot ~gonames ~propagated_fa
+    | Contacts ->
+      with_contact_data @@ contacts_mode params ~background ~foreground ~filtered_annot ~gonames ~propagated_fa
+    | Hybrid ->
+      with_contact_data @@ hybrid_mode params ~background ~foreground ~chromosome_sizes ~filtered_annot ~gonames ~propagated_fa
   in
   match main_result with
   | Ok () -> ()
@@ -398,7 +392,7 @@ let term =
     Arg.(required & opt (some non_dir_file) None & info ["gene-annot"] ~doc ~docv:"PATH")
   and+ chr_sizes =
     let doc = "Path to chromosome size files (tab-separated, chr size)." in
-    Arg.(value & opt string "NA" & info ["chr-sizes"] ~doc ~docv:"PATH")
+    Arg.(required & opt (some non_dir_file) None & info ["chr-sizes"] ~doc ~docv:"PATH")
   and+ upstream =
     let doc = "Size of basal regulatory domain upstream of TSS. Used in GREAT mode." in
     Arg.(value & opt int 5_000 & info ["upstream"] ~doc ~docv:"INT")
@@ -410,10 +404,10 @@ let term =
     Arg.(value & opt int 1_000_000 & info ["extend"] ~doc ~docv:"INT")
   and+ bait_coords =
     let doc = "Path to bait coordinates file. " in
-    Arg.(value & opt string "NA" & info ["bait-coords"] ~doc ~docv:"PATH")
-  and+ ibed_path =
+    Arg.(value & opt (some non_dir_file) None & info ["bait-coords"] ~doc ~docv:"PATH")
+  and+ ibed_files =
     let doc = "Path(s) to chromatin contact data in IBED format. Can be several paths separated by commas. " in
-    Arg.(value & opt string "NA" & info ["ibed-path"] ~doc ~docv:"PATH")
+    Arg.(value & opt (list string) [] & info ["ibed-path"] ~doc ~docv:"PATH")
   and+ max_dist_bait_TSS =
     let doc = "Maximum accepted distance (in base pairs) between gene TSS and bait coordinates." in
     Arg.(value & opt int 1_000 & info ["max-dist-bait-TSS"] ~doc ~docv:"INT")
@@ -445,7 +439,6 @@ let term =
     let doc = "Write output for gene-element association in background." in
     Arg.(value & flag  & info ["write-background"] ~doc)
   in
-  let ibed_files = String.split ibed_path ~on:',' in
   let pl = {mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg_path ; chr_sizes ; upstream ; downstream ; extend ; bait_coords ; ibed_files ; max_dist_bait_TSS ; max_dist_element_fragment ; min_dist_contacts ; max_dist_contacts ; min_score ; output_dir ; output_prefix ; write_elements_foreground ; write_elements_background} in
   let output_pars = Printf.sprintf "%s/%s_parameters.txt" output_dir output_prefix in
   Logs.set_reporter (Logs.format_reporter ());
