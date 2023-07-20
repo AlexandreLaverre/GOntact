@@ -54,8 +54,8 @@ type gocat_assignment = {
 
 let gocat_assignment_combine a1 a2 =
   {
-    foreground = Go_enrichment.combine_GO_maps a1.foreground a2.foreground ;
-    background = Go_enrichment.combine_GO_maps a1.background a2.background ;
+    foreground = Go_enrichment.combine_annotations a1.foreground a2.foreground ;
+    background = Go_enrichment.combine_annotations a1.background a2.background ;
   }
 
 let enrichment { foreground ; background } propagated_fa =

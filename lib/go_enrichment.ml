@@ -36,11 +36,6 @@ let combine_maps gomap1 gomap2 =
   let gomap = String.Map.of_alist_exn gotuples in
   gomap
 
-let combine_GO_maps xs ys =
-  List.map2_exn xs ys ~f:(fun (gi_x, cats_x) (gi_y, cats_y) ->
-      assert Genomic_interval.(String.equal (id gi_x) (id gi_y)) ;
-      gi_x, GO_term_set.union cats_x cats_y
-    )
 
 let go_frequencies ~categories_by_element fa =
   let nb_total = List.length categories_by_element in (* number of elements that have at least one GO category*)
@@ -103,3 +98,21 @@ let write_output results go_names path =
       List.iter ordered_results  ~f:(fun res ->
           let name = String.Map.find_exn go_names res.id in
           Printf.fprintf output "%s\t%s\t%d\t%d\t%f\t%d\t%d\t%f\t%f\t%f\n" res.id name res.count_foreground res.total_foreground res.observed res.count_background res.total_background res.expected res.pval res.fdr))
+
+type annotation = (Genomic_interval.t * GO_term_set.t) list
+
+let combine_annotations xs ys =
+  List.map2_exn xs ys ~f:(fun (gi_x, cats_x) (gi_y, cats_y) ->
+      assert Genomic_interval.(String.equal (id gi_x) (id gi_y)) ;
+      gi_x, GO_term_set.union cats_x cats_y
+    )
+
+let binom_test element_annotation functional_annotation =
+  let frequencies = FGBG.map element_annotation ~f:(fun x ->
+      go_frequencies ~categories_by_element:x functional_annotation
+    ) in
+  let go_frequencies_background = frequencies.background in
+  let go_frequencies_foreground = frequencies.foreground in
+  foreground_vs_background_binom_test
+    ~go_frequencies_background
+    ~go_frequencies_foreground

@@ -1,6 +1,15 @@
 open Core
 
+type annotation = (Genomic_interval.t * GO_term_set.t) list
+
+val combine_annotations : annotation -> annotation -> annotation
+
 type enrichment_result
+
+val binom_test :
+  annotation FGBG.t ->
+  Functional_annotation.t ->
+  enrichment_result list
 
 val foreground_vs_background_binom_test :
   go_frequencies_foreground:(int String.Map.t) ->
@@ -23,12 +32,7 @@ val combine_maps :
   (string list) String.Map.t ->
   (string list) String.Map.t
 
-val combine_GO_maps :
-  (Genomic_interval.t * GO_term_set.t) list ->
-  (Genomic_interval.t * GO_term_set.t) list ->
-  (Genomic_interval.t * GO_term_set.t) list
-
 val go_frequencies :
-  categories_by_element:(Genomic_interval.t * GO_term_set.t) list ->
+  categories_by_element:annotation ->
   Functional_annotation.t ->
   int String.Map.t
