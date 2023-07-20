@@ -62,25 +62,6 @@ let _test_interval_intersection () =
       List.iter neighboors ~f:(fun x -> Printf.printf "%s intersects with %s\n" (Genomic_interval.id u) (Genomic_interval.id x))
     )
 
-let _test_regulatory_domains () =
-  let open Let_syntax.Result in
-  let* ga = Genomic_annotation.of_ensembl_biomart_file "/home/ubuntu/data/mydatalocal/GOntact/data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt" in
-  let* obo = Obo.of_obo_file "/home/ubuntu/data/mydatalocal/GOntact/data/GeneOntology/go-basic.obo" in
-  let* bp = Ontology.of_obo obo Biological_process in
-  let+ gaf =  Gaf.of_gaf_file "/home/ubuntu/data/mydatalocal/GOntact/data/GeneOntology/goa_human.gaf" in
-  let fa = Functional_annotation.of_gaf_and_ontology gaf bp in
-  let fap = Functional_annotation.propagate_annotations fa bp in
-  let gene_symbols = Functional_annotation.gene_symbols fap in
-  let chr_sizes = Genomic_interval_collection.of_chr_size_file "/home/ubuntu/data/mydatalocal/GOntact/data/ensembl_annotations/human/chr_sizes_hg38.txt" ~strip_chr:false in
-  let chr_set = Genomic_interval_collection.chr_set chr_sizes in
-  let filtered_annot_chr = Genomic_annotation.filter_chromosomes ga chr_set in (*take only genes on standard chromosomes*)
-  let filtered_annot_bio_gene = Genomic_annotation.filter_gene_biotypes filtered_annot_chr "protein_coding" in (*take only protein_coding genes*)
-  let filtered_annot_bio_tx = Genomic_annotation.filter_transcript_biotypes filtered_annot_bio_gene "protein_coding" in (*take only protein_coding transcripts*)
-  let filtered_annot = Genomic_annotation.filter_gene_symbols filtered_annot_bio_tx gene_symbols in  (*take only genes whose symbols are in functional (GO) annotations*)
-  let domains = Great.basal_plus_extension_domains ~chromosome_sizes:chr_sizes ~genomic_annotation:filtered_annot ~upstream:5000 ~downstream:1000 ~extend:1000000 in
-  let int_domains = Great.genomic_interval_collection domains in
-  Genomic_interval_collection.write_output int_domains "basal_plus_extension_domains.txt" ~append:false
-
 (*
 let test_go_frequencies () =
   let open Let_syntax.Result in
