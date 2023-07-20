@@ -102,3 +102,34 @@ let elements_by_go_category unique_gocat_by_element =
 let symbol_elements ~(element_coordinates:Genomic_interval_collection.t) ~(regulatory_domains:Genomic_interval_collection.t) =
    let intersection = Genomic_interval_collection.intersect element_coordinates regulatory_domains in (*dictionary, element ids -> list of gene symbols*)
    intersection
+
+
+type param = {
+  upstream : int ;
+  downstream : int ;
+  extend : int ;
+}
+
+type enrichment_analysis = {
+  enriched_terms : Go_enrichment.enrichment_result list ;
+  domains_int : Genomic_interval_collection.t ;
+  element_annotation : Go_enrichment.annotation FGBG.t ;
+}
+
+let enrichment_analysis
+    { upstream ; downstream ; extend } ~chromosome_sizes
+    ~genomic_annotation ~functional_annotation
+    elements =
+  let domains =
+    basal_plus_extension_domains
+      ~chromosome_sizes ~genomic_annotation
+      ~upstream ~downstream ~extend
+  in
+  let domains_int = genomic_interval_collection domains in
+  let annotate element_coordinates =
+    go_categories_by_element
+      ~element_coordinates ~regulatory_domains:domains_int
+      ~functional_annot:functional_annotation in
+  let element_annotation = FGBG.map elements ~f:annotate in
+  let enriched_terms = Go_enrichment.binom_test element_annotation functional_annotation in
+  { enriched_terms ; domains_int ; element_annotation }
