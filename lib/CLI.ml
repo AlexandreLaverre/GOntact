@@ -122,13 +122,6 @@ let great_mode pl ~chromosome_sizes ~gonames ~filtered_annot ~foreground ~backgr
     ) ;
   )
 
-let contacts_gocat_assignment ~contacted_fragments ~fragment_to_baits ~annotated_baits ~foreground ~background =
-  let assign element_coordinates =
-    Chromatin_contact.go_categories_by_element
-      ~element_coordinates ~fragments:contacted_fragments
-      ~fragment_to_baits ~annotated_baits in
-  { FGBG.foreground = assign foreground ; background = assign background }
-
 let contact_gene_distance_by_element
     elements ~filtered_annot ~major_isoforms
     ~contacted_fragments ~fragment_to_baits ~symbol_annotated_baits =
@@ -145,32 +138,21 @@ let contact_gene_distance_by_element
     ~element_map
     ~gene_annotation:filtered_annot ~major_isoforms
 
-let all_contacts_of_beds beds ~bait_annotation ~bait_collection ~min_dist_contacts ~max_dist_contacts ~min_score =
-  let contact_list = List.map beds ~f:(fun file -> Chromatin_contact.of_ibed_file file ~strip_chr:true) in
-  let with_annotated_baits = List.map contact_list ~f:(fun cc ->
-      Chromatin_contact.remove_unannotated_baits ~contacts:cc ~bait_annotation
-    ) in
-  let cis_contacts = List.map with_annotated_baits ~f:(fun cc -> Chromatin_contact.select_cis cc) in
-  let range_contacts = List.map cis_contacts ~f:(fun cc -> Chromatin_contact.select_distance cc ~min_dist:min_dist_contacts ~max_dist:max_dist_contacts) in
-  let score_contacts = List.map range_contacts ~f:(fun cc -> Chromatin_contact.select_min_score cc ~min_score) in
-  let unbaited_contacts = List.map score_contacts ~f:(fun cc -> Chromatin_contact.select_unbaited cc ~bait_collection) in
-  List.dedup_and_sort ~compare:Chromatin_contact.compare (List.join unbaited_contacts)
-
-let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~propagated_fa ~bait_collection ~annotated_baits =
-  let all_contacts =
-    all_contacts_of_beds pl.ibed_files
-      ~bait_annotation:annotated_baits ~bait_collection
-      ~min_dist_contacts:(float_of_int pl.min_dist_contacts)
-      ~max_dist_contacts:(float_of_int pl.max_dist_contacts)
-      ~min_score:pl.min_score in
-  let contacted_fragments = Chromatin_contact.extend_fragments ~contacts:all_contacts ~margin:pl.max_dist_element_fragment in
-  let fragment_to_baits = Chromatin_contact.fragment_to_baits ~contacts:all_contacts in
-  let gocat_assignment = contacts_gocat_assignment ~contacted_fragments ~fragment_to_baits ~annotated_baits ~foreground ~background in
-  let enrichment_results = enrichment gocat_assignment propagated_fa in
-  let annotated_baits = String.Map.map annotated_baits ~f:(Functional_annotation.term_names_of_pkeys propagated_fa) in
+let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~contact_graph ~propagated_fa ~annotated_baits =
+  let { Contact_enrichment_analysis.contacted_fragments ; fragment_to_baits ;
+        element_annotation ; _ } as enrichment_results =
+    Contact_enrichment_analysis.enrichment_analysis
+      ~margin:pl.max_dist_element_fragment
+      annotated_baits
+      propagated_fa
+      contact_graph
+      { FGBG.foreground ; background }
+  in
+  let bait_collection = annotated_baits.baits in
+  let annotated_baits = String.Map.map annotated_baits.annotation ~f:(Functional_annotation.term_names_of_pkeys propagated_fa) in
   let output_path_GO_baits = output_file pl "bait_GO_annotation.txt" in
   Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:annotated_baits ~path:output_path_GO_baits ;
-  output_enrichment pl enrichment_results gonames ;
+  output_enrichment pl enrichment_results.enriched_terms gonames ;
 
   if (pl.write_elements_foreground || pl.write_elements_background) then (
     let major_isoforms = Utils.chrono "extract major isoforms symbols" Genomic_annotation.identify_major_isoforms_symbols filtered_annot in
@@ -188,7 +170,7 @@ let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~propagate
       let output_path_fg_elements = output_file pl "element_gene_association_foreground.txt" in
       Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_foreground output_path_fg_elements ;
       let output_path_fg_elements_go = output_file pl "element_GO_association_foreground.txt" in
-      let gocat_by_element_foreground = expand_go_term_sets gocat_assignment.foreground propagated_fa in
+      let gocat_by_element_foreground = expand_go_term_sets element_annotation.foreground propagated_fa in
       let elements_by_gocat_foreground = Chromatin_contact.elements_by_annotation gocat_by_element_foreground in
       Go_enrichment.write_detailed_association elements_by_gocat_foreground output_path_fg_elements_go ;
     ) ;
@@ -198,7 +180,7 @@ let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~propagate
       let output_path_bg_elements = output_file pl "element_gene_association_background.txt" in
       Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_background output_path_bg_elements ;
       let output_path_bg_elements_go = output_file pl "element_GO_association_background.txt" in
-      let gocat_by_element_background = expand_go_term_sets gocat_assignment.background propagated_fa in
+      let gocat_by_element_background = expand_go_term_sets element_annotation.background propagated_fa in
       let elements_by_gocat_background = Chromatin_contact.elements_by_annotation gocat_by_element_background in
       Go_enrichment.write_detailed_association elements_by_gocat_background output_path_bg_elements_go ;
     ) ;
@@ -220,7 +202,7 @@ let hybrid_gene_distance_by_element
   let element_map =  Genomic_interval_collection.interval_map elements in
   Genomic_annotation.compute_cis_distances symbol_elements_hybrid ~element_map ~gene_annotation:filtered_annot ~major_isoforms:major_isoforms
 
-let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~propagated_fa ~gonames ~bait_collection ~annotated_baits =
+let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~contact_graph ~propagated_fa ~gonames ~annotated_baits =
   let great =
     Great.enrichment_analysis
       { Great.upstream = pl.upstream ; downstream = pl.downstream ; extend = 0 }
@@ -228,18 +210,19 @@ let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~pr
       ~functional_annotation:propagated_fa
       { FGBG.foreground ; background }
   in
-  let all_contacts =
-    all_contacts_of_beds pl.ibed_files
-      ~bait_annotation:annotated_baits ~bait_collection
-      ~min_dist_contacts:(float_of_int pl.min_dist_contacts)
-      ~max_dist_contacts:(float_of_int pl.max_dist_contacts)
-      ~min_score:pl.min_score in
-  let contacted_fragments = Chromatin_contact.extend_fragments ~contacts:all_contacts ~margin:pl.max_dist_element_fragment in
-  let fragment_to_baits = Chromatin_contact.fragment_to_baits ~contacts:all_contacts in
-  let gocat_assignment_cc = contacts_gocat_assignment ~annotated_baits ~background ~contacted_fragments ~foreground ~fragment_to_baits in
-  let gocat_assignment = gocat_assignment_combine great.element_annotation gocat_assignment_cc in
+  let { Contact_enrichment_analysis.contacted_fragments ; fragment_to_baits ; _ }
+    as contacts =
+    Contact_enrichment_analysis.enrichment_analysis
+      ~margin:pl.max_dist_element_fragment
+      annotated_baits
+      propagated_fa
+      contact_graph
+      { FGBG.foreground ; background }
+  in
+  let gocat_assignment = gocat_assignment_combine great.element_annotation contacts.element_annotation in
   let enrichment_results = enrichment gocat_assignment propagated_fa in
-  let annotated_baits = String.Map.map annotated_baits ~f:(Functional_annotation.term_names_of_pkeys propagated_fa) in
+  let bait_collection = annotated_baits.baits in
+  let annotated_baits = String.Map.map annotated_baits.annotation ~f:(Functional_annotation.term_names_of_pkeys propagated_fa) in
   let output_path_baits = output_file pl "bait_annotation.txt" in
   Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:annotated_baits ~path:output_path_baits ;
   output_enrichment pl enrichment_results gonames ;
@@ -257,7 +240,7 @@ let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~pr
       Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_foreground output_path_fg_elements ;
       let output_path_fg_elements_go = output_file pl "element_GO_association_foreground.txt" in
       let gocat_by_element_great_foreground = expand_go_term_sets great.element_annotation.foreground propagated_fa in
-      let gocat_by_element_cc_foreground = expand_go_term_sets gocat_assignment_cc.foreground propagated_fa in
+      let gocat_by_element_cc_foreground = expand_go_term_sets contacts.element_annotation.foreground propagated_fa in
       let elements_by_gocat_great_foreground = Great.elements_by_go_category gocat_by_element_great_foreground in
       let elements_by_gocat_cc_foreground = Chromatin_contact.elements_by_annotation gocat_by_element_cc_foreground in
       let elements_by_gocat_foreground = Go_enrichment.combine_maps elements_by_gocat_great_foreground elements_by_gocat_cc_foreground in
@@ -270,7 +253,7 @@ let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~pr
       Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_background output_path_bg_elements ;
       let output_path_bg_elements_go = output_file pl "element_GO_association_background.txt" in
       let gocat_by_element_great_background = expand_go_term_sets great.element_annotation.background propagated_fa in
-      let gocat_by_element_cc_background = expand_go_term_sets gocat_assignment_cc.background propagated_fa in
+      let gocat_by_element_cc_background = expand_go_term_sets contacts.element_annotation.background propagated_fa in
       let elements_by_gocat_great_background = Great.elements_by_go_category gocat_by_element_great_background in
       let elements_by_gocat_cc_background = Chromatin_contact.elements_by_annotation gocat_by_element_cc_background in
       let elements_by_gocat_background = Go_enrichment.combine_maps elements_by_gocat_great_background elements_by_gocat_cc_background in
@@ -278,18 +261,32 @@ let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~pr
     ) ;
   )
 
-let contact_data_prepare pl ~genome_annotation ~functional_annot =
+let contact_data_prepare pl ~genome_annotation ~functional_annotation =
   match pl.bait_coords with
   | None -> dief "Bait coordinates required, use option --bait-coords"
   | Some bait_coords_path ->
     let bait_collection =
       Genomic_interval_collection.of_bed_file bait_coords_path ~strip_chr:true ~format:Base1 in
     let annotated_baits =
-      Chromatin_contact.go_annotate_baits
-        ~bait_collection ~genome_annotation
-        ~max_dist:pl.max_dist_bait_TSS
-        ~functional_annot in
-    bait_collection, annotated_baits
+      Contact_enrichment_analysis.annotate_baits
+        bait_collection
+        ~genome_annotation ~functional_annotation
+        ~max_dist_bait_TSS:pl.max_dist_bait_TSS
+    in
+    let contact_graphs =
+      List.map pl.ibed_files ~f:(Chromatin_contact_graph.of_ibed_file ~strip_chr:true)
+    in
+    let contact_graph =
+      Contact_enrichment_analysis.aggregate_contact_graphs
+        contact_graphs
+        {
+          Contact_enrichment_analysis.min_dist = float pl.min_dist_contacts ;
+          max_dist = float pl.max_dist_contacts ;
+          min_score = pl.min_score
+        }
+        annotated_baits
+    in
+    contact_graph, annotated_baits
 
 let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg_path ; chr_sizes ; _} as params) =
   let main_result =
@@ -321,13 +318,13 @@ let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg
     let foreground = Utils.chrono "removing duplicated foreground elements" Genomic_interval_collection.remove_duplicated_identifiers unfiltered_foreground in
     let background = Utils.chrono "removing duplicated background elements" Genomic_interval_collection.remove_duplicated_identifiers unfiltered_background in
     let with_contact_data f =
-      let bait_collection, annotated_baits =
+      let contact_graph, annotated_baits =
         contact_data_prepare
           params
-          ~functional_annot:propagated_fa
+          ~functional_annotation:propagated_fa
           ~genome_annotation:filtered_annot
       in
-      f ~bait_collection ~annotated_baits
+      f ~contact_graph ~annotated_baits
     in
     match mode with
     | GREAT -> great_mode params ~background ~chromosome_sizes ~foreground ~filtered_annot ~gonames ~propagated_fa

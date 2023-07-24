@@ -23,7 +23,7 @@ let shared_contacts ibed_paths min_nb_samples path_output =
       List.iter l ~f:(fun x -> H.add_multi h ~key:x ~data:()) ;
       H.to_alist h |> List.map ~f:(fun (x, y) -> (x, List.length y))
     in
-    let contact_list = List.concat_map ibed_files ~f:(fun file -> Chromatin_contact.of_ibed_file file ~strip_chr:false) in
+    let contact_list = List.concat_map ibed_files ~f:(fun file -> Chromatin_contact_graph.of_ibed_file file ~strip_chr:false) in
     let contact_table = table contact_list in
     Out_channel.with_file path_output ~append:false ~f:(fun output -> (
         Printf.fprintf output "bait_chr\tbait_start\tbait_end\tbait_name\totherEnd_chr\totherEnd_start\totherEnd_end\totherEnd_name\tN_reads\tscore\n" ;

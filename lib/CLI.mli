@@ -41,9 +41,9 @@ val contacts_mode :
   filtered_annot:Genomic_annotation.t ->
   foreground:Genomic_interval_collection.t ->
   background:Genomic_interval_collection.t ->
+  contact_graph:Chromatin_contact_graph.t ->
   propagated_fa:Functional_annotation.t ->
-  bait_collection:Genomic_interval_collection.t ->
-  annotated_baits:Ontology.PKey.t list Core.String.Map.t ->
+  annotated_baits:Contact_enrichment_analysis.annotated_bait_collection ->
   unit
 
 val hybrid_mode :
@@ -52,10 +52,10 @@ val hybrid_mode :
   filtered_annot:Genomic_annotation.t ->
   foreground:Genomic_interval_collection.t ->
   background:Genomic_interval_collection.t ->
+  contact_graph:Chromatin_contact_graph.t ->
   propagated_fa:Functional_annotation.t ->
   gonames:string Core.String.Map.t ->
-  bait_collection:Genomic_interval_collection.t ->
-  annotated_baits:Ontology.PKey.t list Core.String.Map.t ->
+  annotated_baits:Contact_enrichment_analysis.annotated_bait_collection ->
   unit
 
 val command : unit Cmdliner.Cmd.t
