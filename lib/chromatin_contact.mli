@@ -1,7 +1,22 @@
 open Core
 
-type t
+type t = {
+  bait_chr : string ;
+  bait_start : int ;
+  bait_end : int ;
+  bait_name : string ;
+  otherEnd_chr : string ;
+  otherEnd_start : int ;
+  otherEnd_end : int ;
+  otherEnd_name : string ;
+  n_reads : int ;
+  score : float ;
+}
 [@@deriving sexp]
+
+val distance : t -> float option
+
+val contacted_fragment : t -> Genomic_interval.t
 
 val of_ibed_file :
   string ->

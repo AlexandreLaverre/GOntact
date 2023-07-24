@@ -75,7 +75,7 @@ let select_cis l =
       Printf.printf "Found %d contacts before filtering to keep only cis contacts.\n" nb_original;  *)
   List.filter l ~f:(fun cc -> String.equal cc.bait_chr cc.otherEnd_chr)
 
-let compute_distance cc =
+let distance cc =
   match String.equal cc.bait_chr cc.otherEnd_chr with
   | true -> (
       let midpos1 = ((float_of_int cc.bait_start) +. (float_of_int cc.bait_end)) /. 2. in
@@ -89,7 +89,7 @@ let select_distance l ~min_dist ~max_dist =
   (* let nb_original = List.length l in
     Printf.printf "Found %d contacts before filtering with minimum distance %f and maximum distance %f.\n" nb_original min_dist max_dist; *)
   let verify_distance cc =
-    let d = compute_distance cc in
+    let d = distance cc in
     match d with
     | None -> false
     | Some dist -> Float.(dist >= min_dist && dist <= max_dist)
