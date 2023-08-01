@@ -15,7 +15,7 @@ let perform
     ~margin ~annotated_baits ~contact_graph elements =
   let great =
     Great.enrichment_analysis
-      great_param
+      { great_param with extend = 0 }
       ~chromosome_sizes ~genome_annotation
       ~functional_annotation
       elements
