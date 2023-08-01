@@ -268,7 +268,8 @@ let contact_data_prepare pl ~genome_annotation ~functional_annotation =
         {
           Contact_enrichment_analysis.min_dist = float pl.min_dist_contacts ;
           max_dist = float pl.max_dist_contacts ;
-          min_score = pl.min_score
+          min_score = pl.min_score ;
+          min_samples = None ;
         }
         annotated_baits
     in

@@ -4,6 +4,7 @@ type param = {
   min_dist : float ;
   max_dist : float ;
   min_score : float ;
+  min_samples : int option ;
 }
 
 type annotated_bait_collection = {
@@ -39,16 +40,22 @@ type t = {
   fragment_to_baits : string list String.Map.t ;
 }
 
-let aggregate_contact_graphs graphs { min_dist ; max_dist ; min_score } annotated_baits =
-  let with_annotated_baits =
-    List.map
-      graphs
-      ~f:(Chromatin_contact_graph.remove_unannotated_baits ~bait_annotation:annotated_baits.annotation) in
-  let cis_contacts = List.map with_annotated_baits ~f:Chromatin_contact_graph.select_cis in
-  let range_contacts = List.map cis_contacts ~f:(Chromatin_contact_graph.select_distance ~min_dist ~max_dist) in
-  let score_contacts = List.map range_contacts ~f:(Chromatin_contact_graph.select_min_score ~min_score) in
-  let unbaited_contacts = List.map score_contacts ~f:(Chromatin_contact_graph.select_unbaited ~bait_collection:annotated_baits.baits) in
-  List.dedup_and_sort ~compare:Chromatin_contact.compare (List.join unbaited_contacts)
+let aggregate_contact_graphs graphs { min_dist ; max_dist ; min_score ; min_samples } annotated_baits =
+  let transform_contact_graph graph =
+    graph
+    |> Chromatin_contact_graph.remove_unannotated_baits ~bait_annotation:annotated_baits.annotation
+    |> Chromatin_contact_graph.select_cis
+    |> Chromatin_contact_graph.select_distance ~min_dist ~max_dist
+    |> Chromatin_contact_graph.select_min_score ~min_score
+    |> Chromatin_contact_graph.select_unbaited ~bait_collection:annotated_baits.baits
+  in
+  let select = match min_samples with
+    | None -> List.hd
+    | Some min_samples -> (fun xs -> if List.length xs >= min_samples then List.hd xs else None)
+  in
+  List.concat_map graphs ~f:transform_contact_graph
+  |> List.sort_and_group ~compare:Chromatin_contact.compare
+  |> List.filter_map ~f:select
 
 let go_categories_by_element
     ~(element_coordinates:Genomic_interval_collection.t)
