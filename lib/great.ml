@@ -65,7 +65,7 @@ let extend_domains ~genomic_annotation ~ordered_tss ~extend ~upstream ~downstrea
     let b2 = basal_domain_of_tss i2 in
     extend_one_domain i1 ~left_boundary:0 ~right_boundary:(b2.start_pos) :: (rec_extend t ~acc:[] ~previous:b1)
 
-let basal_plus_extension_domains_one_chr  ~chr ~chromosome_size ~genomic_annotation:ga ~upstream ~downstream ~extend =
+let basal_plus_extension_domains_one_chr  ~chr ~chromosome_size ~genome_annotation:ga ~upstream ~downstream ~extend =
   let chr_set = String.Set.singleton chr in
   let filtered_annot_chr = Genomic_annotation.filter_chromosomes ga chr_set in (*take only genes on only one chromosome *)
   let major_isoforms = Genomic_annotation.identify_major_isoforms filtered_annot_chr in      (*canonical isoform for each gene*)
@@ -73,9 +73,9 @@ let basal_plus_extension_domains_one_chr  ~chr ~chromosome_size ~genomic_annotat
   let domains_list = extend_domains ~genomic_annotation:ga ~ordered_tss:(Genomic_interval_collection.interval_list major_tss) ~extend ~upstream ~downstream ~chromosome_size in
   domains_list
 
-let basal_plus_extension_domains ~(chromosome_sizes:Genomic_interval_collection.t) ~genomic_annotation ~upstream ~downstream ~extend =
+let basal_plus_extension_domains ~(chromosome_sizes:Genomic_interval_collection.t) ~genome_annotation ~upstream ~downstream ~extend =
   let cl = Genomic_interval_collection.interval_list chromosome_sizes in
-  List.concat_map cl ~f:(fun i -> basal_plus_extension_domains_one_chr ~chr:(Genomic_interval.chr i) ~chromosome_size:(Genomic_interval.end_pos i) ~genomic_annotation ~upstream ~downstream ~extend)
+  List.concat_map cl ~f:(fun i -> basal_plus_extension_domains_one_chr ~chr:(Genomic_interval.chr i) ~chromosome_size:(Genomic_interval.end_pos i) ~genome_annotation ~upstream ~downstream ~extend)
 
 let go_categories_by_element ~(element_coordinates:Genomic_interval_collection.t) ~(regulatory_domains:Genomic_interval_collection.t) ~(functional_annot:Functional_annotation.t) =
   (*regulatory domains were constructed for genes that have at least one GO annotation*)
@@ -118,11 +118,11 @@ type enrichment_analysis = {
 
 let enrichment_analysis
     { upstream ; downstream ; extend } ~chromosome_sizes
-    ~genomic_annotation ~functional_annotation
+    ~genome_annotation ~functional_annotation
     elements =
   let domains =
     basal_plus_extension_domains
-      ~chromosome_sizes ~genomic_annotation
+      ~chromosome_sizes ~genome_annotation
       ~upstream ~downstream ~extend
   in
   let domains_int = genomic_interval_collection domains in
@@ -149,6 +149,6 @@ let test_regulatory_domains () =
   let filtered_annot_bio_gene = Genomic_annotation.filter_gene_biotypes filtered_annot_chr "protein_coding" in (*take only protein_coding genes*)
   let filtered_annot_bio_tx = Genomic_annotation.filter_transcript_biotypes filtered_annot_bio_gene "protein_coding" in (*take only protein_coding transcripts*)
   let filtered_annot = Genomic_annotation.filter_gene_symbols filtered_annot_bio_tx gene_symbols in  (*take only genes whose symbols are in functional (GO) annotations*)
-  let domains = basal_plus_extension_domains ~chromosome_sizes:chr_sizes ~genomic_annotation:filtered_annot ~upstream:5000 ~downstream:1000 ~extend:1000000 in
+  let domains = basal_plus_extension_domains ~chromosome_sizes:chr_sizes ~genome_annotation:filtered_annot ~upstream:5000 ~downstream:1000 ~extend:1000000 in
   let int_domains = genomic_interval_collection domains in
   Genomic_interval_collection.write_output int_domains "basal_plus_extension_domains.txt" ~append:false

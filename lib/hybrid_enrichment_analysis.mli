@@ -7,7 +7,7 @@ type t = {
 val perform :
   Great.param ->
   chromosome_sizes:Genomic_interval_collection.t ->
-  genomic_annotation:Genomic_annotation.t ->
+  genome_annotation:Genomic_annotation.t ->
   functional_annotation:Functional_annotation.t ->
   margin:int ->
   annotated_baits:Contact_enrichment_analysis.annotated_bait_collection ->

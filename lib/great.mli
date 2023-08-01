@@ -15,7 +15,7 @@ type enrichment_analysis = {
 val enrichment_analysis :
   param ->
   chromosome_sizes:Genomic_interval_collection.t ->
-  genomic_annotation:Genomic_annotation.t ->
+  genome_annotation:Genomic_annotation.t ->
   functional_annotation:Functional_annotation.t ->
   Genomic_interval_collection.t FGBG.t ->
   enrichment_analysis

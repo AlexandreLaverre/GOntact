@@ -11,12 +11,12 @@ let gocat_assignment_combine a1 a2 =
   }
 
 let perform
-    great_param ~chromosome_sizes ~genomic_annotation ~functional_annotation
+    great_param ~chromosome_sizes ~genome_annotation ~functional_annotation
     ~margin ~annotated_baits ~contact_graph elements =
   let great =
     Great.enrichment_analysis
       great_param
-      ~chromosome_sizes ~genomic_annotation
+      ~chromosome_sizes ~genome_annotation
       ~functional_annotation
       elements
   in

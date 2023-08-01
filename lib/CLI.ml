@@ -78,7 +78,7 @@ let great_mode pl ~chromosome_sizes ~gonames ~filtered_annot ~foreground ~backgr
   let { Great.enriched_terms ; domains_int ; element_annotation } =
     Great.enrichment_analysis
       { Great.upstream = pl.upstream ; downstream = pl.downstream ; extend = pl.extend }
-      ~chromosome_sizes ~genomic_annotation:filtered_annot
+      ~chromosome_sizes ~genome_annotation:filtered_annot
       ~functional_annotation:propagated_fa
       { FGBG.foreground ; background }
   in
@@ -198,7 +198,7 @@ let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~co
   let { Hybrid_enrichment_analysis.great ; contacts ; enriched_terms } =
     Hybrid_enrichment_analysis.perform
       great_param
-      ~chromosome_sizes ~genomic_annotation:filtered_annot
+      ~chromosome_sizes ~genome_annotation:filtered_annot
       ~functional_annotation:propagated_fa
       ~margin:pl.max_dist_element_fragment
       ~annotated_baits ~contact_graph
