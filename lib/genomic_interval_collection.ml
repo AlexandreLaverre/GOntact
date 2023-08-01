@@ -44,11 +44,15 @@ let split_bed_line line ~strip_chr ~format =
     Genomic_interval.make ~id new_chr start_1based end_1based new_strand
   | _ -> invalid_arg "bed file must have at least three fields "
 
-let of_bed_file path ~strip_chr ~format =
-  let l = In_channel.read_lines path in
-  let il = List.map l ~f:(split_bed_line ~strip_chr ~format) in
+let of_bed_lines lines ~strip_chr ~format =
+  let il = List.map lines ~f:(split_bed_line ~strip_chr ~format) in
   let sl = sort_by_coordinate il in
   {int_list = sl}
+
+let of_bed_file path ~strip_chr ~format =
+  In_channel.read_lines path
+  |> of_bed_lines ~strip_chr ~format
+
 
 let of_chr_size_file path ~strip_chr =
   let split_chr_line line =

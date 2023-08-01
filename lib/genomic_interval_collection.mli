@@ -7,6 +7,8 @@ type format = Base1 | Base0
 
 val of_bed_file : string -> strip_chr:bool -> format:format -> t
 
+val of_bed_lines : string list -> strip_chr:bool -> format:format -> t
+
 val of_chr_size_file : string -> strip_chr:bool -> t
 
 val of_interval_list : Genomic_interval.t list -> t
