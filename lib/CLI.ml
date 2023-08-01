@@ -47,17 +47,6 @@ let expand_go_term_sets go_terms_by_elt fa =
       |> Functional_annotation.term_names_of_pkeys fa
     )
 
-let gocat_assignment_combine a1 a2 =
-  FGBG.{
-    foreground = Go_enrichment.combine_annotations a1.foreground a2.foreground ;
-    background = Go_enrichment.combine_annotations a1.background a2.background ;
-  }
-
-let enrichment { FGBG.foreground ; background } propagated_fa =
-  let go_frequencies_foreground = Go_enrichment.go_frequencies ~categories_by_element:foreground propagated_fa in
-  let go_frequencies_background = Go_enrichment.go_frequencies ~categories_by_element:background propagated_fa in
-  Go_enrichment.foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequencies_background
-
 let output_domains pl domains_int =
   let output_path_domains = output_file pl "regulatory_domains.txt" in
   Genomic_interval_collection.write_output domains_int output_path_domains ~append:false
@@ -203,29 +192,26 @@ let hybrid_gene_distance_by_element
   Genomic_annotation.compute_cis_distances symbol_elements_hybrid ~element_map ~gene_annotation:filtered_annot ~major_isoforms:major_isoforms
 
 let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~contact_graph ~propagated_fa ~gonames ~annotated_baits =
-  let great =
-    Great.enrichment_analysis
-      { Great.upstream = pl.upstream ; downstream = pl.downstream ; extend = 0 }
+  let great_param =
+    { Great.upstream = pl.upstream ; downstream = pl.downstream ; extend = 0 }
+  in
+  let { Hybrid_enrichment_analysis.great ; contacts ; enriched_terms } =
+    Hybrid_enrichment_analysis.perform
+      great_param
       ~chromosome_sizes ~genomic_annotation:filtered_annot
       ~functional_annotation:propagated_fa
-      { FGBG.foreground ; background }
-  in
-  let { Contact_enrichment_analysis.contacted_fragments ; fragment_to_baits ; _ }
-    as contacts =
-    Contact_enrichment_analysis.perform
       ~margin:pl.max_dist_element_fragment
-      annotated_baits
-      propagated_fa
-      contact_graph
+      ~annotated_baits ~contact_graph
       { FGBG.foreground ; background }
   in
-  let gocat_assignment = gocat_assignment_combine great.element_annotation contacts.element_annotation in
-  let enrichment_results = enrichment gocat_assignment propagated_fa in
+  let { Contact_enrichment_analysis.contacted_fragments ; fragment_to_baits ; _ } =
+    contacts
+  in
   let bait_collection = annotated_baits.baits in
   let annotated_baits = String.Map.map annotated_baits.annotation ~f:(Functional_annotation.term_names_of_pkeys propagated_fa) in
   let output_path_baits = output_file pl "bait_annotation.txt" in
   Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:annotated_baits ~path:output_path_baits ;
-  output_enrichment pl enrichment_results gonames ;
+  output_enrichment pl enriched_terms gonames ;
   if (pl.write_elements_foreground || pl.write_elements_background) then (
     let major_isoforms = Utils.chrono "extract major isoforms symbols" Genomic_annotation.identify_major_isoforms_symbols filtered_annot in
     let symbol_annotated_baits = Chromatin_contact.symbol_annotate_baits ~bait_collection ~genome_annotation:filtered_annot ~max_dist:pl.max_dist_bait_TSS in
