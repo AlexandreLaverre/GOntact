@@ -141,7 +141,7 @@ let contact_gene_distance_by_element
 let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~contact_graph ~propagated_fa ~annotated_baits =
   let { Contact_enrichment_analysis.contacted_fragments ; fragment_to_baits ;
         element_annotation ; _ } as enrichment_results =
-    Contact_enrichment_analysis.enrichment_analysis
+    Contact_enrichment_analysis.perform
       ~margin:pl.max_dist_element_fragment
       annotated_baits
       propagated_fa
@@ -212,7 +212,7 @@ let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~co
   in
   let { Contact_enrichment_analysis.contacted_fragments ; fragment_to_baits ; _ }
     as contacts =
-    Contact_enrichment_analysis.enrichment_analysis
+    Contact_enrichment_analysis.perform
       ~margin:pl.max_dist_element_fragment
       annotated_baits
       propagated_fa

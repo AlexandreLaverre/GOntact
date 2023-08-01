@@ -32,7 +32,7 @@ let annotate_baits baits ~genome_annotation ~functional_annotation ~max_dist_bai
   let annotation = String.Map.map go_annot ~f:(fun l -> List.dedup_and_sort ~compare:Ontology.PKey.compare l) in
   { baits ; annotation }
 
-type enrichment_analysis = {
+type t = {
   enriched_terms : Go_enrichment.enrichment_result list ;
   element_annotation : Go_enrichment.annotation FGBG.t ;
   contacted_fragments : Genomic_interval_collection.t ;
@@ -70,7 +70,7 @@ let go_categories_by_element
       |> GO_term_set.of_sorted_lists_unsafe
     )
 
-let enrichment_analysis ~margin annotated_baits functional_annotation contact_graph elements =
+let perform ~margin annotated_baits functional_annotation contact_graph elements =
   let contacted_fragments = Chromatin_contact_graph.extend_fragments contact_graph ~margin in
   let fragment_to_baits = Chromatin_contact_graph.fragment_to_baits contact_graph in
   let annotate element_coordinates =

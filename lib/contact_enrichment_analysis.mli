@@ -22,17 +22,17 @@ val aggregate_contact_graphs :
   annotated_bait_collection ->
   Chromatin_contact_graph.t
 
-type enrichment_analysis = {
+type t = {
   enriched_terms : Go_enrichment.enrichment_result list ;
   element_annotation : Go_enrichment.annotation FGBG.t ;
   contacted_fragments : Genomic_interval_collection.t ;
   fragment_to_baits : string list Core.String.Map.t ;
 }
 
-val enrichment_analysis :
+val perform :
   margin:int ->
   annotated_bait_collection ->
   Functional_annotation.t ->
   Chromatin_contact_graph.t ->
   Genomic_interval_collection.t FGBG.t ->
-  enrichment_analysis
+  t
