@@ -36,7 +36,6 @@ let combine_maps gomap1 gomap2 =
   let gomap = String.Map.of_alist_exn gotuples in
   gomap
 
-
 let go_frequencies ~categories_by_element fa =
   let nb_total = List.length categories_by_element in (* number of elements that have at least one GO category*)
   let counts =
@@ -102,9 +101,12 @@ let write_output results go_names path =
 type annotation = (Genomic_interval.t * GO_term_set.t) list
 
 let combine_annotations xs ys =
-  List.map2_exn xs ys ~f:(fun (gi_x, cats_x) (gi_y, cats_y) ->
-      assert Genomic_interval.(String.equal (id gi_x) (id gi_y)) ;
-      gi_x, GO_term_set.union cats_x cats_y
+  let to_map zs = String.Map.of_alist_exn (List.map zs ~f:(fun ((gi, _) as p) -> Genomic_interval.id gi, p)) in
+  String.Map.fold2 (to_map xs) (to_map ys) ~init:[] ~f:(fun ~key:_ ~data acc ->
+      match data with
+      | `Left _ | `Right _ -> acc
+      | `Both ((gi_x, cats_x), (_, cats_y)) ->
+        (gi_x, GO_term_set.union cats_x cats_y) :: acc
     )
 
 let binom_test element_annotation functional_annotation =
