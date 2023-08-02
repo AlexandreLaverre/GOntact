@@ -108,7 +108,7 @@ module Form_page = struct
 	of PCHi-C samples: </label>
 	    </td>
 	    <td>
-	      <input type="text"
+	      <input type="number" min="1"
 		     name="min-samples"  value="1" style="width: 100px">
 	    </td>
 	  </tr>
@@ -119,7 +119,7 @@ module Form_page = struct
               <label for="min-score"> Minimum CHiCAGO score: </label>
 	    </td>
 	    <td>
-	      <input type="text"
+	      <input type="number" min="0"
 		     name="min-score"  value="5" style="width: 100px">
 	    </td>
 	  </tr>
@@ -131,7 +131,7 @@ module Form_page = struct
 	      contacted regions (bp):</label>
 	    </td>
 	     <td>
-	      <input type="text"
+	      <input type="number" min="0"
 		     name="min-dist-contacts" value="25000" style="width: 100px">
 	     </td>
 	  </tr>
@@ -143,7 +143,7 @@ module Form_page = struct
 	      contacted regions (bp):</label>
 	    </td>
 	     <td>
-	      <input type="text"
+	      <input type="number" min="0"
 		     name="max-dist-contacts"  value="1000000" style="width: 100px">
 	     </td>
 	     </tr>
@@ -155,7 +155,7 @@ module Form_page = struct
 	      elements and contacted fragments (bp):</label>
 	    </td>
 	     <td>
-	      <input type="text"
+	      <input type="number" min="0"
 		     name="max-dist-element-fragment"  value="5000" style="width: 100px">
 	     </td>
 	     </tr>
@@ -167,11 +167,10 @@ module Form_page = struct
               included (bp):</label>
 	    </td>
 	     <td>
-	      <input type="text"
+	      <input type="number" min="0"
 		     name="basal-domain"  value="0" style="width: 100px">
 	     </td>
 	     </tr>
-
 	  </table>
 
       <!-- submit button-->
