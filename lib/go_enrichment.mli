@@ -4,7 +4,17 @@ type annotation = (Genomic_interval.t * GO_term_set.t) list
 
 val combine_annotations : annotation -> annotation -> annotation
 
-type enrichment_result
+type enrichment_result = {
+  id : string ;
+  observed : float ;
+  expected : float ;
+  count_foreground : int ;
+  total_foreground : int ;
+  count_background : int ;
+  total_background : int ;
+  pval : float ;
+  fdr : float ;
+}
 
 val binom_test :
   annotation FGBG.t ->
