@@ -18,6 +18,12 @@ let html_page ~title body =
   in
   Html.html ~a:[Html.a_lang "en"] head (Html.body [Html.main body])
 
+let logo_header =
+  let open Html in
+  header [
+    img ~src:"img/GOntact_logo.png" ~alt:"GOntact logo" ~a:[a_width 600] () ;
+  ] ;
+
 module Form_page = struct
   let%html intro_par = {|
     <p style="text-align:justify;">
@@ -176,9 +182,7 @@ module Form_page = struct
   let render request =
     let open Tyxml.Html in
     html_page ~title:"GOntact" [
-      header [
-        img ~src:"img/GOntact_logo.png" ~alt:"GOntact logo" ~a:[a_width 600] () ;
-      ] ;
+      logo_header ;
       h1 [small [txt "Gene Ontology enrichments based on chromatin contacts for noncoding elements"]] ;
       hr () ;
       intro_par ;
@@ -213,6 +217,11 @@ module Decode_form = struct
 
   let single_file_contents label = function
     | [name, contents] -> Ok (name, contents)
+    | _ -> Rresult.R.error_msgf "wrong field structure (%s)" label
+
+  let maybe_single_file_contents label = function
+    | [] -> Ok None
+    | [name, contents] -> Ok (Some (name, contents))
     | _ -> Rresult.R.error_msgf "wrong field structure (%s)" label
 
 end
@@ -304,7 +313,7 @@ let analysis
   and+ domain = Decode_form.domain "domain" domain_choice
   and+ margin = Decode_form.int "margin" max_dist_element_fragment
   and+ min_samples = Decode_form.int "min_samples" min_samples
-  and+ _, background_bed = Decode_form.single_file_contents "background_file" background_file
+  and+ maybe_background_bed = Decode_form.maybe_single_file_contents "background_file" background_file
   and+ _, foreground_bed = Decode_form.single_file_contents "foreground_file" foreground_file
   in
   let great_param = { Great.upstream = basal_domain ; downstream = basal_domain ; extend = 0 } in
@@ -315,6 +324,16 @@ let analysis
   let annotated_baits = load_annotated_baits genome ~genome_annotation ~functional_annotation in
   let contact_graph = load_contact_graph genome ~cea_param ~annotated_baits in
   let chromosome_sizes = load_chromosome_sizes genome in
+  let background_bed =
+    match maybe_background_bed with
+    | None ->
+      In_channel.read_all (
+        match genome with
+        | `human -> "data/enhancers/human/ENCODE.Laverre2022.bed"
+        | `mouse -> "data/enhancers/mouse/ENCODE.Laverre2022.bed"
+      )
+    | Some (_, bed) -> bed
+  in
   let elements =
     { FGBG.foreground = foreground_bed ; background = background_bed }
     |> FGBG.map ~f:load_bed
@@ -368,10 +387,14 @@ let table_of_enriched_terms ers ~gonames =
 let generate_result_page res_or_error =
   let module H = Tyxml.Html in
   let contents = match res_or_error with
-    | Error _ -> [ H.txt "error" ]
+    | Error (`Param_parsing p) ->
+      let msg = sprintf "error: could not parse %s" p in
+      [ H.txt msg ]
+    | Error (`Msg msg) -> [ H.txt msg ]
     | Ok (enriched_terms, ontology) ->
       let gonames = Ontology.term_names ontology in
       [
+        logo_header ;
         table_of_enriched_terms enriched_terms ~gonames ;
       ]
   in
