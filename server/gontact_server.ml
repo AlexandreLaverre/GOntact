@@ -319,13 +319,24 @@ let analysis
     { FGBG.foreground = foreground_bed ; background = background_bed }
     |> FGBG.map ~f:load_bed
   in
-  let hea =
-    Hybrid_enrichment_analysis.perform
-      great_param ~contact_graph ~genome_annotation ~margin
-      ~chromosome_sizes ~annotated_baits ~functional_annotation
-      elements
+  let enriched_terms =
+    if basal_domain > 0 then
+      let hea =
+        Hybrid_enrichment_analysis.perform
+          great_param ~contact_graph ~genome_annotation ~margin
+          ~chromosome_sizes ~annotated_baits ~functional_annotation
+          elements
+      in
+      hea.enriched_terms
+    else
+      let cea =
+        Contact_enrichment_analysis.perform
+          ~margin annotated_baits functional_annotation
+          contact_graph elements
+      in
+      cea.enriched_terms
   in
-  hea, ontology
+  enriched_terms, ontology
 
 
 let table_of_enriched_terms ers ~gonames =
@@ -358,10 +369,10 @@ let generate_result_page res_or_error =
   let module H = Tyxml.Html in
   let contents = match res_or_error with
     | Error _ -> [ H.txt "error" ]
-    | Ok (hea, ontology) ->
+    | Ok (enriched_terms, ontology) ->
       let gonames = Ontology.term_names ontology in
       [
-        table_of_enriched_terms hea.Hybrid_enrichment_analysis.enriched_terms ~gonames ;
+        table_of_enriched_terms enriched_terms ~gonames ;
       ]
   in
   html_page ~title:"GOntact results" contents
