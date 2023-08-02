@@ -16,7 +16,6 @@ let genomic_interval_collection rdl =
   let il = List.map rdl ~f:interval_of_domain in
   Genomic_interval_collection.of_interval_list il
 
-
 let basal_domain_of_tss (tss:Genomic_interval.t) ~(genomic_annotation:Genomic_annotation.t)  ~upstream:u ~downstream:d ~chromosome_size:cs =
   let (id, chr, tss_pos, strand) = (Genomic_interval.id tss, Genomic_interval.chr tss, Genomic_interval.start_pos tss,  Genomic_interval.strand tss) in  (* start_pos is tss *)
   let gene_symbol = Genomic_annotation.gene_symbol_exn genomic_annotation id in
@@ -75,7 +74,11 @@ let basal_plus_extension_domains_one_chr  ~chr ~chromosome_size ~genome_annotati
 
 let basal_plus_extension_domains ~(chromosome_sizes:Genomic_interval_collection.t) ~genome_annotation ~upstream ~downstream ~extend =
   let cl = Genomic_interval_collection.interval_list chromosome_sizes in
-  List.concat_map cl ~f:(fun i -> basal_plus_extension_domains_one_chr ~chr:(Genomic_interval.chr i) ~chromosome_size:(Genomic_interval.end_pos i) ~genome_annotation ~upstream ~downstream ~extend)
+  List.concat_map cl ~f:(fun i ->
+      basal_plus_extension_domains_one_chr
+        ~chr:(Genomic_interval.chr i)
+        ~chromosome_size:(Genomic_interval.end_pos i)
+        ~genome_annotation ~upstream ~downstream ~extend)
 
 let go_categories_by_element ~(element_coordinates:Genomic_interval_collection.t) ~(regulatory_domains:Genomic_interval_collection.t) ~(functional_annot:Functional_annotation.t) =
   (*regulatory domains were constructed for genes that have at least one GO annotation*)
