@@ -299,22 +299,52 @@ let load_bed bed_contents =
   String.split_lines bed_contents
   |> Genomic_interval_collection.of_bed_lines ~strip_chr:true ~format:Genomic_interval_collection.Base0
 
+type analysis_request = {
+  min_score : float ;
+  basal_domain : int ;
+  min_dist : float ;
+  max_dist : float ;
+  genome : [`human | `mouse] ;
+  domain : Ontology.domain ;
+  margin : int ;
+  min_samples : int ;
+  maybe_background_bed : string option ;
+  foreground_bed : string ;
+}
+
+let analysis_request_decode = function
+  | [ "background-file", background_file ;
+      "basal-domain", basal_domain ;
+      "domain-choice", domain_choice ;
+      "foreground-file", foreground_file ;
+      "genome-choice", genome_choice ;
+      "max-dist-contacts", max_dist_contacts ;
+      "max-dist-element-fragment", max_dist_element_fragment ;
+      "min-dist-contacts", min_dist_contacts ;
+      "min-samples", min_samples ;
+      "min-score", min_score ] ->
+    let open Gontact.Let_syntax.Result in
+    let+ min_score = Decode_form.float "min_score" min_score
+    and+ basal_domain = Decode_form.int "basal_domain" basal_domain
+    and+ min_dist = Decode_form.float "min_dist" min_dist_contacts
+    and+ max_dist = Decode_form.float "max_dist" max_dist_contacts
+    and+ genome = Decode_form.genome "genome" genome_choice
+    and+ domain = Decode_form.domain "domain" domain_choice
+    and+ margin = Decode_form.int "margin" max_dist_element_fragment
+    and+ min_samples = Decode_form.int "min_samples" min_samples
+    and+ maybe_background_bed =
+      Decode_form.maybe_single_file_contents "background_file" background_file
+      |> Result.map ~f:(Option.map ~f:snd)
+    and+ _, foreground_bed = Decode_form.single_file_contents "foreground_file" foreground_file
+    in
+    { min_score ; basal_domain ; domain ; foreground_bed ; min_dist ;
+      max_dist ; genome ; margin ; min_samples ; maybe_background_bed }
+  | _ -> Error `Incorrect_field_list
+
 let analysis
-    ~background_file ~domain_choice ~foreground_file
-    ~genome_choice ~max_dist_contacts ~max_dist_element_fragment
-    ~min_dist_contacts ~min_samples ~min_score ~basal_domain =
-  let open Gontact.Let_syntax.Result in
-  let+ min_score = Decode_form.float "min_score" min_score
-  and+ basal_domain = Decode_form.int "basal_domain" basal_domain
-  and+ min_dist = Decode_form.float "min_dist" min_dist_contacts
-  and+ max_dist = Decode_form.float "max_dist" max_dist_contacts
-  and+ genome = Decode_form.genome "genome" genome_choice
-  and+ domain = Decode_form.domain "domain" domain_choice
-  and+ margin = Decode_form.int "margin" max_dist_element_fragment
-  and+ min_samples = Decode_form.int "min_samples" min_samples
-  and+ maybe_background_bed = Decode_form.maybe_single_file_contents "background_file" background_file
-  and+ _, foreground_bed = Decode_form.single_file_contents "foreground_file" foreground_file
-  in
+    { maybe_background_bed ; domain ; foreground_bed ;
+      genome ; max_dist ; min_dist ; min_samples ; min_score ; basal_domain ;
+      margin } =
   let great_param = { Great.upstream = basal_domain ; downstream = basal_domain ; extend = 0 } in
   let cea_param = { Contact_enrichment_analysis.min_score ; min_dist ; max_dist ; min_samples = Some min_samples } in
   let functional_annotation, ontology = load_functional_annotation genome ~domain in
@@ -323,15 +353,13 @@ let analysis
   let annotated_baits = load_annotated_baits genome ~genome_annotation ~functional_annotation in
   let contact_graph = load_contact_graph genome ~cea_param ~annotated_baits in
   let chromosome_sizes = load_chromosome_sizes genome in
-  let background_bed =
-    match maybe_background_bed with
-    | None ->
+  let background_bed = Option.value_or_thunk maybe_background_bed ~default:(fun () ->
       In_channel.read_all (
         match genome with
         | `human -> "data/enhancers/human/ENCODE.Laverre2022.bed"
         | `mouse -> "data/enhancers/mouse/ENCODE.Laverre2022.bed"
       )
-    | Some (_, bed) -> bed
+    )
   in
   let elements =
     { FGBG.foreground = foreground_bed ; background = background_bed }
@@ -383,19 +411,14 @@ let table_of_enriched_terms ers ~gonames =
   in
   H.table ~thead rows
 
-let generate_result_page res_or_error =
+let generate_result_page (enriched_terms, ontology) =
   let module H = Tyxml.Html in
-  let contents = match res_or_error with
-    | Error (`Param_parsing p) ->
-      let msg = sprintf "error: could not parse %s" p in
-      [ H.txt msg ]
-    | Error (`Msg msg) -> [ H.txt msg ]
-    | Ok (enriched_terms, ontology) ->
-      let gonames = Ontology.term_names ontology in
-      [
-        logo_header ;
+  let contents =
+    let gonames = Ontology.term_names ontology in
+    [
+      logo_header ;
         table_of_enriched_terms enriched_terms ~gonames ;
-      ]
+    ]
   in
   html_page ~title:"GOntact results" contents
 
@@ -418,30 +441,18 @@ let () =
 
     Dream.post "/" (fun request ->
         match%lwt Dream.multipart request with
-        | `Ok [
-            "background-file", background_file ;
-            "basal-domain", basal_domain ;
-            "domain-choice", domain_choice ;
-            "foreground-file", foreground_file ;
-            "genome-choice", genome_choice ;
-            "max-dist-contacts", max_dist_contacts ;
-            "max-dist-element-fragment", max_dist_element_fragment ;
-            "min-dist-contacts", min_dist_contacts ;
-            "min-samples", min_samples ;
-            "min-score", min_score
-          ] ->
-          let%lwt res_or_error =
-            Lwt.return @@
-            analysis
-              ~background_file ~domain_choice ~foreground_file
-              ~genome_choice ~max_dist_contacts ~max_dist_element_fragment
-              ~min_dist_contacts ~min_samples ~min_score ~basal_domain
-          in
-          let page = generate_result_page res_or_error in
-          Dream.html (html_to_string page)
-        | `Ok bad_form ->
-          print_endline ([%show: (string * (string option * string) list) list] bad_form) ;
-          Dream.empty `Bad_Request
+        | `Ok form -> (
+            match analysis_request_decode form with
+            | Ok req ->
+              let res_or_error = analysis req in
+              let page = generate_result_page res_or_error in
+              Dream.html (html_to_string page)
+            | Error `Incorrect_field_list ->
+              print_endline ([%show: (string * (string option * string) list) list] form) ;
+              Dream.empty `Bad_Request
+            | Error (`Msg msg) -> Dream.html ~code:500 msg
+            | Error (`Param_parsing p) -> Dream.html ~code:400 (sprintf "could not parse %s" p)
+          )
         | _ -> Dream.empty `Bad_Request
       );
 
