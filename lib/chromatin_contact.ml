@@ -18,9 +18,9 @@ type t = {
 let distance cc =
   match String.equal cc.bait_chr cc.otherEnd_chr with
   | true -> (
-      let midpos1 = ((float_of_int cc.bait_start) +. (float_of_int cc.bait_end)) /. 2. in
-      let midpos2 = ((float_of_int cc.otherEnd_start) +. (float_of_int cc.otherEnd_end)) /. 2. in
-      let dist = Float.abs (midpos1 -. midpos2) in
+      let midpos1 = (cc.bait_start + cc.bait_end) / 2 in
+      let midpos2 = (cc.otherEnd_start + cc.otherEnd_end) / 2 in
+      let dist = Int.abs (midpos1 - midpos2) in
       Some dist
     )
   | false -> None

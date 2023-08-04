@@ -65,7 +65,7 @@ let select_distance l ~min_dist ~max_dist =
     let d = Chromatin_contact.distance cc in
     match d with
     | None -> false
-    | Some dist -> Float.(dist >= min_dist && dist <= max_dist)
+    | Some dist -> dist >= min_dist && dist <= max_dist
   in
   List.filter l ~f:verify_distance
 

@@ -20,8 +20,8 @@ val select_cis : t -> t
 
 val select_distance :
   t ->
-  min_dist:float ->
-  max_dist:float ->
+  min_dist:int ->
+  max_dist:int ->
   t
 
 val select_unbaited :

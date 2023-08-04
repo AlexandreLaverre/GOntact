@@ -1,8 +1,8 @@
 open Core
 
 type param = {
-  min_dist : float ;
-  max_dist : float ;
+  min_dist : int ;
+  max_dist : int ;
   min_score : float ;
   min_samples : int option ;
 }

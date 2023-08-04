@@ -20,7 +20,7 @@ val compare : t -> t -> int
 
 val hash : t -> int
 
-val distance : t -> float option
+val distance : t -> int option
 
 val contacted_fragment : t -> Genomic_interval.t
 

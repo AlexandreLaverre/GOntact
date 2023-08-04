@@ -302,8 +302,8 @@ let load_bed bed_contents =
 type analysis_request = {
   min_score : float ;
   basal_domain : int ;
-  min_dist : float ;
-  max_dist : float ;
+  min_dist : int ;
+  max_dist : int ;
   genome : [`human | `mouse] ;
   domain : Ontology.domain ;
   margin : int ;
@@ -326,8 +326,8 @@ let analysis_request_decode = function
     let open Gontact.Let_syntax.Result in
     let+ min_score = Decode_form.float "min_score" min_score
     and+ basal_domain = Decode_form.int "basal_domain" basal_domain
-    and+ min_dist = Decode_form.float "min_dist" min_dist_contacts
-    and+ max_dist = Decode_form.float "max_dist" max_dist_contacts
+    and+ min_dist = Decode_form.int "min_dist" min_dist_contacts
+    and+ max_dist = Decode_form.int "max_dist" max_dist_contacts
     and+ genome = Decode_form.genome "genome" genome_choice
     and+ domain = Decode_form.domain "domain" domain_choice
     and+ margin = Decode_form.int "margin" max_dist_element_fragment
