@@ -1,5 +1,5 @@
 (executable
   (name gontact_server)
   (public_name gontact_server)
-  (libraries dream gontact tyxml)
+  (libraries core_unix dream gontact tyxml)
   (preprocess (pps lwt_ppx ppx_deriving.show tyxml-ppx)))

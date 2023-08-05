@@ -11,9 +11,9 @@ let html_page ~title body =
       Html.meta ~a:[Html.a_charset "utf-8"] () ;
       Html.meta ~a:[Html.a_http_equiv "X-UA-Compatible" ; Html.a_content "IE=edge"] () ;
       Html.meta ~a:[Html.a_name "viewport" ; Html.a_content "width=device-width, initial-scale=1"] () ;
-      Html.link ~rel:[`Icon] ~href:"img/favicon.ico" () ;
-      css_link "css/marx.css" ;
-      css_link "css/gontact.css" ;
+      Html.link ~rel:[`Icon] ~href:"/img/favicon.ico" () ;
+      css_link "/css/marx.css" ;
+      css_link "/css/gontact.css" ;
     ]
   in
   Html.html ~a:[Html.a_lang "en"] head (Html.body [Html.main body])
@@ -21,7 +21,7 @@ let html_page ~title body =
 let logo_header =
   let open Html in
   header [
-    img ~src:"img/GOntact_logo.png" ~alt:"GOntact logo" ~a:[a_width 600] () ;
+    img ~src:"/img/GOntact_logo.png" ~alt:"GOntact logo" ~a:[a_width 600] () ;
   ] ;
 
 module Form_page = struct
@@ -411,17 +411,38 @@ let table_of_enriched_terms ers ~gonames =
   in
   H.table ~thead rows
 
-let generate_result_page (enriched_terms, ontology) =
+let generate_result_page maybe_res =
   let module H = Tyxml.Html in
   let contents =
-    let gonames = Ontology.term_names ontology in
-    [
-      logo_header ;
+    match maybe_res with
+    | Some (enriched_terms, ontology) ->
+      let gonames = Ontology.term_names ontology in
+      [
+        logo_header ;
         table_of_enriched_terms enriched_terms ~gonames ;
-    ]
+      ]
+    | None -> [ H.txt "not yet" ]
   in
   html_page ~title:"GOntact results" contents
 
+let request_table = String.Table.create ()
+
+let create_analysis_request req =
+  let id =
+    Core_unix.gettimeofday ()
+    |> Core_unix.localtime
+    |> Core_unix.sexp_of_tm
+    |> Sexp.to_string_mach
+    |> Md5.digest_string
+    |> Md5.to_hex
+  in
+  Lwt.async (fun () ->
+      Lwt_preemptive.detach (fun () ->
+          let res = analysis req in
+          String.Table.set request_table ~key:id ~data:res
+        ) ()
+    ) ;
+  id
 
 let html_to_string html =
   Format.asprintf "%a" (Tyxml.Html.pp ()) html
@@ -443,10 +464,11 @@ let () =
         match%lwt Dream.multipart request with
         | `Ok form -> (
             match analysis_request_decode form with
-            | Ok req ->
-              let res_or_error = analysis req in
-              let page = generate_result_page res_or_error in
-              Dream.html (html_to_string page)
+            | Ok req -> (
+                let id = create_analysis_request req in
+                let url = sprintf "/run/%s" id in
+                Dream.html ~headers:["Location", url] ~code:303 ""
+              )
             | Error `Incorrect_field_list ->
               print_endline ([%show: (string * (string option * string) list) list] form) ;
               Dream.empty `Bad_Request
@@ -456,4 +478,10 @@ let () =
         | _ -> Dream.empty `Bad_Request
       );
 
+    Dream.get "/run/:run_id"  (fun request ->
+        let run_id = Dream.param request "run_id" in
+        let res_or_error = String.Table.find request_table run_id in
+        let page = generate_result_page res_or_error in
+        Dream.html (html_to_string page)
+      ) ;
   ]
