@@ -190,7 +190,7 @@ module Form_page = struct
 
   let render request =
     let open Tyxml.Html in
-    html_page ~title:"GOntact" [
+    html_page ~mode:Form ~title:"GOntact" [
       logo_header ;
       h1 [small [txt "Gene Ontology enrichments based on chromatin contacts for noncoding elements"]] ;
       hr () ;
@@ -394,46 +394,9 @@ let analysis
   in
   enriched_terms, ontology
 
-
-let table_of_enriched_terms ers ~gonames =
-  let module H = Tyxml.Html in
-  let compare_by_fdr x y = Go_enrichment.(Float.compare x.fdr y.fdr) in
-  let ordered_results = List.sort ers ~compare:compare_by_fdr in
-  let rows = List.map ordered_results ~f:(fun er ->
-      let name = String.Map.find_exn gonames er.id
-      and enrichment = sprintf "%.2f" (er.observed /. er.expected)
-      and pval = sprintf "%g" er.pval
-      and fdr = sprintf "%g" er.fdr in
-      H.tr [
-        H.td [ H.txt name ] ;
-        H.td [ H.txt enrichment ] ;
-        H.td [ H.txt pval ] ;
-        H.td [ H.txt fdr ] ;
-      ]
-    )
-  in
-  let thead = H.thead [ H.tr [
-      H.th [H.txt "GO term name"] ;
-      H.th [H.txt "Enrichment"] ;
-      H.th [H.txt "p-value"] ;
-      H.th [H.txt "FDR"] ;
-    ] ]
-  in
-  H.table ~thead rows
-
-let generate_result_page maybe_res =
-  let module H = Tyxml.Html in
-  let contents =
-    match maybe_res with
-    | Some (enriched_terms, ontology) ->
-      let gonames = Ontology.term_names ontology in
-      [
-        logo_header ;
-        table_of_enriched_terms enriched_terms ~gonames ;
-      ]
-    | None -> [ H.txt "not yet" ]
-  in
-  html_page ~title:"GOntact results" contents
+type request_status =
+  | Work_in_progress
+  | Completed of Go_enrichment.enrichment_result list * Ontology.t
 
 let request_table = String.Table.create ()
 
@@ -446,16 +409,52 @@ let create_analysis_request req =
     |> Md5.digest_string
     |> Md5.to_hex
   in
+  String.Table.set request_table ~key:id ~data:Work_in_progress ;
   Lwt.async (fun () ->
       Lwt_preemptive.detach (fun () ->
-          let res = analysis req in
-          String.Table.set request_table ~key:id ~data:res
+          let terms, ontology = analysis req in
+          String.Table.set request_table ~key:id ~data:(Completed (terms, ontology))
         ) ()
     ) ;
   id
 
 let html_to_string html =
   Format.asprintf "%a" (Tyxml.Html.pp ()) html
+
+let html_get_run run_id =
+  let open Tyxml.Html in
+  let contents = [
+    logo_header ;
+    p [
+      input ~a:[a_input_type `Button ; a_value "Download full table"] () ;
+    ] ;
+    div ~a:[a_id "result-table"] []
+  ]
+  in
+  html_page ~mode:(Results { id = run_id }) ~title:"GOntact results" contents
+  |> html_to_string
+  |> Dream.html
+
+let json_get_run run_id =
+  String.Table.find request_table run_id
+  |> Option.map ~f:(function
+      | Work_in_progress -> In_progress
+      | Completed (enriched_terms, ontology) ->
+        let gonames = Ontology.term_names ontology in
+        let compare_by_fdr x y = Go_enrichment.(Float.compare x.fdr y.fdr) in
+        let ordered_results = List.sort enriched_terms ~compare:compare_by_fdr in
+        Completed (
+          List.map ordered_results ~f:(fun er ->
+              let go_term = String.Map.find_exn gonames er.id
+              and enrichment = er.observed /. er.expected in
+              { go_id = er.id ; go_term ; enrichment ; pval = er.pval ; fdr = er.fdr }
+            )
+        )
+    )
+  |> [%yojson_of: request_status option]
+  |> Yojson.Safe.to_string
+  |> Dream.response ~headers:["Content-Type", Dream.application_json]
+  |> Lwt.return
 
 let () =
   Dream.run
@@ -478,7 +477,7 @@ let () =
             | Ok req -> (
                 let id = create_analysis_request req in
                 let url = sprintf "/run/%s" id in
-                Dream.html ~headers:["Location", url] ~code:303 ""
+                Dream.redirect ~status:`See_Other request url
               )
             | Error `Incorrect_field_list ->
               print_endline ([%show: (string * (string option * string) list) list] form) ;
@@ -491,8 +490,12 @@ let () =
 
     Dream.get "/run/:run_id"  (fun request ->
         let run_id = Dream.param request "run_id" in
-        let res_or_error = String.Table.find request_table run_id in
-        let page = generate_result_page res_or_error in
-        Dream.html (html_to_string page)
+        let format = Dream.query request "format" in
+        match format with
+        | None -> html_get_run run_id
+        | Some "json" -> json_get_run run_id
+        | Some f ->
+          let msg = sprintf "Format %s is not supported" f in
+          Dream.html ~status:`Bad_Request msg
       ) ;
   ]
