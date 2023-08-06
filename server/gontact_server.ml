@@ -1,22 +1,32 @@
 open Tyxml
 open Core
 open Gontact
+open Gontact_shared
 
 let css_link ?a href = Html.link ?a ~rel:[`Stylesheet] ~href ()
 (* let ext_js_script ?(a = []) href = Html.script ~a:(Html.a_src href :: a) (Html.txt "") *)
 
-let html_page ~title body =
-  let head =
-    Html.head (Html.title (Html.txt title)) [
-      Html.meta ~a:[Html.a_charset "utf-8"] () ;
-      Html.meta ~a:[Html.a_http_equiv "X-UA-Compatible" ; Html.a_content "IE=edge"] () ;
-      Html.meta ~a:[Html.a_name "viewport" ; Html.a_content "width=device-width, initial-scale=1"] () ;
-      Html.link ~rel:[`Icon] ~href:"/img/favicon.ico" () ;
+let html_page ?mode ~title:page_title contents =
+  let open Html in
+  let page_head =
+    head (title (txt page_title)) [
+      meta ~a:[a_charset "utf-8"] () ;
+      meta ~a:[a_http_equiv "X-UA-Compatible" ; a_content "IE=edge"] () ;
+      meta ~a:[a_name "viewport" ; a_content "width=device-width, initial-scale=1"] () ;
+      link ~rel:[`Icon] ~href:"/img/favicon.ico" () ;
       css_link "/css/marx.css" ;
       css_link "/css/gontact.css" ;
+      script ~a:[a_src "/js/gontact_client.js" ; a_defer () ] (txt "") ;
     ]
   in
-  Html.html ~a:[Html.a_lang "en"] head (Html.body [Html.main body])
+  let atts = match mode with
+    | None -> []
+    | Some m -> [a_user_data "mode" (Sexp.to_string_mach (sexp_of_mode m))]
+  in
+  html
+    ~a:[a_lang "en"]
+    page_head
+    (body ~a:atts [main contents])
 
 let logo_header =
   let open Html in
@@ -455,6 +465,7 @@ let () =
 
     Dream.get "/css/**" @@ Dream.static "server/static/css" ;
     Dream.get "/img/**" @@ Dream.static "server/static/img" ;
+    Dream.get "/js/**" @@ Dream.static "server/static/js" ;
 
     Dream.get  "/" (fun request ->
         Dream.html (html_to_string @@ Form_page.render request)

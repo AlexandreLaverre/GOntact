@@ -1,5 +1,17 @@
 (executable
   (name gontact_server)
   (public_name gontact_server)
-  (libraries core_unix dream gontact tyxml)
+  (modules Gontact_server)
+  (libraries core_unix dream gontact gontact_shared tyxml)
   (preprocess (pps lwt_ppx ppx_deriving.show tyxml-ppx)))
+
+(executable
+  (name gontact_client)
+  (modules Gontact_client)
+  (modes js)
+  (libraries brr js_of_ocaml))
+
+(library
+  (name gontact_shared)
+  (modules Gontact_shared)
+  (preprocess (pps ppx_sexp_conv)))
