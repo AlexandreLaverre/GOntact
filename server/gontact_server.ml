@@ -425,9 +425,6 @@ let html_get_run run_id =
   let open Tyxml.Html in
   let contents = [
     logo_header ;
-    p [
-      input ~a:[a_input_type `Button ; a_value "Download full table"] () ;
-    ] ;
     div ~a:[a_id "result-table"] []
   ]
   in

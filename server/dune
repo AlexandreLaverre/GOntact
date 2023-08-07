@@ -9,10 +9,15 @@
   (name gontact_client)
   (modules Gontact_client)
   (modes js)
-  (libraries base brr gontact_shared js_of_ocaml parsexp))
+  (js_of_ocaml (flags --opt 3))
+  (libraries base brr gontact_shared note.brr parsexp)
+  )
 
 (library
   (name gontact_shared)
   (modules Gontact_shared)
   (libraries base)
   (preprocess (pps ppx_sexp_conv ppx_yojson_conv)))
+
+(env
+  (dev (js_of_ocaml (compilation_mode whole_program))))
