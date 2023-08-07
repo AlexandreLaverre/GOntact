@@ -429,8 +429,8 @@ let html_get_run run_id =
   |> html_to_string
   |> Dream.html
 
-let json_get_run run_id =
-  let response = Dream.response ~headers:["Content-Type", Dream.application_json] in
+let api_get_run ~mime_type ~serializer run_id =
+  let response = Dream.response ~headers:["Content-Type", mime_type] in
   match String.Table.find request_table run_id with
   | None -> Lwt.return (response ~status:`Not_Found "")
   | Some t ->
@@ -443,10 +443,23 @@ let json_get_run run_id =
           and enrichment = er.observed /. er.expected in
           { go_id = er.id ; go_term ; enrichment ; pval = er.pval ; fdr = er.fdr }
         )
-      |> [%yojson_of: Gontact_shared.enriched_term list]
-      |> Yojson.Safe.to_string
+      |> serializer
       |> response
       |> Lwt.return
+
+let tsv_get_run = api_get_run ~mime_type:"text/tab-separated-values" ~serializer:(fun enriched_terms ->
+    List.map enriched_terms ~f:(fun er ->
+        sprintf "%s\t%f\t%f\t%f" er.go_term er.enrichment er.pval er.fdr
+      )
+    |> List.cons "GO term\tenrichment\tpval\tfdr"
+    |> String.concat ~sep:"\n"
+  )
+
+let json_get_run = api_get_run ~mime_type:Dream.application_json ~serializer:(fun enriched_terms ->
+    enriched_terms
+    |> [%yojson_of: Gontact_shared.enriched_term list]
+    |> Yojson.Safe.to_string
+  )
 
 let () =
   Dream.run
@@ -486,6 +499,7 @@ let () =
         match format with
         | None -> html_get_run run_id
         | Some "json" -> json_get_run run_id
+        | Some "tsv"  -> tsv_get_run run_id
         | Some f ->
           let msg = sprintf "Format %s is not supported" f in
           Dream.html ~status:`Bad_Request msg

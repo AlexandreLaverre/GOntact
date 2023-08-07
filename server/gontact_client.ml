@@ -85,15 +85,16 @@ module Result_mode = struct
     ) ;
     El.table [head ; body]
 
-  let result_widget result_fetch_ev =
+  let result_widget run_id result_fetch_ev =
     let status_bar =
       let p = El.p [El.txt' "Work in progress..."] in
       set_visibility p ~on:(Note.E.map (Fun.const `Collapse) result_fetch_ev) ;
       p
     in
     let download_button =
-      let b = El.button [El.txt' "Download full table"] in
-      b
+      El.a
+        ~at:[At.href (Jstr.v (Printf.sprintf "/run/%s?format=tsv" run_id))]
+        [El.button [El.txt' "Download full table"]]
     in
     let fdr_filter_field_id = Jstr.v "fdr-filter-field" in
     let filter_form, fdr_threshold =
@@ -134,7 +135,7 @@ module Result_mode = struct
       |> Note.E.filter_map Base.Result.ok
     in
     Option.iter
-      (fun div -> El.set_children div (result_widget result_fetch_ev))
+      (fun div -> El.set_children div (result_widget id result_fetch_ev))
       (Document.find_el_by_id G.document (Jstr.v "result-table"))
 end
 
