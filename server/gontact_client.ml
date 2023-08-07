@@ -67,7 +67,7 @@ module Result_mode = struct
       ~on:(Note.E.map (fun x -> Jstr.v (string_of_visibility x)) ev)
       el
 
-  let create_table result_fetch_ev =
+  let create_table result_fetch_ev ~fdr_threshold =
     let head = El.thead [
         El.tr [
           El.th [El.txt' "GO term name"] ;
@@ -77,24 +77,69 @@ module Result_mode = struct
         ]
       ] in
     let body = El.tbody [] in
-    Note_brr.Elr.set_children body ~on:(
-      Note.E.map
-        (fun enriched_terms ->
-           let row (term : Gontact_shared.enriched_term) =
-             El.tr [
-               El.td [El.txt' term.go_term] ;
-               El.td [El.txt' (Printf.sprintf "%g" term.enrichment)] ;
-               El.td [El.txt' (Printf.sprintf "%g" term.pval)] ;
-               El.td [El.txt' (Printf.sprintf "%g" term.fdr)] ;
-             ]
+    Note_brr.Elr.def_children body (
+      Note.S.l2
+        (fun fdr_threshold enriched_terms ->
+           let maybe_row (term : Gontact_shared.enriched_term) =
+             if term.Gontact_shared.fdr < fdr_threshold then
+               Some (
+                 El.tr [
+                   El.td [El.txt' term.go_term] ;
+                   El.td [El.txt' (Printf.sprintf "%g" term.enrichment)] ;
+                   El.td [El.txt' (Printf.sprintf "%g" term.pval)] ;
+                   El.td [El.txt' (Printf.sprintf "%g" term.fdr)] ;
+                 ]
+               )
+             else None
            in
-           List.map row enriched_terms)
-        result_fetch_ev
+           List.filter_map maybe_row enriched_terms
+        )
+        fdr_threshold
+        (Note.S.hold [] result_fetch_ev)
     ) ;
+    El.table [head ; body]
+
+  let result_widget result_fetch_ev =
+    let status_bar =
+      let p = El.p [El.txt' "Work in progress..."] in
+      set_visibility p ~on:(Note.E.map (Fun.const `Collapse) result_fetch_ev) ;
+      p
+    in
+    let download_button =
+      let b = El.button [El.txt' "Download full table"] in
+      b
+    in
+    let fdr_filter_field_id = Jstr.v "fdr-filter-field" in
+    let filter_form, fdr_threshold =
+      let table_cell_at = At.style (Jstr.v "display:table-cell") in
+      let fdr_input = El.input ~at:[At.id fdr_filter_field_id ; At.value (Jstr.v "0.05");table_cell_at] () in
+      let fdr_threshold =
+        Note_brr.Evr.on_el Ev.keyup (Fun.const ()) fdr_input
+        |> Note.E.map (fun  _ -> Jstr.trim @@ El.prop El.Prop.value fdr_input)
+        |> Note.E.filter_map (fun s ->
+            let x = Jstr.to_float s in
+            if Float.is_nan x then None else Some x
+          )
+        |> Note.S.hold 0.05
+      in
+      El.fieldset ~at:[At.style (Jstr.v "display:table")] [
+        El.legend [El.txt' "Filter"] ;
+        El.p ~at:[At.style (Jstr.v"display:table-row")] [
+          El.label ~at:[At.for' fdr_filter_field_id; table_cell_at] [El.txt' "FDR threshold"] ;
+          fdr_input ;
+        ] ;
+      ],
+      fdr_threshold
+    in
     let at = [At.style (Jstr.v "visibility:collapse")] in
-    let t = El.table ~at [head ; body] in
-    set_visibility t ~on:(Note.E.map (Fun.const `Visible) result_fetch_ev) ;
-    t
+    let div = El.div ~at [
+        El.div ~at:[At.style (Jstr.v "display:flex;justify-content:space-evenly")] [El.p [ download_button] ; filter_form ] ;
+        El.br () ;
+        create_table result_fetch_ev ~fdr_threshold
+      ]
+    in
+    set_visibility div ~on:(Note.E.map (Fun.const `Visible) result_fetch_ev) ;
+    [ status_bar ; div ]
 
   let main id =
     let result_fetch_ev =
@@ -102,19 +147,8 @@ module Result_mode = struct
       |> Note_brr.Futr.to_event
       |> Note.E.filter_map Base.Result.ok
     in
-    let status_bar =
-      let p = El.p [El.txt' "Work in progress..."] in
-      set_visibility p ~on:(Note.E.map (Fun.const `Collapse) result_fetch_ev) ;
-      p
-    in
-    let download_button =
-      let at = [At.style (Jstr.v "visibility:collapse")] in
-      let b = El.button ~at [El.txt' "Download full table"] in
-      set_visibility b ~on:(Note.E.map (Fun.const `Visible) result_fetch_ev) ;
-      b
-    in
     Option.iter
-      (fun div -> El.set_children div [status_bar ; El.p [ download_button ] ; create_table result_fetch_ev])
+      (fun div -> El.set_children div (result_widget result_fetch_ev))
       (Document.find_el_by_id G.document (Jstr.v "result-table"))
 end
 
