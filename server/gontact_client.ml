@@ -56,19 +56,65 @@ module Result_mode = struct
     in
     loop ()
 
+  let set_visibility el ~on:ev =
+    let string_of_visibility = function
+      | `Visible -> "visibility:visible"
+      | `Hidden -> "visibility:hidden"
+      | `Collapse -> "visibility:collapse"
+    in
+    Note_brr.Elr.set_prop
+      (El.Prop.jstr (Jstr.v "style"))
+      ~on:(Note.E.map (fun x -> Jstr.v (string_of_visibility x)) ev)
+      el
+
+  let create_table result_fetch_ev =
+    let head = El.thead [
+        El.tr [
+          El.th [El.txt' "GO term name"] ;
+          El.th [El.txt' "Enrichment"] ;
+          El.th [El.txt' "p-value"] ;
+          El.th [El.txt' "FDR"] ;
+        ]
+      ] in
+    let body = El.tbody [] in
+    Note_brr.Elr.set_children body ~on:(
+      Note.E.map
+        (fun enriched_terms ->
+           let row (term : Gontact_shared.enriched_term) =
+             El.tr [
+               El.td [El.txt' term.go_term] ;
+               El.td [El.txt' (Printf.sprintf "%g" term.enrichment)] ;
+               El.td [El.txt' (Printf.sprintf "%g" term.pval)] ;
+               El.td [El.txt' (Printf.sprintf "%g" term.fdr)] ;
+             ]
+           in
+           List.map row enriched_terms)
+        result_fetch_ev
+    ) ;
+    let at = [At.style (Jstr.v "visibility:collapse")] in
+    let t = El.table ~at [head ; body] in
+    set_visibility t ~on:(Note.E.map (Fun.const `Visible) result_fetch_ev) ;
+    t
+
   let main id =
-    let result_fetch_ev = Note_brr.Futr.to_event (fetch_loop id) in
+    let result_fetch_ev =
+      fetch_loop id
+      |> Note_brr.Futr.to_event
+      |> Note.E.filter_map Base.Result.ok
+    in
+    let status_bar =
+      let p = El.p [El.txt' "Work in progress..."] in
+      set_visibility p ~on:(Note.E.map (Fun.const `Collapse) result_fetch_ev) ;
+      p
+    in
     let download_button =
-      let at = [ At.disabled ] in
+      let at = [At.style (Jstr.v "visibility:collapse")] in
       let b = El.button ~at [El.txt' "Download full table"] in
-      Note_brr.Elr.set_prop
-        (El.Prop.bool (Jstr.v "disabled"))
-        ~on:(Note.E.map (Fun.const false) result_fetch_ev)
-        b ;
+      set_visibility b ~on:(Note.E.map (Fun.const `Visible) result_fetch_ev) ;
       b
     in
     Option.iter
-      (fun div -> El.set_children div [download_button])
+      (fun div -> El.set_children div [status_bar ; El.p [ download_button ] ; create_table result_fetch_ev])
       (Document.find_el_by_id G.document (Jstr.v "result-table"))
 end
 
