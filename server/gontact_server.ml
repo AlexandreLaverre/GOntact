@@ -449,9 +449,9 @@ let api_get_run ~mime_type ~serializer run_id =
 
 let tsv_get_run = api_get_run ~mime_type:"text/tab-separated-values" ~serializer:(fun enriched_terms ->
     List.map enriched_terms ~f:(fun er ->
-        sprintf "%s\t%f\t%f\t%f" er.go_term er.enrichment er.pval er.fdr
+        sprintf "%s\t%s\t%f\t%f\t%f" er.go_id er.go_term er.enrichment er.pval er.fdr
       )
-    |> List.cons "GO term\tenrichment\tpval\tfdr"
+    |> List.cons "GO id\tGO term\tenrichment\tpval\tfdr"
     |> String.concat ~sep:"\n"
   )
 
