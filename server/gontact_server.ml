@@ -394,10 +394,6 @@ let analysis
   in
   enriched_terms, ontology
 
-type request_status =
-  | Work_in_progress
-  | Completed of Go_enrichment.enrichment_result list * Ontology.t
-
 let request_table = String.Table.create ()
 
 let create_analysis_request req =
@@ -409,11 +405,12 @@ let create_analysis_request req =
     |> Md5.digest_string
     |> Md5.to_hex
   in
-  String.Table.set request_table ~key:id ~data:Work_in_progress ;
+  let (t, waiter) = Lwt.wait () in
+  String.Table.set request_table ~key:id ~data:t ;
   Lwt.async (fun () ->
       Lwt_preemptive.detach (fun () ->
-          let terms, ontology = analysis req in
-          String.Table.set request_table ~key:id ~data:(Completed (terms, ontology))
+          let res = analysis req in
+          Lwt.wakeup waiter res ;
         ) ()
     ) ;
   id
@@ -433,25 +430,23 @@ let html_get_run run_id =
   |> Dream.html
 
 let json_get_run run_id =
-  String.Table.find request_table run_id
-  |> Option.map ~f:(function
-      | Work_in_progress -> In_progress
-      | Completed (enriched_terms, ontology) ->
-        let gonames = Ontology.term_names ontology in
-        let compare_by_fdr x y = Go_enrichment.(Float.compare x.fdr y.fdr) in
-        let ordered_results = List.sort enriched_terms ~compare:compare_by_fdr in
-        Completed (
-          List.map ordered_results ~f:(fun er ->
-              let go_term = String.Map.find_exn gonames er.id
-              and enrichment = er.observed /. er.expected in
-              { go_id = er.id ; go_term ; enrichment ; pval = er.pval ; fdr = er.fdr }
-            )
+  let response = Dream.response ~headers:["Content-Type", Dream.application_json] in
+  match String.Table.find request_table run_id with
+  | None -> Lwt.return (response ~status:`Not_Found "")
+  | Some t ->
+      let%lwt enriched_terms, ontology = t in
+      let gonames = Ontology.term_names ontology in
+      let compare_by_fdr x y = Go_enrichment.(Float.compare x.fdr y.fdr) in
+      let ordered_results = List.sort enriched_terms ~compare:compare_by_fdr in
+      List.map ordered_results ~f:(fun er ->
+          let go_term = String.Map.find_exn gonames er.id
+          and enrichment = er.observed /. er.expected in
+          { go_id = er.id ; go_term ; enrichment ; pval = er.pval ; fdr = er.fdr }
         )
-    )
-  |> [%yojson_of: request_status option]
-  |> Yojson.Safe.to_string
-  |> Dream.response ~headers:["Content-Type", Dream.application_json]
-  |> Lwt.return
+      |> [%yojson_of: Gontact_shared.enriched_term list]
+      |> Yojson.Safe.to_string
+      |> response
+      |> Lwt.return
 
 let () =
   Dream.run

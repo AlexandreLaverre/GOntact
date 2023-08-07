@@ -20,41 +20,27 @@ module Result_mode = struct
     Jv.find x "fdr" >>| Jv.to_float >>= fun fdr ->
     Some { Gontact_shared.go_id ; go_term ; enrichment ; pval ; fdr }
 
-  let fetch_loop id =
+  let fetch_result id =
     let open Fut.Result_syntax in
     let open Brr_io.Fetch in
 
     let decode_response resp =
-      let open Fut.Result_syntax in
       let body = Response.as_body resp in
-      let+ json = Body.json body in
-      match Jv.to_string @@ Jv.Jarray.get json 0 with
-      | "In_progress" -> Some Gontact_shared.In_progress
-      | "Completed" ->
-        let table = Jv.Jarray.get json 1 in
-        let n = Jv.Jarray.length table in
-        let terms =
-          List.init n (fun i -> decode_enriched_term (Jv.Jarray.get table i))
-          |> Base.Option.all
-        in
-        Option.map (fun x -> Gontact_shared.Completed x) terms
-      | _ -> None
+      let* table = Body.json body in
+      let n = Jv.Jarray.length table in
+      Fut.return (
+        List.init n (fun i -> decode_enriched_term (Jv.Jarray.get table i))
+        |> Base.Option.all
+        |> Base.Result.of_option ~error:(Jv.Error.v (Jstr.v "decoding"))
+      )
     in
     let u = Jstr.of_string (Printf.sprintf "/run/%s?format=json" id) in
-    let rec loop () =
-      let* resp = url u in
-      if Response.ok resp then
-        let* request_status = decode_response resp in
-        match request_status with
-        | Some In_progress ->
-          Fut.bind (Fut.tick ~ms:10_000) loop
-        | Some (Completed enriched_terms) ->
-          Fut.return (Ok enriched_terms)
-        | None -> Fut.error (Jv.Error.v (Jstr.v "decoding"))
-      else
-        Fut.return (Error (Jv.Error.v (Response.status_text resp)))
-    in
-    loop ()
+    let* resp = url u in
+    if Response.ok resp then
+      let+ enriched_terms = decode_response resp in
+      enriched_terms
+    else
+      Fut.return (Error (Jv.Error.v (Response.status_text resp)))
 
   let set_visibility el ~on:ev =
     let string_of_visibility = function
@@ -143,7 +129,7 @@ module Result_mode = struct
 
   let main id =
     let result_fetch_ev =
-      fetch_loop id
+      fetch_result id
       |> Note_brr.Futr.to_event
       |> Note.E.filter_map Base.Result.ok
     in
