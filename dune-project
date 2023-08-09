@@ -18,3 +18,16 @@
     gsl
     logs
     ppx_deriving))
+
+(package
+  (name gontact-server)
+  (tags (bioinformatics))
+  (depends
+    core_unix
+    directories
+    dream
+    geoip
+    gontact
+    leveldb
+    ppx_deriving
+    tyxml))
