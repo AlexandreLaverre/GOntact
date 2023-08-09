@@ -42,15 +42,14 @@ module Result_mode = struct
     else
       Fut.return (Error (Jv.Error.v (Response.status_text resp)))
 
-  let set_visibility el ~on:ev =
-    let string_of_visibility = function
-      | `Visible -> "visibility:visible"
-      | `Hidden -> "visibility:hidden"
-      | `Collapse -> "visibility:collapse"
+  let set_display el ~on:ev =
+    let string_of_display = function
+      | `None -> "display:none"
+      | `Grid -> "display:grid"
     in
     Note_brr.Elr.set_prop
       (El.Prop.jstr (Jstr.v "style"))
-      ~on:(Note.E.map (fun x -> Jstr.v (string_of_visibility x)) ev)
+      ~on:(Note.E.map (fun x -> Jstr.v (string_of_display x)) ev)
       el
 
   let create_table result_fetch_ev ~fdr_threshold =
@@ -87,8 +86,11 @@ module Result_mode = struct
 
   let result_widget run_id result_fetch_ev =
     let status_bar =
-      let p = El.p [El.txt' "Work in progress..."] in
-      set_visibility p ~on:(Note.E.map (Fun.const `Collapse) result_fetch_ev) ;
+      let txt = El.txt' "Work in progress..." in
+      let span = El.span ~at:[At.style (Jstr.v "font-weight:bold")] [txt] in
+      let spinner = El.img ~at:[At.src (Jstr.v "/img/hourglass.gif")] () in
+      let p = El.p ~at:[At.style (Jstr.v "text-align:center")] [span ; El.br () ; spinner ] in
+      set_display p ~on:(Note.E.map (Fun.const `None) result_fetch_ev) ;
       p
     in
     let download_button =
@@ -125,7 +127,7 @@ module Result_mode = struct
         create_table result_fetch_ev ~fdr_threshold
       ]
     in
-    set_visibility div ~on:(Note.E.map (Fun.const `Visible) result_fetch_ev) ;
+    set_display div ~on:(Note.E.map (Fun.const `Grid) result_fetch_ev) ;
     [ status_bar ; div ]
 
   let main id =
