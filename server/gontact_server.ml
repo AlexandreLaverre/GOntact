@@ -32,7 +32,125 @@ let logo_header =
   let open Html in
   header [
     img ~src:"/img/GOntact_logo.png" ~alt:"GOntact logo" ~a:[a_width 600] () ;
-  ] ;
+  ]
+
+let ibed_directory = function
+  | `human -> "data/PCHi-C/human/ibed_files"
+  | `mouse -> "data/PCHi-C/mouse/ibed_files"
+
+let ibed_files genome =
+  let dir = ibed_directory genome in
+  Sys_unix.readdir dir
+  |> Array.filter ~f:(Core.String.is_suffix ~suffix:".ibed")
+  |> Array.map ~f:(Filename.concat dir)
+  |> Array.to_list
+
+let load_genome_annotation genome ~gene_symbols =
+  let path = match genome with
+    | `human -> "data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt"
+    | `mouse -> "data/ensembl_annotations/mouse/GeneAnnotation_BioMart_Ensembl102_mm10.txt"
+  in
+  let gene_annot =
+    Genomic_annotation.of_ensembl_biomart_file path
+    |> Result.ok_or_failwith
+  in
+  let filtered_annot_bio_gene = Genomic_annotation.filter_gene_biotypes gene_annot "protein_coding" in
+  let filtered_annot_bio_tx = Genomic_annotation.filter_transcript_biotypes filtered_annot_bio_gene "protein_coding" in
+  Genomic_annotation.filter_gene_symbols filtered_annot_bio_tx gene_symbols
+
+let load_annotated_baits genome ~genome_annotation ~functional_annotation =
+  let bait_path = match genome with
+    | `human -> "data/PCHi-C/human/hg38.baitmap"
+    | `mouse -> "data/PCHi-C/mouse/mm10.baitmap"
+  in
+  let bait_collection =
+    Genomic_interval_collection.of_bed_file bait_path ~strip_chr:true ~format:Base1
+  in
+  Contact_enrichment_analysis.annotate_baits
+    bait_collection
+    ~genome_annotation ~functional_annotation
+    ~max_dist_bait_TSS:1_000
+
+let load_contact_graph genome ~cea_param ~annotated_baits =
+  let contact_graphs =
+    ibed_files genome
+    |> List.map ~f:(Gontact.Chromatin_contact_graph.of_ibed_file ~strip_chr:true)
+  in
+  Contact_enrichment_analysis.aggregate_contact_graphs
+    contact_graphs
+    cea_param
+    annotated_baits
+
+let load_chromosome_sizes genome =
+  let path = match genome with
+    | `human -> "data/ensembl_annotations/human/chr_sizes_hg38.txt"
+    | `mouse -> "data/ensembl_annotations/mouse/chr_sizes_mm10.txt"
+  in
+  Genomic_interval_collection.of_chr_size_file path ~strip_chr:true
+
+let load_functional_annotation genome ~domain =
+  (
+    let open Let_syntax.Result in
+    let* obo = Obo.of_obo_file "data/GeneOntology/go-basic.obo" in
+    let* ontology = Ontology.of_obo obo domain in
+    let gaf_path = match genome with
+      | `human -> "data/GeneOntology/goa_human.gaf"
+      | `mouse -> "data/GeneOntology/mgi.gaf"
+    in
+    let+ gaf = Gaf.of_gaf_file gaf_path in
+    let fa = Functional_annotation.of_gaf_and_ontology gaf ontology in
+    let propagated_fa = Functional_annotation.propagate_annotations fa ontology in
+    propagated_fa, ontology
+  )
+  |> Result.ok_or_failwith
+
+let load_bed bed_contents =
+  String.split_lines bed_contents
+  |> Genomic_interval_collection.of_bed_lines ~strip_chr:true ~format:Genomic_interval_collection.Base0
+
+let load_default_background genome =
+  In_channel.read_all (
+    match genome with
+    | `human -> "data/enhancers/human/ENCODE.Laverre2022.bed"
+    | `mouse -> "data/enhancers/mouse/ENCODE.Laverre2022.bed"
+  )
+
+let request_table = String.Table.create ()
+
+module Decode_form = struct
+  let scalar ~of_string_exn label = function
+    | [None, v] -> (
+        try Ok (of_string_exn v)
+        with Failure _ -> Error (`Param_parsing label)
+      )
+    | _ -> Rresult.R.error_msgf "wrong field structure (%s)" label
+
+  let float = scalar ~of_string_exn:Core.Float.of_string
+  let int = scalar ~of_string_exn:Core.Int.of_string
+
+  let genome = scalar ~of_string_exn:(function
+      | "human" -> `human
+      | "mouse" -> `mouse
+      | _ -> failwith "unknown genome"
+    )
+
+  let domain = scalar ~of_string_exn:(function
+      | "cellular_component" -> Ontology.Cellular_component
+      | "molecular_function" -> Molecular_function
+      | "biological_process" -> Biological_process
+      | _ -> failwith "unknown GO domain"
+    )
+
+  let single_file_contents label = function
+    | [name, contents] -> Ok (name, contents)
+    | _ -> Rresult.R.error_msgf "wrong field structure (%s)" label
+
+  let maybe_single_file_contents label = function
+    | [] -> Ok None
+    | [name, contents] -> Ok (Some (name, contents))
+    | _ -> Rresult.R.error_msgf "wrong field structure (%s)" label
+
+end
 
 module Form_page = struct
   let%html intro_par = {|
@@ -60,20 +178,20 @@ module Form_page = struct
     </p>|}
 
   let%html gontact_form request = {|
-  <form method="Post" action = "/" enctype="multipart/form-data">
+  <form id= "gontact-form" method="Post" action="/" enctype="multipart/form-data">
     |}[Tyxml.Html.Unsafe.data @@ Dream.csrf_tag request]{|
     <!-- GO domain choice -->
       Select the <b>Gene Ontology domain</b> for which you want to
       compute an enrichment:
       <br>
-      <input type="radio" id="biological_process" name="domain-choice" value="biological_process" />
-      <label for="biological_process">biological process</label>
+      <input type="radio" id="radio-biological-process" name="domain-choice" value="biological_process" required/>
+      <label for="radio-biological-process">biological process</label>
       <br>
-      <input type="radio" id="molecular_function" name="domain-choice" value="molecular_function" />
-      <label for="molecular_function">molecular function</label>
+      <input type="radio" id="radio-molecular-function" name="domain-choice" value="molecular_function" />
+      <label for="radio-molecular-function">molecular function</label>
       <br>
-       <input type="radio" id="cellular_component" name="domain-choice" value="cellular_component" />
-      <label for="cellular_component">cellular component</label>
+       <input type="radio" id="radio-cellular-component" name="domain-choice" value="cellular_component" />
+      <label for="radio-cellular-component">cellular component</label>
       <br>
 
       <hr>
@@ -81,7 +199,7 @@ module Form_page = struct
       <!-- genome choice -->
       Select the <b>genome</b> you want to analyze:
       <br>
-      <input type="radio" id="genome_human" name="genome-choice" value="human" />
+      <input type="radio" id="genome_human" name="genome-choice" value="human" required />
       <label for="genome_human">human (hg38)</label>
       <br>
 
@@ -93,7 +211,7 @@ module Form_page = struct
 
       <label for="foreground-file">Input the coordinates of the <b>foreground</b> regions (bed format):</label>
       <br>
-      <input type="file" id="foreground-file" name="foreground-file">
+      <input type="file" id="foreground-file" name="foreground-file" required>
 
       <!-- background regions -->
 
@@ -198,205 +316,259 @@ module Form_page = struct
       hr () ;
       gontact_form request ;
     ]
+
+  type analysis_request = {
+    min_score : float ;
+    basal_domain : int ;
+    min_dist : int ;
+    max_dist : int ;
+    genome : [`human | `mouse] ;
+    domain : Ontology.domain ;
+    margin : int ;
+    min_samples : int ;
+    maybe_background_bed : string option ;
+    foreground_bed : string ;
+  }
+
+  let analysis_request_decode = function
+    | [ "background-file", background_file ;
+        "basal-domain", basal_domain ;
+        "domain-choice", domain_choice ;
+        "foreground-file", foreground_file ;
+        "genome-choice", genome_choice ;
+        "max-dist-contacts", max_dist_contacts ;
+        "max-dist-element-fragment", max_dist_element_fragment ;
+        "min-dist-contacts", min_dist_contacts ;
+        "min-samples", min_samples ;
+        "min-score", min_score ] ->
+      let open Gontact.Let_syntax.Result in
+      let+ min_score = Decode_form.float "min_score" min_score
+      and+ basal_domain = Decode_form.int "basal_domain" basal_domain
+      and+ min_dist = Decode_form.int "min_dist" min_dist_contacts
+      and+ max_dist = Decode_form.int "max_dist" max_dist_contacts
+      and+ genome = Decode_form.genome "genome" genome_choice
+      and+ domain = Decode_form.domain "domain" domain_choice
+      and+ margin = Decode_form.int "margin" max_dist_element_fragment
+      and+ min_samples = Decode_form.int "min_samples" min_samples
+      and+ maybe_background_bed =
+        Decode_form.maybe_single_file_contents "background_file" background_file
+        |> Result.map ~f:(Option.map ~f:snd)
+      and+ _, foreground_bed = Decode_form.single_file_contents "foreground_file" foreground_file
+      in
+      { min_score ; basal_domain ; domain ; foreground_bed ; min_dist ;
+        max_dist ; genome ; margin ; min_samples ; maybe_background_bed }
+    | _ -> Error `Incorrect_field_list
+
+  let analysis
+      { maybe_background_bed ; domain ; foreground_bed ;
+        genome ; max_dist ; min_dist ; min_samples ; min_score ; basal_domain ;
+        margin } =
+    let great_param = { Great.upstream = basal_domain ; downstream = basal_domain ; extend = 0 } in
+    let cea_param = { Contact_enrichment_analysis.min_score ; min_dist ; max_dist ; min_samples = Some min_samples } in
+    let functional_annotation, ontology = load_functional_annotation genome ~domain in
+    let gene_symbols = Functional_annotation.gene_symbols functional_annotation in
+    let genome_annotation = load_genome_annotation genome ~gene_symbols in
+    let annotated_baits = load_annotated_baits genome ~genome_annotation ~functional_annotation in
+    let contact_graph = load_contact_graph genome ~cea_param ~annotated_baits in
+    let chromosome_sizes = load_chromosome_sizes genome in
+    let background_bed = Option.value_or_thunk maybe_background_bed ~default:(fun () ->
+        load_default_background genome
+      )
+    in
+    let elements =
+      { FGBG.foreground = foreground_bed ; background = background_bed }
+      |> FGBG.map ~f:load_bed
+    in
+    let enriched_terms =
+      if basal_domain > 0 then
+        let hea =
+          Hybrid_enrichment_analysis.perform
+            great_param ~contact_graph ~genome_annotation ~margin
+            ~chromosome_sizes ~annotated_baits ~functional_annotation
+            elements
+        in
+        hea.enriched_terms
+      else
+        let cea =
+          Contact_enrichment_analysis.perform
+            ~margin annotated_baits functional_annotation
+            contact_graph elements
+        in
+        cea.enriched_terms
+    in
+    enriched_terms, ontology
 end
 
-module Decode_form = struct
-  let scalar ~of_string_exn label = function
-    | [None, v] -> (
-        try Ok (of_string_exn v)
-        with Failure _ -> Error (`Param_parsing label)
+module GREAT_form_page = struct
+  let%html intro_par = {|
+    <p style="text-align:justify;">
+      This page allows you to compare the results obtained with GOntact with
+      the results you would obtain
+      with <a href="http://great.stanford.edu/public/html/">GREAT</a>
+      using the same genomic annotations and the same set of Gene
+      Ontology annotations. As for GOntact, by default, the coordinates of enhancer elements predicted by
+      ENCODE are used as a background set of noncoding elements.
+    </p>|}
+
+  let%html great_form request = {|
+  <form id= "great-form" method="Post" action="/great" enctype="multipart/form-data">
+    |}[Tyxml.Html.Unsafe.data @@ Dream.csrf_tag request]{|
+    <!-- genome choice -->
+    Select the <b>Gene Ontology domain</b> for which you want to compute an enrichment:
+    <br>
+    <input type="radio" id="radio-biological-process" name="domain-choice" value="biological_process" required/>
+    <label for="radio-biological-process">biological process</label>
+    <br>
+    <input type="radio" id="radio-molecular-function" name="domain-choice" value="molecular_function" />
+    <label for="radio-molecular-function">molecular function</label>
+    <br>
+    <input type="radio" id="radio-cellular-component" name="domain-choice" value="cellular_component" />
+    <label for="radio-cellular-component">cellular component</label>
+    <br>
+
+    <hr>
+
+    <!-- genome choice -->
+    Select the <b>genome</b> you want to analyze:
+    <br>
+    <input type="radio" id="radio-genome-human" name="genome-choice" value="human" required/>
+    <label for="radio-genome-human">human (hg38)</label>
+    <br>
+    <input type="radio" id="radio-genome-mouse" name="genome-choice" value="mouse" />
+    <label for="radio-genome-mouse">mouse (mm10)</label>
+    <hr>
+
+    <!-- foreground regions -->
+    <label for="foreground-file">Input the coordinates of the <b>foreground</b> regions (bed format):</label>
+    <br>
+    <input type="file" id="foreground-file" name="foreground-file" required>
+
+    <!-- background regions -->
+    <br>
+    <label for="background-file">(Optional) Input the coordinates of
+      a custom set of <b>background</b> regions (bed format):</label>
+    <br>
+    <input type="file" id="background-file" name="background-file">
+
+    <!-- GREAT domain parameters-->
+
+    <br>
+    <hr>
+    Definition of <b>regulatory domains</b>:
+    <br>
+      <table style="padding:0px">
+
+        <!-- nb samples-->
+	<tr>
+	  <td>
+           <label for="upstream"> Basal regulatory domain, upstream
+           region (bp): </label>
+	    </td>
+	    <td>
+	      <input type="number" min="0"
+		     name="basal-upstream"  value="5000" style="width: 100px">
+	    </td>
+	  </tr>
+
+	   <!-- nb samples-->
+	  <tr>
+	    <td>
+              <label for="downstream">  Basal regulatory domain,
+              downstream region (bp):</label>
+	    </td>
+	    <td>
+	      <input type="number" min="0"
+		     name="basal-downstream"  value="1000" style="width: 100px">
+	    </td>
+	  </tr>
+
+	  <!-- extension-->
+	  <tr>
+	    <td>
+	      <label for="extension"> Regulatory domain extension size (bp):</label>
+	    </td>
+	     <td>
+	      <input type="number" min="0"
+		     name="extension" value="1000000" style="width: 100px">
+	     </td>
+	  </tr>
+
+
+
+	  </table>
+
+      <!-- submit button-->
+      <div style="text-align:center"><input type="submit"></div>
+    </form>|}
+
+  let render request =
+    let open Tyxml.Html in
+    html_page ~mode:Form ~title:"GOntact" [
+      logo_header ;
+      hr () ;
+      intro_par ;
+      hr () ;
+      great_form request ;
+    ]
+
+  type analysis_request = {
+    basal_downstream : int ;
+    basal_upstream : int ;
+    extension : int ;
+    genome : [`human | `mouse] ;
+    domain : Ontology.domain ;
+    maybe_background_bed : string option ;
+    foreground_bed : string ;
+  }
+
+  let analysis_request_decode = function
+    | [ "background-file", background_file ;
+        "basal-downstream", basal_downstream ;
+        "basal-upstream", basal_upstream ;
+        "domain-choice", domain_choice ;
+        "extension", extension ;
+        "foreground-file", foreground_file ;
+        "genome-choice", genome_choice ] ->
+      let open Gontact.Let_syntax.Result in
+      let+ basal_downstream = Decode_form.int "basal_downstream" basal_downstream
+      and+ basal_upstream = Decode_form.int "basal_upstream" basal_upstream
+      and+ extension = Decode_form.int "extension" extension
+      and+ genome = Decode_form.genome "genome" genome_choice
+      and+ domain = Decode_form.domain "domain" domain_choice
+      and+ maybe_background_bed =
+        Decode_form.maybe_single_file_contents "background_file" background_file
+        |> Result.map ~f:(Option.map ~f:snd)
+      and+ _, foreground_bed = Decode_form.single_file_contents "foreground_file" foreground_file
+      in
+      { basal_downstream ; basal_upstream ; domain ; foreground_bed ;
+        genome ; extension ; maybe_background_bed }
+    | _ -> Error `Incorrect_field_list
+
+  let analysis
+      { maybe_background_bed ; domain ; foreground_bed ;
+        genome ; basal_downstream ; basal_upstream ; extension } =
+    let param = { Great.upstream = basal_upstream ; downstream = basal_downstream ; extend = extension } in
+    let functional_annotation, ontology = load_functional_annotation genome ~domain in
+    let gene_symbols = Functional_annotation.gene_symbols functional_annotation in
+    let genome_annotation = load_genome_annotation genome ~gene_symbols in
+    let chromosome_sizes = load_chromosome_sizes genome in
+    let background_bed = Option.value_or_thunk maybe_background_bed ~default:(fun () ->
+        load_default_background genome
       )
-    | _ -> Rresult.R.error_msgf "wrong field structure (%s)" label
-
-  let float = scalar ~of_string_exn:Core.Float.of_string
-  let int = scalar ~of_string_exn:Core.Int.of_string
-
-  let genome = scalar ~of_string_exn:(function
-      | "human" -> `human
-      | "mouse" -> `mouse
-      | _ -> failwith "unknown genome"
-    )
-
-  let domain = scalar ~of_string_exn:(function
-      | "cellular_component" -> Ontology.Cellular_component
-      | "molecular_function" -> Molecular_function
-      | "biological_process" -> Biological_process
-      | _ -> failwith "unknown GO domain"
-    )
-
-  let single_file_contents label = function
-    | [name, contents] -> Ok (name, contents)
-    | _ -> Rresult.R.error_msgf "wrong field structure (%s)" label
-
-  let maybe_single_file_contents label = function
-    | [] -> Ok None
-    | [name, contents] -> Ok (Some (name, contents))
-    | _ -> Rresult.R.error_msgf "wrong field structure (%s)" label
-
+    in
+    let elements =
+      { FGBG.foreground = foreground_bed ; background = background_bed }
+      |> FGBG.map ~f:load_bed
+    in
+    let gea =
+      Great.enrichment_analysis param ~genome_annotation
+        ~chromosome_sizes ~functional_annotation
+        elements in
+    let enriched_terms = gea.enriched_terms in
+    enriched_terms, ontology
 end
 
-let ibed_directory = function
-  | `human -> "data/PCHi-C/human/ibed_files"
-  | `mouse -> "data/PCHi-C/mouse/ibed_files"
-
-let ibed_files genome =
-  let dir = ibed_directory genome in
-  Sys_unix.readdir dir
-  |> Array.filter ~f:(Core.String.is_suffix ~suffix:".ibed")
-  |> Array.map ~f:(Filename.concat dir)
-  |> Array.to_list
-
-let load_genome_annotation genome ~gene_symbols =
-  let path = match genome with
-    | `human -> "data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt"
-    | `mouse -> "data/ensembl_annotations/mouse/GeneAnnotation_BioMart_Ensembl102_mm10.txt"
-  in
-  let gene_annot =
-    Genomic_annotation.of_ensembl_biomart_file path
-    |> Result.ok_or_failwith
-  in
-  let filtered_annot_bio_gene = Genomic_annotation.filter_gene_biotypes gene_annot "protein_coding" in
-  let filtered_annot_bio_tx = Genomic_annotation.filter_transcript_biotypes filtered_annot_bio_gene "protein_coding" in
-  Genomic_annotation.filter_gene_symbols filtered_annot_bio_tx gene_symbols
-
-let load_annotated_baits genome ~genome_annotation ~functional_annotation =
-  let bait_path = match genome with
-    | `human -> "data/PCHi-C/human/hg38.baitmap"
-    | `mouse -> "data/PCHi-C/mouse/mm10.baitmap"
-  in
-  let bait_collection =
-    Genomic_interval_collection.of_bed_file bait_path ~strip_chr:true ~format:Base1
-  in
-  Contact_enrichment_analysis.annotate_baits
-    bait_collection
-    ~genome_annotation ~functional_annotation
-    ~max_dist_bait_TSS:1_000
-
-let load_contact_graph genome ~cea_param ~annotated_baits =
-  let contact_graphs =
-    ibed_files genome
-    |> List.map ~f:(Gontact.Chromatin_contact_graph.of_ibed_file ~strip_chr:true)
-  in
-  Contact_enrichment_analysis.aggregate_contact_graphs
-    contact_graphs
-    cea_param
-    annotated_baits
-
-let load_chromosome_sizes genome =
-  let path = match genome with
-    | `human -> "data/ensembl_annotations/human/chr_sizes_hg38.txt"
-    | `mouse -> "data/ensembl_annotations/mouse/chr_sizes_mm10.txt"
-  in
-  Genomic_interval_collection.of_chr_size_file path ~strip_chr:true
-
-let load_functional_annotation genome ~domain =
-  (
-    let open Let_syntax.Result in
-    let* obo = Obo.of_obo_file "data/GeneOntology/go-basic.obo" in
-    let* ontology = Ontology.of_obo obo domain in
-    let gaf_path = match genome with
-      | `human -> "data/GeneOntology/goa_human.gaf"
-      | `mouse -> "data/GeneOntology/mgi.gaf"
-    in
-    let+ gaf = Gaf.of_gaf_file gaf_path in
-    let fa = Functional_annotation.of_gaf_and_ontology gaf ontology in
-    let propagated_fa = Functional_annotation.propagate_annotations fa ontology in
-    propagated_fa, ontology
-  )
-  |> Result.ok_or_failwith
-
-let load_bed bed_contents =
-  String.split_lines bed_contents
-  |> Genomic_interval_collection.of_bed_lines ~strip_chr:true ~format:Genomic_interval_collection.Base0
-
-type analysis_request = {
-  min_score : float ;
-  basal_domain : int ;
-  min_dist : int ;
-  max_dist : int ;
-  genome : [`human | `mouse] ;
-  domain : Ontology.domain ;
-  margin : int ;
-  min_samples : int ;
-  maybe_background_bed : string option ;
-  foreground_bed : string ;
-}
-
-let analysis_request_decode = function
-  | [ "background-file", background_file ;
-      "basal-domain", basal_domain ;
-      "domain-choice", domain_choice ;
-      "foreground-file", foreground_file ;
-      "genome-choice", genome_choice ;
-      "max-dist-contacts", max_dist_contacts ;
-      "max-dist-element-fragment", max_dist_element_fragment ;
-      "min-dist-contacts", min_dist_contacts ;
-      "min-samples", min_samples ;
-      "min-score", min_score ] ->
-    let open Gontact.Let_syntax.Result in
-    let+ min_score = Decode_form.float "min_score" min_score
-    and+ basal_domain = Decode_form.int "basal_domain" basal_domain
-    and+ min_dist = Decode_form.int "min_dist" min_dist_contacts
-    and+ max_dist = Decode_form.int "max_dist" max_dist_contacts
-    and+ genome = Decode_form.genome "genome" genome_choice
-    and+ domain = Decode_form.domain "domain" domain_choice
-    and+ margin = Decode_form.int "margin" max_dist_element_fragment
-    and+ min_samples = Decode_form.int "min_samples" min_samples
-    and+ maybe_background_bed =
-      Decode_form.maybe_single_file_contents "background_file" background_file
-      |> Result.map ~f:(Option.map ~f:snd)
-    and+ _, foreground_bed = Decode_form.single_file_contents "foreground_file" foreground_file
-    in
-    { min_score ; basal_domain ; domain ; foreground_bed ; min_dist ;
-      max_dist ; genome ; margin ; min_samples ; maybe_background_bed }
-  | _ -> Error `Incorrect_field_list
-
-let analysis
-    { maybe_background_bed ; domain ; foreground_bed ;
-      genome ; max_dist ; min_dist ; min_samples ; min_score ; basal_domain ;
-      margin } =
-  let great_param = { Great.upstream = basal_domain ; downstream = basal_domain ; extend = 0 } in
-  let cea_param = { Contact_enrichment_analysis.min_score ; min_dist ; max_dist ; min_samples = Some min_samples } in
-  let functional_annotation, ontology = load_functional_annotation genome ~domain in
-  let gene_symbols = Functional_annotation.gene_symbols functional_annotation in
-  let genome_annotation = load_genome_annotation genome ~gene_symbols in
-  let annotated_baits = load_annotated_baits genome ~genome_annotation ~functional_annotation in
-  let contact_graph = load_contact_graph genome ~cea_param ~annotated_baits in
-  let chromosome_sizes = load_chromosome_sizes genome in
-  let background_bed = Option.value_or_thunk maybe_background_bed ~default:(fun () ->
-      In_channel.read_all (
-        match genome with
-        | `human -> "data/enhancers/human/ENCODE.Laverre2022.bed"
-        | `mouse -> "data/enhancers/mouse/ENCODE.Laverre2022.bed"
-      )
-    )
-  in
-  let elements =
-    { FGBG.foreground = foreground_bed ; background = background_bed }
-    |> FGBG.map ~f:load_bed
-  in
-  let enriched_terms =
-    if basal_domain > 0 then
-      let hea =
-        Hybrid_enrichment_analysis.perform
-          great_param ~contact_graph ~genome_annotation ~margin
-          ~chromosome_sizes ~annotated_baits ~functional_annotation
-          elements
-      in
-      hea.enriched_terms
-    else
-      let cea =
-        Contact_enrichment_analysis.perform
-          ~margin annotated_baits functional_annotation
-          contact_graph elements
-      in
-      cea.enriched_terms
-  in
-  enriched_terms, ontology
-
-let request_table = String.Table.create ()
-
-let create_analysis_request req =
+let create_analysis_request analysis req =
   let id =
     Core_unix.gettimeofday ()
     |> Core_unix.localtime
@@ -461,6 +633,25 @@ let json_get_run = api_get_run ~mime_type:Dream.application_json ~serializer:(fu
     |> Yojson.Safe.to_string
   )
 
+let analysis_service ~route ~param_decode ~create_analysis_request =
+  Dream.post route (fun request ->
+      match%lwt Dream.multipart request with
+      | `Ok form -> (
+          match param_decode form with
+          | Ok req -> (
+              let id = create_analysis_request req in
+              let url = sprintf "/run/%s" id in
+              Dream.redirect ~status:`See_Other request url
+            )
+          | Error `Incorrect_field_list ->
+            print_endline ([%show: (string * (string option * string) list) list] form) ;
+            Dream.empty `Bad_Request
+          | Error (`Msg msg) -> Dream.html ~code:500 msg
+          | Error (`Param_parsing p) -> Dream.html ~code:400 (sprintf "could not parse %s" p)
+        )
+      | _ -> Dream.empty `Bad_Request
+    )
+
 let () =
   Dream.run
   @@ Dream.logger
@@ -475,23 +666,17 @@ let () =
         Dream.html (html_to_string @@ Form_page.render request)
       );
 
-    Dream.post "/" (fun request ->
-        match%lwt Dream.multipart request with
-        | `Ok form -> (
-            match analysis_request_decode form with
-            | Ok req -> (
-                let id = create_analysis_request req in
-                let url = sprintf "/run/%s" id in
-                Dream.redirect ~status:`See_Other request url
-              )
-            | Error `Incorrect_field_list ->
-              print_endline ([%show: (string * (string option * string) list) list] form) ;
-              Dream.empty `Bad_Request
-            | Error (`Msg msg) -> Dream.html ~code:500 msg
-            | Error (`Param_parsing p) -> Dream.html ~code:400 (sprintf "could not parse %s" p)
-          )
-        | _ -> Dream.empty `Bad_Request
+    analysis_service ~route:"/"
+      ~param_decode:Form_page.analysis_request_decode
+      ~create_analysis_request:(create_analysis_request Form_page.analysis);
+
+    Dream.get  "/great" (fun request ->
+        Dream.html (html_to_string @@ GREAT_form_page.render request)
       );
+
+    analysis_service ~route:"/great"
+      ~param_decode:GREAT_form_page.analysis_request_decode
+      ~create_analysis_request:(create_analysis_request GREAT_form_page.analysis) ;
 
     Dream.get "/run/:run_id"  (fun request ->
         let run_id = Dream.param request "run_id" in
