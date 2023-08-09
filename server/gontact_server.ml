@@ -633,12 +633,82 @@ let json_get_run = api_get_run ~mime_type:Dream.application_json ~serializer:(fu
     |> Yojson.Safe.to_string
   )
 
-let analysis_service ~route ~param_decode ~create_analysis_request =
+
+module Logger = struct
+  type entry = {
+    time : float ;
+    user_agent : string option ;
+    user_info : user_info option ;
+  }
+  and user_info = {
+    country : string option ;
+    hash : string ;
+  }
+  [@@deriving sexp]
+
+  let open_db () =
+    let module Project_dirs = Directories.Project_dirs (struct
+        let qualifier = "fr"
+        let organization = "univ-lyon1"
+        let application = "gontact"
+      end) in
+
+    let data_path =
+      match Project_dirs.data_dir with
+      | None -> failwith "can't compute data_dir path"
+      | Some path -> path
+    in
+
+    let db_path = Filename.concat data_path "db" in
+
+    let () =
+      match Sys_unix.file_exists db_path with
+      | `No -> Core_unix.mkdir_p db_path ~perm:0o750;
+      | `Yes -> ()
+      | `Unknown -> failwithf "please check candidate db location %s" db_path ()
+    in
+    LevelDB.open_db db_path
+
+  let get_country point =
+    if String.is_empty point then None
+    else
+      let gi = Geoip.init_exn Geoip.GEOIP_MEMORY_CACHE in
+      let country_name = Geoip.country_name_by_name gi point in
+      Geoip.close gi ;
+      country_name
+
+  let get_user_info ip =
+    let country = get_country ip in
+    let hash = Stdlib.(Digest.to_hex (Digest.string ip)) in
+    { country ; hash }
+
+  let get_ip req =
+    Dream.header req "X-Forwarded-For"
+
+  let get_user_agent req =
+    Dream.header req "User-Agent"
+
+  let add_entry db req =
+    let time = Core_unix.gettimeofday () in
+    let key =
+      Int64.bits_of_float time
+      |> Int64.to_string
+    in
+    let maybe_ip = get_ip req in
+    let user_info = Option.map ~f:get_user_info maybe_ip in
+    let user_agent = get_user_agent req in
+    let entry = { time ; user_agent ; user_info } in
+    let data = Sexp.to_string_mach (sexp_of_entry entry) in
+    LevelDB.put db key data
+end
+
+let analysis_service ~route ~param_decode ~create_analysis_request db =
   Dream.post route (fun request ->
       match%lwt Dream.multipart request with
       | `Ok form -> (
           match param_decode form with
           | Ok req -> (
+              Logger.add_entry db request ;
               let id = create_analysis_request req in
               let url = sprintf "/run/%s" id in
               Dream.redirect ~status:`See_Other request url
@@ -653,40 +723,44 @@ let analysis_service ~route ~param_decode ~create_analysis_request =
     )
 
 let () =
-  Dream.run
-  @@ Dream.logger
-  @@ Dream.memory_sessions
-  @@ Dream.router [
+  let db = Logger.open_db () in
+  protect ~f:(fun () ->
+      Dream.run
+      @@ Dream.logger
+      @@ Dream.memory_sessions
+      @@ Dream.router [
 
-    Dream.get "/css/**" @@ Dream.static "server/static/css" ;
-    Dream.get "/img/**" @@ Dream.static "server/static/img" ;
-    Dream.get "/js/**" @@ Dream.static "server/static/js" ;
+        Dream.get "/css/**" @@ Dream.static "server/static/css" ;
+        Dream.get "/img/**" @@ Dream.static "server/static/img" ;
+        Dream.get "/js/**" @@ Dream.static "server/static/js" ;
 
-    Dream.get  "/" (fun request ->
-        Dream.html (html_to_string @@ Form_page.render request)
-      );
+        Dream.get  "/" (fun request ->
+            Dream.html (html_to_string @@ Form_page.render request)
+          );
 
-    analysis_service ~route:"/"
-      ~param_decode:Form_page.analysis_request_decode
-      ~create_analysis_request:(create_analysis_request Form_page.analysis);
+        analysis_service db ~route:"/"
+          ~param_decode:Form_page.analysis_request_decode
+          ~create_analysis_request:(create_analysis_request Form_page.analysis);
 
-    Dream.get  "/great" (fun request ->
-        Dream.html (html_to_string @@ GREAT_form_page.render request)
-      );
+        Dream.get  "/great" (fun request ->
+            Dream.html (html_to_string @@ GREAT_form_page.render request)
+          );
 
-    analysis_service ~route:"/great"
-      ~param_decode:GREAT_form_page.analysis_request_decode
-      ~create_analysis_request:(create_analysis_request GREAT_form_page.analysis) ;
+        analysis_service db ~route:"/great"
+          ~param_decode:GREAT_form_page.analysis_request_decode
+          ~create_analysis_request:(create_analysis_request GREAT_form_page.analysis) ;
 
-    Dream.get "/run/:run_id"  (fun request ->
-        let run_id = Dream.param request "run_id" in
-        let format = Dream.query request "format" in
-        match format with
-        | None -> html_get_run run_id
-        | Some "json" -> json_get_run run_id
-        | Some "tsv"  -> tsv_get_run run_id
-        | Some f ->
-          let msg = sprintf "Format %s is not supported" f in
-          Dream.html ~status:`Bad_Request msg
-      ) ;
-  ]
+        Dream.get "/run/:run_id"  (fun request ->
+            let run_id = Dream.param request "run_id" in
+            let format = Dream.query request "format" in
+            match format with
+            | None -> html_get_run run_id
+            | Some "json" -> json_get_run run_id
+            | Some "tsv"  -> tsv_get_run run_id
+            | Some f ->
+              let msg = sprintf "Format %s is not supported" f in
+              Dream.html ~status:`Bad_Request msg
+          ) ;
+      ]
+    )
+    ~finally:(fun () -> LevelDB.close db)

@@ -2,7 +2,7 @@
   (name gontact_server)
   (public_name gontact_server)
   (modules Gontact_server)
-  (libraries core_unix dream gontact gontact_shared tyxml)
+  (libraries core_unix directories dream geoip gontact gontact_shared leveldb tyxml)
   (preprocess (pps lwt_ppx ppx_deriving.show ppx_sexp_conv ppx_yojson_conv tyxml-ppx)))
 
 (executable
