@@ -10,14 +10,18 @@ homepage: "https://gitlab.in2p3.fr/anamaria.necsulea/GOntact"
 bug-reports: "https://gitlab.in2p3.fr/anamaria.necsulea/GOntact/-/issues"
 depends: [
   "dune" {>= "3.1"}
+  "brr"
   "core_unix"
   "directories"
   "dream"
   "geoip"
   "gontact"
   "leveldb"
+  "note"
   "ppx_deriving"
+  "ppx_yojson_conv"
   "tyxml"
+  "tyxml-ppx"
   "odoc" {with-doc}
 ]
 build: [

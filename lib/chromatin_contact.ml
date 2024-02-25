@@ -94,7 +94,7 @@ let output_bait_annotation ~bait_collection ~bait_annotation ~path =
   Out_channel.with_file path ~append:false ~f:(fun output ->
       Out_channel.output_string output "BaitID\tGOID\n" ;
       List.iter id_baits  ~f:(fun id ->
-          match (String.Map.find bait_annotation id) with
+          match (Map.find bait_annotation id) with
           | None ->  Printf.fprintf output "%s\t\n" id
           | Some l -> Printf.fprintf output "%s\t%s\n" id (String.concat ~sep:"," l)
         )
@@ -109,13 +109,13 @@ let annotations_by_element ~(element_coordinates:Genomic_interval_collection.t) 
   in
   let elbaits =
     String.Map.map intersection ~f:(fun l ->
-        List.filter_map l ~f:(fun frag -> String.Map.find fragment_to_baits frag)
+        List.filter_map l ~f:(fun frag -> Map.find fragment_to_baits frag)
         |> List.join
         |> List.dedup_and_sort ~compare:String.compare
       )
   in
   String.Map.map elbaits ~f:(fun l ->
-      List.filter_map l ~f:(fun bait -> String.Map.find annotated_baits bait)
+      List.filter_map l ~f:(fun bait -> Map.find annotated_baits bait)
       |> List.join
       |> List.dedup_and_sort ~compare:String.compare
     )

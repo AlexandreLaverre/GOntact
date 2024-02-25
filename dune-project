@@ -9,25 +9,29 @@
 (homepage https://gitlab.in2p3.fr/anamaria.necsulea/GOntact)
 
 (package
-  (name gontact)
-  (tags (bioinformatics))
-  (depends
-    cmdliner
-    (core (>= 0.15.0))
-    core_unix
-    gsl
-    logs
-    ppx_deriving))
+ (name gontact)
+ (tags (bioinformatics))
+ (depends
+   cmdliner
+  (core (>= 0.15.0))
+   core_unix
+   gsl
+   logs
+   ppx_deriving))
 
 (package
-  (name gontact-server)
-  (tags (bioinformatics))
-  (depends
-    core_unix
-    directories
-    dream
-    geoip
-    gontact
-    leveldb
-    ppx_deriving
-    tyxml))
+ (name gontact-server)
+ (tags (bioinformatics))
+ (depends
+   brr
+   core_unix
+   directories
+   dream
+   geoip
+   gontact
+   leveldb
+   note
+   ppx_deriving
+   ppx_yojson_conv
+   tyxml
+   tyxml-ppx))

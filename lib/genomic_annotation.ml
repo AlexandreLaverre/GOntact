@@ -35,12 +35,12 @@ type biomart_header = {
 }
 
 let gene_symbol ga id =
-  match String.Map.find ga.genes id with
+  match Map.find ga.genes id with
   | Some g -> Some g.gene_symbol
   | None -> None
 
 let gene_symbol_exn ga id =
-  let g = Option.value_exn (String.Map.find ga.genes id) in
+  let g = Option.value_exn (Map.find ga.genes id) in
   g.gene_symbol
 
 let extract_ensembl_biomart_header h =
@@ -86,8 +86,8 @@ let transcript_annot_of_line line header =
     length = int_of_string (al.(header.transcript_length_index))})
 
 let isoforms_of_transcripts tx =
-  String.Map.map tx ~f:(fun t -> t.gene_id) (*simplify dictionary - tx id - gene id *)
-  |> String.Map.to_alist (*transform to list of tuples*)
+  Map.map tx ~f:(fun t -> t.gene_id) (*simplify dictionary - tx id - gene id *)
+  |> Map.to_alist (*transform to list of tuples*)
   |> List.map ~f:(fun (x, y) -> (y, x)) (*reverse tuple ordre to create dictionary *)
   |> String.Map.of_alist_multi  (*dictionary has gene ids as keys, values are list of transcript ids *)
 
@@ -116,57 +116,57 @@ let of_ensembl_biomart_file path =
 let filter_transcript_biotypes ga biotype =
   let genes = ga.genes in
   let transcripts = ga.transcripts in
-  let filtered_transcripts = String.Map.filter transcripts ~f:(fun x -> String.equal x.transcript_type biotype) in (*select transcripts with the good biotype*)
-  let filtered_gene_set = String.Map.fold filtered_transcripts ~init:String.Set.empty ~f:(fun ~key:_ ~data:tx acc -> String.Set.add acc tx.gene_id) in
-  let filtered_genes = String.Map.filter_keys genes ~f:(String.Set.mem filtered_gene_set) in
+  let filtered_transcripts = Map.filter transcripts ~f:(fun x -> String.equal x.transcript_type biotype) in (*select transcripts with the good biotype*)
+  let filtered_gene_set = Map.fold filtered_transcripts ~init:String.Set.empty ~f:(fun ~key:_ ~data:tx acc -> Set.add acc tx.gene_id) in
+  let filtered_genes = Map.filter_keys genes ~f:(Set.mem filtered_gene_set) in
   let filtered_isoforms = isoforms_of_transcripts filtered_transcripts in
   {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
 
 let filter_gene_biotypes ga biotype =
   let genes = ga.genes in
   let transcripts = ga.transcripts in
-  let filtered_genes = String.Map.filter genes ~f:(fun x -> String.equal x.gene_type biotype) in (*select genes with the good biotype*)
-  let filtered_gene_set = String.Set.of_list (String.Map.keys filtered_genes) in
-  let filtered_transcripts = String.Map.filter transcripts ~f:(fun x -> String.Set.mem filtered_gene_set x.gene_id) in
+  let filtered_genes = Map.filter genes ~f:(fun x -> String.equal x.gene_type biotype) in (*select genes with the good biotype*)
+  let filtered_gene_set = String.Set.of_list (Map.keys filtered_genes) in
+  let filtered_transcripts = Map.filter transcripts ~f:(fun x -> Set.mem filtered_gene_set x.gene_id) in
   let filtered_isoforms = isoforms_of_transcripts filtered_transcripts in
   {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
 
 let filter_gene_symbols ga symbol_set =
   (*symbol set is a set of strings = gene symbols*)
-  let filtered_genes = String.Map.filter ga.genes ~f:(fun g -> String.Set.mem symbol_set g.gene_symbol) in (*we keep genes that have these symbols*)
-  let gene_set = String.Set.of_list (String.Map.keys filtered_genes) in
-  let filtered_transcripts = String.Map.filter ga.transcripts ~f:(fun tx -> String.Set.mem gene_set tx.gene_id) in
-  let filtered_isoforms = String.Map.filter_keys ga.isoforms ~f:(fun gid -> String.Set.mem gene_set gid) in
+  let filtered_genes = Map.filter ga.genes ~f:(fun g -> Set.mem symbol_set g.gene_symbol) in (*we keep genes that have these symbols*)
+  let gene_set = String.Set.of_list (Map.keys filtered_genes) in
+  let filtered_transcripts = Map.filter ga.transcripts ~f:(fun tx -> Set.mem gene_set tx.gene_id) in
+  let filtered_isoforms = Map.filter_keys ga.isoforms ~f:(fun gid -> Set.mem gene_set gid) in
   {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
 
 let filter_chromosomes ga chr_set =
-  let filtered_genes = String.Map.filter ga.genes ~f:(fun g -> String.Set.mem chr_set g.chr) in (*we keep genes that are on these chromosomes*)
-  let gene_set = String.Set.of_list (String.Map.keys filtered_genes) in
-  let filtered_transcripts = String.Map.filter ga.transcripts ~f:(fun tx -> String.Set.mem gene_set tx.gene_id) in
-  let filtered_isoforms = String.Map.filter_keys ga.isoforms ~f:(fun gid -> String.Set.mem gene_set gid) in
+  let filtered_genes = Map.filter ga.genes ~f:(fun g -> Set.mem chr_set g.chr) in (*we keep genes that are on these chromosomes*)
+  let gene_set = String.Set.of_list (Map.keys filtered_genes) in
+  let filtered_transcripts = Map.filter ga.transcripts ~f:(fun tx -> Set.mem gene_set tx.gene_id) in
+  let filtered_isoforms = Map.filter_keys ga.isoforms ~f:(fun gid -> Set.mem gene_set gid) in
   {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
 
 let remove_duplicated_gene_symbols ga =
-  let tuples = String.Map.fold ga.genes ~init:[]  ~f:(fun ~key:gene_id ~data:gene acc -> ((gene.gene_symbol, gene_id) :: acc)) in
+  let tuples = Map.fold ga.genes ~init:[]  ~f:(fun ~key:gene_id ~data:gene acc -> ((gene.gene_symbol, gene_id) :: acc)) in
   let symbol_id = String.Map.of_alist_multi tuples in
-  let unique_genes = String.Map.fold symbol_id ~init:[] ~f:(fun ~key:_ ~data acc -> (
+  let unique_genes = Map.fold symbol_id ~init:[] ~f:(fun ~key:_ ~data acc -> (
         match data with
         | [ gid ] -> gid :: acc  (*keep only those genes that are unique*)
         | _ -> acc
       )
     ) in
-  let filtered_gene_tuples = List.map unique_genes ~f:(fun g -> (g, (String.Map.find_exn ga.genes g))) in
+  let filtered_gene_tuples = List.map unique_genes ~f:(fun g -> (g, (Map.find_exn ga.genes g))) in
   let filtered_genes = String.Map.of_alist_exn filtered_gene_tuples in
-  let gene_set = String.Set.of_list (String.Map.keys filtered_genes) in
-  let filtered_transcripts = String.Map.filter ga.transcripts ~f:(fun tx -> String.Set.mem gene_set tx.gene_id) in
-  let filtered_isoforms = String.Map.filter_keys ga.isoforms ~f:(fun gid -> String.Set.mem gene_set gid) in
+  let gene_set = String.Set.of_list (Map.keys filtered_genes) in
+  let filtered_transcripts = Map.filter ga.transcripts ~f:(fun tx -> Set.mem gene_set tx.gene_id) in
+  let filtered_isoforms = Map.filter_keys ga.isoforms ~f:(fun gid -> Set.mem gene_set gid) in
   {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
 
 
 let compare_isoforms txinfo t1 t2 =
   (*two isoforms from the same gene *)
-  let info1 = String.Map.find_exn txinfo t1 in (*t1 and t2 are necessarily in the transcript dictionary*)
-  let info2 = String.Map.find_exn txinfo t2 in
+  let info1 = Map.find_exn txinfo t1 in (*t1 and t2 are necessarily in the transcript dictionary*)
+  let info2 = Map.find_exn txinfo t2 in
   let appris1 = info1.appris_class in
   let appris2 = info2.appris_class in
   if String.equal appris1 appris2 then (
@@ -193,79 +193,79 @@ let compare_isoforms txinfo t1 t2 =
   )
 
 let identify_major_isoforms ga =
-  let gene_list = String.Map.keys ga.genes in
+  let gene_list = Map.keys ga.genes in
   let isoforms = ga.isoforms in
   let transcripts = ga.transcripts in
   let find_major_isoform isolist =
     Option.value_exn (List.max_elt isolist ~compare:(compare_isoforms transcripts))
   in
-  let major_list = List.map gene_list ~f:(fun g -> (g, find_major_isoform (String.Map.find_exn isoforms g))) in
+  let major_list = List.map gene_list ~f:(fun g -> (g, find_major_isoform (Map.find_exn isoforms g))) in
   String.Map.of_alist_exn major_list
 
 let identify_major_isoforms_symbols ga =
-  let gene_list = String.Map.keys ga.genes in
+  let gene_list = Map.keys ga.genes in
   let isoforms = ga.isoforms in
   let transcripts = ga.transcripts in
   let find_major_isoform isolist =
     Option.value_exn (List.max_elt isolist ~compare:(compare_isoforms transcripts))
   in
-  let major_list = List.map gene_list ~f:(fun g -> ((gene_symbol_exn ga g), find_major_isoform (String.Map.find_exn isoforms g))) in
+  let major_list = List.map gene_list ~f:(fun g -> ((gene_symbol_exn ga g), find_major_isoform (Map.find_exn isoforms g))) in
   String.Map.of_alist_exn major_list
 
 let write_major_isoforms mi path =
   Out_channel.with_file path ~append:false ~f:(fun output ->
       Printf.fprintf output "GeneID\tTranscript\n" ;
-      String.Map.iteri mi  ~f:(fun ~key ~data -> Printf.fprintf output "%s\t%s\n" key data))
+      Map.iteri mi  ~f:(fun ~key ~data -> Printf.fprintf output "%s\t%s\n" key data))
 
 let major_isoform_tss ga ~major_isoforms:iso =
   let ginfo = ga.genes in
   let txinfo = ga.transcripts in
-  let tss_pos = String.Map.map iso ~f:(fun tx -> (let ti = String.Map.find_exn txinfo tx in ti.tss_pos)) in
+  let tss_pos = Map.map iso ~f:(fun tx -> (let ti = Map.find_exn txinfo tx in ti.tss_pos)) in
   let interval_of_gene g =
-    let gi = String.Map.find_exn ginfo g in
-    let tss = String.Map.find_exn tss_pos g in
+    let gi = Map.find_exn ginfo g in
+    let tss = Map.find_exn tss_pos g in
     Genomic_interval.make ~id:g gi.chr tss tss gi.strand
   in
-  let int_list = List.map (String.Map.keys iso) ~f:interval_of_gene in
+  let int_list = List.map (Map.keys iso) ~f:interval_of_gene in
   Genomic_interval_collection.of_interval_list int_list
 
 let all_tss_intervals ga extend =
   let ginfo = ga.genes in
   let txinfo = ga.transcripts in
-  let tss_pos = String.Map.map txinfo ~f:(fun tx -> tx.tss_pos) in
+  let tss_pos = Map.map txinfo ~f:(fun tx -> tx.tss_pos) in
   let interval_of_transcript tx  =
-    let ti = String.Map.find_exn txinfo tx in
+    let ti = Map.find_exn txinfo tx in
     let g = ti.gene_id in
-    let gi = String.Map.find_exn ginfo g in
+    let gi = Map.find_exn ginfo g in
     let gs = gi.gene_symbol in
     let new_id = Printf.sprintf "%s:%s" g gs in
-    let tss = String.Map.find_exn tss_pos tx in
+    let tss = Map.find_exn tss_pos tx in
     let max_extend = max extend 1 in
     Genomic_interval.make ~id:new_id gi.chr (tss - max_extend) (tss + max_extend) gi.strand
   in
-  let int_list = List.map (String.Map.keys txinfo) ~f:interval_of_transcript in
+  let int_list = List.map (Map.keys txinfo) ~f:interval_of_transcript in
   Genomic_interval_collection.of_interval_list int_list
 
 let compute_cis_distances element_genes ~element_map:em ~gene_annotation:ga ~major_isoforms:mi =
   (* we assume that pairs of elements-genes are always in cis *)
   let txinfo = ga.transcripts in
-  let tss_pos = String.Map.map txinfo ~f:(fun tx -> tx.tss_pos) in
+  let tss_pos = Map.map txinfo ~f:(fun tx -> tx.tss_pos) in
   let compute_one_distance element_id gene_symbol =
-    let txid = String.Map.find_exn mi gene_symbol in (*identifier of the major isoform*)
-    let this_tss_pos = float_of_int (String.Map.find_exn tss_pos txid) in
-    let gint = String.Map.find_exn em element_id in
+    let txid = Map.find_exn mi gene_symbol in (*identifier of the major isoform*)
+    let this_tss_pos = float_of_int (Map.find_exn tss_pos txid) in
+    let gint = Map.find_exn em element_id in
     let start_pos = float_of_int (Genomic_interval.start_pos gint) in
     let end_pos = float_of_int (Genomic_interval.end_pos gint) in
     let mid_pos = (start_pos +. end_pos) /. 2. in
     let dist = Float.abs (mid_pos -. this_tss_pos) in
     (gene_symbol, dist)
   in
-  String.Map.mapi element_genes ~f:(fun ~key ~data -> (List.map data ~f:(fun g -> compute_one_distance key g)))
+  Map.mapi element_genes ~f:(fun ~key ~data -> (List.map data ~f:(fun g -> compute_one_distance key g)))
 
 let write_distance_elements ~dist_elements path =
   Out_channel.with_file path ~append:false ~f:(fun output ->
       Printf.fprintf output "ElementID\tGeneSymbol\tDistance\n" ;
-      String.Map.iteri dist_elements  ~f:(fun ~key ~data -> (List.iter data ~f:(fun (gs, dist) -> Printf.fprintf output "%s\t%s\t%f\n" key gs dist))))
+      Map.iteri dist_elements  ~f:(fun ~key ~data -> (List.iter data ~f:(fun (gs, dist) -> Printf.fprintf output "%s\t%s\t%f\n" key gs dist))))
 
 let number_of_genes ga =
-  String.Map.length ga.genes
+  Map.length ga.genes

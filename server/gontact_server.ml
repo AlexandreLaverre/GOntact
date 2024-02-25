@@ -2,6 +2,7 @@ open Tyxml
 open Core
 open Gontact
 open Gontact_shared
+open Ppx_yojson_conv_lib.Yojson_conv.Primitives
 
 let css_link ?a href = Html.link ?a ~rel:[`Stylesheet] ~href ()
 (* let ext_js_script ?(a = []) href = Html.script ~a:(Html.a_src href :: a) (Html.txt "") *)
@@ -578,7 +579,7 @@ let create_analysis_request analysis req =
     |> Md5.to_hex
   in
   let (t, waiter) = Lwt.wait () in
-  String.Table.set request_table ~key:id ~data:t ;
+  Hashtbl.set request_table ~key:id ~data:t ;
   Lwt.async (fun () ->
       Lwt_preemptive.detach (fun () ->
           let res = analysis req in
@@ -603,7 +604,7 @@ let html_get_run run_id =
 
 let api_get_run ~mime_type ~serializer run_id =
   let response = Dream.response ~headers:["Content-Type", mime_type] in
-  match String.Table.find request_table run_id with
+  match Hashtbl.find request_table run_id with
   | None -> Lwt.return (response ~status:`Not_Found "")
   | Some t ->
       let%lwt enriched_terms, ontology = t in
@@ -611,7 +612,7 @@ let api_get_run ~mime_type ~serializer run_id =
       let compare_by_fdr x y = Go_enrichment.(Float.compare x.fdr y.fdr) in
       let ordered_results = List.sort enriched_terms ~compare:compare_by_fdr in
       List.map ordered_results ~f:(fun er ->
-          let go_term = String.Map.find_exn gonames er.id
+          let go_term = Map.find_exn gonames er.id
           and enrichment = er.observed /. er.expected in
           { go_id = er.id ; go_term ; enrichment ; pval = er.pval ; fdr = er.fdr }
         )

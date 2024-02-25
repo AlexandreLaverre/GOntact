@@ -1,4 +1,5 @@
 open Base
+open Ppx_yojson_conv_lib.Yojson_conv.Primitives
 
 type mode = Form | Results of { id : string }
 [@@deriving sexp]

@@ -37,7 +37,7 @@ type domain = Biological_process | Molecular_function | Cellular_component
 [@@deriving sexp]
 
 let find_term o id =
-  match String.Map.find o.id_index id with
+  match Map.find o.id_index id with
   | None -> None
   | Some i -> Some o.terms.(i)
 
@@ -62,7 +62,7 @@ let of_obo (obo:Obo.t) ns =
     let terms = Array.of_list terms in
     let is_a = Array.map terms ~f:(fun (t : Term.t) ->
         List.map t.is_a ~f:(fun parent_id ->
-            match String.Map.find id_index parent_id with
+            match Map.find id_index parent_id with
             | None -> raise (Unknown_parent (t.id, parent_id))
             | Some i -> i
           )
@@ -74,10 +74,10 @@ let of_obo (obo:Obo.t) ns =
 
 let expand_term_list o tl =
   let rec add_term_to_closure ts t =
-    if Term.Set.mem ts t then ts
+    if Set.mem ts t then ts
     else (
-        let new_set = Term.Set.add ts t in
-        List.fold t.is_a ~init:new_set ~f:(fun term_set t_id ->
+        let new_set = Set.add ts t in
+        List.fold t.Term.is_a ~init:new_set ~f:(fun term_set t_id ->
             match  find_term o t_id with
             | None -> assert false (*should not happen if obo file correct*)
             | Some tt -> add_term_to_closure term_set tt
@@ -85,7 +85,7 @@ let expand_term_list o tl =
       )
   in
   List.fold tl ~init:Term.Set.empty ~f:(fun ts t -> add_term_to_closure ts t)
-  |> Term.Set.to_list
+  |> Set.to_list
 
 
 let expand_id_list o il =
@@ -110,17 +110,17 @@ module PKey = struct
   let get_term o i = o.terms.(i)
 
   let find_term_by_id o id =
-    String.Map.find o.id_index id
+    Map.find o.id_index id
 
   let is_a_transitive_closure o l =
     let rec traverse acc x =
-      if Int.Set.mem acc x then acc
+      if Set.mem acc x then acc
       else
-        List.fold o.is_a.(x) ~init:(Int.Set.add acc x) ~f:traverse
+        List.fold o.is_a.(x) ~init:(Set.add acc x) ~f:traverse
     in
     let leaves = Int.Set.of_list l in
-    Int.Set.fold leaves ~init:Int.Set.empty ~f:traverse
-    |> Int.Set.to_list
+    Set.fold leaves ~init:Int.Set.empty ~f:traverse
+    |> Set.to_list
 
   module Map = Int.Map
 

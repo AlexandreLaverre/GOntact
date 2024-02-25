@@ -17,7 +17,7 @@ let extract_terms ga is =
     | `Id id ->  ga.gene_id_to_go, id
     | `Symbol sym -> ga.gene_symbol_to_go, sym
   in
-  String.Map.find d k
+  Map.find d k
 
 let extract_terms_exn ga is =
   match extract_terms ga is with
@@ -30,7 +30,7 @@ let extract_genes ga ~go_id:go i =
     | `Symbol -> ga.go_to_gene_symbol
   in
   Ontology.PKey.find_term_by_id ga.ontology go
-  |> Option.bind ~f:(Ontology.PKey.Map.find d)
+  |> Option.bind ~f:(Map.find d)
 
 let of_gaf_and_ontology (gaf:Gaf.t) (ont:Ontology.t) =
   let only_this_namespace = List.filter_map gaf ~f:(fun ga ->
@@ -43,14 +43,14 @@ let of_gaf_and_ontology (gaf:Gaf.t) (ont:Ontology.t) =
   let make_pkey_dict xs proj =
     List.fold xs ~init:Ontology.PKey.Map.empty ~f:(fun acc x ->
         let key, data = proj x in
-        Ontology.PKey.Map.add_multi acc ~key ~data
+        Map.add_multi acc ~key ~data
       )
     |> Ontology.PKey.Map.map ~f:(List.dedup_and_sort ~compare:String.compare)
   in
   let make_sm_dict xs proj =
     List.fold xs ~init:String.Map.empty ~f:(fun acc x ->
         let key, data = proj x in
-        String.Map.add_multi acc ~key ~data
+        Map.add_multi acc ~key ~data
       )
     |> String.Map.map ~f:(List.dedup_and_sort ~compare:Ontology.PKey.compare)
   in
@@ -65,29 +65,29 @@ let show fa d =
   match d with
   | `Gene_id_to_go ->
     String.Map.map fa.gene_id_to_go ~f:(term_names_of_pkeys fa)
-    |> String.Map.to_alist
+    |> Map.to_alist
     |> [%show: (string * string list) list]
   | `Gene_symbol_to_go ->
     String.Map.map fa.gene_symbol_to_go ~f:(term_names_of_pkeys fa)
-    |> String.Map.to_alist
+    |> Map.to_alist
     |>  [%show: (string * string list) list]
   | `Go_to_gene_id ->
     fa.go_to_gene_id
-    |> Ontology.PKey.Map.to_alist
+    |> Map.to_alist
     |> List.map ~f:(fun (pkey, xs) -> get_id pkey, xs)
     |> [%show: (string * string list) list]
   | `Go_to_gene_symbol ->
     fa.go_to_gene_symbol
-    |> Ontology.PKey.Map.to_alist
+    |> Map.to_alist
     |> List.map ~f:(fun (pkey, xs) -> get_id pkey, xs)
     |> [%show: (string * string list) list]
 
 
 let propagate_annotations fa o =
   let reverse_dict gtg =
-    String.Map.fold gtg ~init:Ontology.PKey.Map.empty ~f:(fun ~key ~data acc ->
+    Map.fold gtg ~init:Ontology.PKey.Map.empty ~f:(fun ~key ~data acc ->
         List.fold data ~init:acc ~f:(fun acc pkey ->
-            Ontology.PKey.Map.add_multi acc ~key:pkey ~data:key
+            Map.add_multi acc ~key:pkey ~data:key
           )
       )
     |> Ontology.PKey.Map.map ~f:(List.dedup_and_sort ~compare:String.compare)
@@ -116,16 +116,16 @@ let write_annotations fa path =
       )
   in
   Out_channel.output_string output "GeneSymbol\tGOID\n" ;
-  String.Map.iteri s_to_go ~f:(fun ~key:k ~data:l -> write_entry k l) ;
+  Map.iteri s_to_go ~f:(fun ~key:k ~data:l -> write_entry k l) ;
   Out_channel.close output
 
 let gene_symbols fa =
-  String.Map.keys fa.gene_symbol_to_go
+  Map.keys fa.gene_symbol_to_go
   |> String.Set.of_list
 
 let go_list_of_gene_symbol fa gs =
   let symbol2go = fa.gene_symbol_to_go in
-  match String.Map.find symbol2go gs with
+  match Map.find symbol2go gs with
   | Some l -> term_names_of_pkeys fa l
   | None -> []
 

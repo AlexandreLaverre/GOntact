@@ -145,7 +145,7 @@ let remove_duplicated_identifiers c =
   let il = c.int_list in
   let tuples = List.map il ~f:(fun i -> (Genomic_interval.id i, i)) in
   let multi_map = String.Map.of_alist_multi tuples in
-  let filtered_interval_list = String.Map.fold multi_map ~init:[] ~f:(fun ~key:_ ~data acc -> (
+  let filtered_interval_list = Map.fold multi_map ~init:[] ~f:(fun ~key:_ ~data acc -> (
         match data with
         | [ int ] -> int :: acc
         | _ -> acc

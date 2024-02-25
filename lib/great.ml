@@ -97,9 +97,9 @@ let go_categories_by_element ~(element_coordinates:Genomic_interval_collection.t
 let elements_by_go_category unique_gocat_by_element =
   let t = String.Table.create () in
   List.iter unique_gocat_by_element ~f:(fun (elt, go_cats) ->
-      List.iter go_cats ~f:(fun go_cat -> String.Table.add_multi t ~key:go_cat ~data:(Genomic_interval.id elt))
+      List.iter go_cats ~f:(fun go_cat -> Hashtbl.add_multi t ~key:go_cat ~data:(Genomic_interval.id elt))
     ) ;
-  String.Table.to_alist t
+  Hashtbl.to_alist t
   |> String.Map.of_alist_exn
 
 let symbol_elements ~(element_coordinates:Genomic_interval_collection.t) ~(regulatory_domains:Genomic_interval_collection.t) =

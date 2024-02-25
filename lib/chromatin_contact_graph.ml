@@ -39,7 +39,7 @@ let split_ibed_line_filtered line ~strip_chr ~min_dist ~max_dist ~min_score ~bai
           let dist = Float.abs (midpos1 -. midpos2) in
           if Float.(dist >= min_dist && dist <= max_dist) then
             let id_frag = Printf.sprintf "%s:%d-%d" chr2 start2 end2 in
-            if String.Set.mem bait_map id_frag then None
+            if Set.mem bait_map id_frag then None
             else Some {bait_chr = chr1 ; bait_start = start1; bait_end = end1 ; bait_name = name1 ; otherEnd_chr = chr2 ; otherEnd_start = start2; otherEnd_end = end2; otherEnd_name = name2 ; n_reads ; score }
           else None
         else None
@@ -71,11 +71,11 @@ let select_distance l ~min_dist ~max_dist =
 
 let select_unbaited l ~bait_collection =
   let bait_ids = String.Set.of_list (List.map (Genomic_interval_collection.interval_list bait_collection) ~f:(fun i -> Genomic_interval.id i)) in
-  let unbaited = List.filter l ~f:(fun x -> not (String.Set.mem bait_ids (get_id_frag x))) in
+  let unbaited = List.filter l ~f:(fun x -> not (Set.mem bait_ids (get_id_frag x))) in
   unbaited
 
 let remove_unannotated_baits contacts ~bait_annotation =
-  List.filter contacts ~f:(fun c -> String.Map.mem bait_annotation (get_id_bait c))
+  List.filter contacts ~f:(fun c -> Map.mem bait_annotation (get_id_bait c))
 
 let extend_fragments contacts ~margin =
   let all_fragments = List.map contacts ~f:Chromatin_contact.contacted_fragment in

@@ -67,13 +67,13 @@ let go_categories_by_element
   in
   let elbaits =
     List.Assoc.map intersection ~f:(fun l ->
-        List.filter_map l ~f:(fun frag -> String.Map.find fragment_to_baits (Genomic_interval.id frag))
+        List.filter_map l ~f:(fun frag -> Map.find fragment_to_baits (Genomic_interval.id frag))
         |> List.join
         |> List.dedup_and_sort ~compare:String.compare
       )
   in
   List.Assoc.map elbaits ~f:(fun l ->
-      List.filter_map l ~f:(fun bait -> String.Map.find bait_annotation bait)
+      List.filter_map l ~f:(fun bait -> Map.find bait_annotation bait)
       |> GO_term_set.of_sorted_lists_unsafe
     )
 

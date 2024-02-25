@@ -11,8 +11,7 @@
   (modules Gontact_client)
   (modes js)
   (js_of_ocaml (flags --opt 3))
-  (libraries base brr gontact_shared note.brr parsexp)
-  )
+  (libraries base brr gontact_shared note.brr parsexp))
 
 (library
   (name gontact_shared)
