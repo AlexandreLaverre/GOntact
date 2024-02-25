@@ -7,6 +7,8 @@ open Ppx_yojson_conv_lib.Yojson_conv.Primitives
 let css_link ?a href = Html.link ?a ~rel:[`Stylesheet] ~href ()
 (* let ext_js_script ?(a = []) href = Html.script ~a:(Html.a_src href :: a) (Html.txt "") *)
 
+let great_route = "/great"
+
 let html_page ?mode ~title:page_title contents =
   let open Html in
   let page_head =
@@ -175,7 +177,7 @@ module Form_page = struct
       different set of PCHi-C samples, please see our command-line
       version on GitLab. If you want to run GREAT using the same
       genome annotations and Gene Ontology data, you can do so
-      <a href="GREAT.html">here</a>.
+      <a href="|}great_route{|">here</a>.
     </p>|}
 
   let%html gontact_form request = {|
@@ -743,11 +745,11 @@ let () =
           ~param_decode:Form_page.analysis_request_decode
           ~create_analysis_request:(create_analysis_request Form_page.analysis);
 
-        Dream.get  "/great" (fun request ->
+        Dream.get great_route (fun request ->
             Dream.html (html_to_string @@ GREAT_form_page.render request)
           );
 
-        analysis_service db ~route:"/great"
+        analysis_service db ~route:great_route
           ~param_decode:GREAT_form_page.analysis_request_decode
           ~create_analysis_request:(create_analysis_request GREAT_form_page.analysis) ;
 
