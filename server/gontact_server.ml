@@ -662,7 +662,7 @@ module Logger = struct
       | Some path -> path
     in
 
-    let db_path = Filename.concat data_path "db" in
+    let db_path = Fpath.(data_path // (v "db") |> to_string) in
 
     let () =
       match Sys_unix.file_exists db_path with
