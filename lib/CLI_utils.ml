@@ -59,7 +59,6 @@ let shared_contacts_term =
   in
   shared_contacts ibed_paths min_nb_samples path_output
 
-
 (* commands *)
 
 let info_compare_methods = Cmd.info ~doc:"GOntact utils compare methods" "compare-methods"
