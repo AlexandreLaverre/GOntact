@@ -324,7 +324,7 @@ let main ({mode ;functional_annot ; obo_path ; domain ; gene_info ; fg_path ; bg
   | Ok () -> ()
   | Error e -> print_endline e
 
-let term =
+let enrich_term =
   let open Let_syntax.Cmdliner_term in
   let+ mode =
     let contacts_label = "contacts" in
@@ -417,5 +417,8 @@ let term =
   save_parlist pl output_pars ;
   main pl
 
-let info = Cmd.info ~doc:"Compute GO enrichments." "GOntact"
-let command = Cmd.v info term
+let enrich_info = Cmd.info ~doc:"Compute GO enrichments" "enrich"
+let enrich_command = Cmd.v enrich_info enrich_term
+
+let info = Cmd.info ~doc:"GO enrichments based on chromatin contacts" "gontact"
+let command = Cmd.group info [ enrich_command ]
