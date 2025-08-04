@@ -154,25 +154,17 @@ let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~contact_g
           elements ~filtered_annot ~major_isoforms
           ~contacted_fragments ~fragment_to_baits ~symbol_annotated_baits
     in
-    if pl.write_elements_foreground then (
-      let dist_gene_elements_foreground = gene_distance_by_element foreground in
-      let output_path_fg_elements = output_file pl "element_gene_association_foreground.txt" in
-      Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_foreground output_path_fg_elements ;
-      let output_path_fg_elements_go = output_file pl "element_GO_association_foreground.txt" in
-      let gocat_by_element_foreground = expand_go_term_sets element_annotation.foreground propagated_fa in
-      let elements_by_gocat_foreground = Chromatin_contact.elements_by_annotation gocat_by_element_foreground in
-      Go_enrichment.write_detailed_association elements_by_gocat_foreground output_path_fg_elements_go ;
-    ) ;
-
-    if pl.write_elements_background then (
-      let dist_gene_elements_background = gene_distance_by_element background in
-      let output_path_bg_elements = output_file pl "element_gene_association_background.txt" in
-      Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements_background output_path_bg_elements ;
-      let output_path_bg_elements_go = output_file pl "element_GO_association_background.txt" in
-      let gocat_by_element_background = expand_go_term_sets element_annotation.background propagated_fa in
-      let elements_by_gocat_background = Chromatin_contact.elements_by_annotation gocat_by_element_background in
-      Go_enrichment.write_detailed_association elements_by_gocat_background output_path_bg_elements_go ;
-    ) ;
+    let write_elements label elts elts_annotation =
+      let dist_elements = gene_distance_by_element elts in
+      let output_path_elements = output_file pl (sprintf "element_gene_association_%s.txt" label) in
+      Genomic_annotation.write_distance_elements ~dist_elements output_path_elements ;
+      let output_path_elements_go = output_file pl (sprintf "element_GO_association_%s.txt" label) in
+      let gocat_by_element = expand_go_term_sets elts_annotation propagated_fa in
+      let elements_by_gocat = Chromatin_contact.elements_by_annotation gocat_by_element in
+      Go_enrichment.write_detailed_association elements_by_gocat output_path_elements_go
+    in
+    if pl.write_elements_foreground then write_elements "foreground" foreground element_annotation.foreground ;
+    if pl.write_elements_background then write_elements "background" background element_annotation.background ;
   )
 
 let hybrid_gene_distance_by_element
