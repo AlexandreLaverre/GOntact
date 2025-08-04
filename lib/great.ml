@@ -106,12 +106,19 @@ let symbol_elements ~(element_coordinates:Genomic_interval_collection.t) ~(regul
    let intersection = Genomic_interval_collection.intersect element_coordinates regulatory_domains in (*dictionary, element ids -> list of gene symbols*)
    intersection
 
-
 type param = {
   upstream : int ;
   downstream : int ;
   extend : int ;
 }
+
+let domains_intervals { upstream ; downstream ; extend } ~chromosome_sizes ~genome_annotation =
+  let domains =
+    basal_plus_extension_domains
+      ~chromosome_sizes ~genome_annotation
+      ~upstream ~downstream ~extend
+  in
+  genomic_interval_collection domains
 
 type enrichment_analysis = {
   enriched_terms : Go_enrichment.enrichment_result list ;
@@ -120,15 +127,10 @@ type enrichment_analysis = {
 }
 
 let enrichment_analysis
-    { upstream ; downstream ; extend } ~chromosome_sizes
+    param ~chromosome_sizes
     ~genome_annotation ~functional_annotation
     elements =
-  let domains =
-    basal_plus_extension_domains
-      ~chromosome_sizes ~genome_annotation
-      ~upstream ~downstream ~extend
-  in
-  let domains_int = genomic_interval_collection domains in
+  let domains_int = domains_intervals ~chromosome_sizes ~genome_annotation param in
   let annotate element_coordinates =
     go_categories_by_element
       ~element_coordinates ~regulatory_domains:domains_int

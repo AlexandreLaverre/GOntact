@@ -6,6 +6,12 @@ type param = {
   extend : int ;
 }
 
+val domains_intervals :
+  param ->
+  chromosome_sizes:Genomic_interval_collection.t ->
+  genome_annotation:Genomic_annotation.t ->
+  Genomic_interval_collection.t
+
 type enrichment_analysis = {
   enriched_terms : Go_enrichment.enrichment_result list ;
   domains_int : Genomic_interval_collection.t ;
