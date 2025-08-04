@@ -138,9 +138,9 @@ let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~contact_g
       { FGBG.foreground ; background }
   in
   let bait_collection = annotated_baits.baits in
-  let annotated_baits = String.Map.map annotated_baits.annotation ~f:(Functional_annotation.term_names_of_pkeys propagated_fa) in
+  let go_annotated_baits = String.Map.map annotated_baits.annotation ~f:(Functional_annotation.term_names_of_pkeys propagated_fa) in
   let output_path_GO_baits = output_file pl "bait_GO_annotation.txt" in
-  Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:annotated_baits ~path:output_path_GO_baits ;
+  Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:go_annotated_baits ~path:output_path_GO_baits ;
   output_enrichment pl enrichment_results.enriched_terms gonames ;
 
   if (pl.write_elements_foreground || pl.write_elements_background) then (
@@ -198,14 +198,17 @@ let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~co
   in
   let { Contact_enrichment_analysis.contacted_fragments ; fragment_to_baits ; _ } = contacts in
   let bait_collection = annotated_baits.baits in
-  let annotated_baits = String.Map.map annotated_baits.annotation ~f:(Functional_annotation.term_names_of_pkeys propagated_fa) in
-  let output_path_baits = output_file pl "bait_annotation.txt" in
-  Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:annotated_baits ~path:output_path_baits ;
+  let go_annotated_baits = String.Map.map annotated_baits.annotation ~f:(Functional_annotation.term_names_of_pkeys propagated_fa) in
+  let output_path_GO_baits = output_file pl "bait_GO_annotation.txt" in
+  Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:go_annotated_baits ~path:output_path_GO_baits ;
   output_enrichment pl enriched_terms gonames ;
 
   if (pl.write_elements_foreground || pl.write_elements_background) then (
     let major_isoforms = Utils.chrono "extract major isoforms symbols" Genomic_annotation.identify_major_isoforms_symbols filtered_annot in
     let symbol_annotated_baits = Chromatin_contact.symbol_annotate_baits ~bait_collection ~genome_annotation:filtered_annot ~max_dist:pl.max_dist_bait_TSS in
+    let output_path_gene_baits = output_file pl "bait_gene_annotation.txt" in
+    Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:symbol_annotated_baits ~path:output_path_gene_baits ;
+
     let gene_distance_by_element elements =
       hybrid_gene_distance_by_element elements
         ~domains:great.domains_int ~contacted_fragments ~filtered_annot
