@@ -127,6 +127,12 @@ let contact_gene_distance_by_element
     ~element_map
     ~gene_annotation:filtered_annot ~major_isoforms
 
+let write_elements pl label dist_elements elements_by_gocat =
+  let output_path_elements = output_file pl (sprintf "element_gene_association_%s.txt" label) in
+  Genomic_annotation.write_distance_elements ~dist_elements output_path_elements ;
+  let output_path_elements_go = output_file pl (sprintf "element_GO_association_%s.txt" label) in
+  Go_enrichment.write_detailed_association elements_by_gocat output_path_elements_go
+
 let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~contact_graph ~propagated_fa ~annotated_baits =
   let { Contact_enrichment_analysis.contacted_fragments ; fragment_to_baits ;
         element_annotation ; _ } as enrichment_results =
@@ -148,23 +154,19 @@ let contacts_mode pl ~gonames ~filtered_annot ~foreground ~background ~contact_g
     let symbol_annotated_baits = Chromatin_contact.symbol_annotate_baits ~bait_collection ~genome_annotation:filtered_annot ~max_dist:pl.max_dist_bait_TSS in
     let output_path_gene_baits = output_file pl "bait_gene_annotation.txt" in
     Chromatin_contact.output_bait_annotation ~bait_collection ~bait_annotation:symbol_annotated_baits ~path:output_path_gene_baits ;
-
     let gene_distance_by_element elements =
       contact_gene_distance_by_element
           elements ~filtered_annot ~major_isoforms
           ~contacted_fragments ~fragment_to_baits ~symbol_annotated_baits
     in
-    let write_elements label elts elts_annotation =
-      let dist_elements = gene_distance_by_element elts in
-      let output_path_elements = output_file pl (sprintf "element_gene_association_%s.txt" label) in
-      Genomic_annotation.write_distance_elements ~dist_elements output_path_elements ;
-      let output_path_elements_go = output_file pl (sprintf "element_GO_association_%s.txt" label) in
-      let gocat_by_element = expand_go_term_sets elts_annotation propagated_fa in
-      let elements_by_gocat = Chromatin_contact.elements_by_annotation gocat_by_element in
-      Go_enrichment.write_detailed_association elements_by_gocat output_path_elements_go
+    let elements_by_gocat annotation =
+      let gocat_by_element = expand_go_term_sets annotation propagated_fa in
+      Chromatin_contact.elements_by_annotation gocat_by_element
     in
-    if pl.write_elements_foreground then write_elements "foreground" foreground element_annotation.foreground ;
-    if pl.write_elements_background then write_elements "background" background element_annotation.background ;
+    if pl.write_elements_foreground then
+      write_elements pl "foreground" (gene_distance_by_element foreground) (elements_by_gocat element_annotation.foreground) ;
+    if pl.write_elements_background then
+      write_elements pl "background" (gene_distance_by_element background) (elements_by_gocat element_annotation.background) ;
   )
 
 let hybrid_gene_distance_by_element
@@ -221,17 +223,10 @@ let hybrid_mode pl ~chromosome_sizes ~filtered_annot ~foreground ~background ~co
       let elements_by_gocat_cc = Chromatin_contact.elements_by_annotation gocat_by_element_cc in
       Go_enrichment.combine_maps elements_by_gocat_great elements_by_gocat_cc
     in
-    let write_elements label elts elements_by_gocat =
-      let dist_gene_elements = gene_distance_by_element elts in
-      let output_path_elements = output_file pl (sprintf "element_gene_association_%s.txt" label) in
-      Genomic_annotation.write_distance_elements ~dist_elements:dist_gene_elements output_path_elements ;
-      let output_path_elements_go = output_file pl (sprintf "element_GO_association_%s.txt" label) in
-      Go_enrichment.write_detailed_association elements_by_gocat output_path_elements_go
-    in
     if pl.write_elements_foreground then
-      write_elements "foreground" foreground (elements_by_gocat contacts.element_annotation.foreground great.element_annotation.foreground) ;
+      write_elements pl "foreground" (gene_distance_by_element foreground) (elements_by_gocat contacts.element_annotation.foreground great.element_annotation.foreground) ;
     if pl.write_elements_background then
-      write_elements "background" background (elements_by_gocat contacts.element_annotation.background great.element_annotation.background)
+      write_elements pl "background" (gene_distance_by_element background) (elements_by_gocat contacts.element_annotation.background great.element_annotation.background)
   )
 
 let contact_data_prepare pl ~genome_annotation ~functional_annotation =
