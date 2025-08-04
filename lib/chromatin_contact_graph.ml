@@ -71,8 +71,7 @@ let select_distance l ~min_dist ~max_dist =
 
 let select_unbaited l ~bait_collection =
   let bait_ids = String.Set.of_list (List.map (Genomic_interval_collection.interval_list bait_collection) ~f:(fun i -> Genomic_interval.id i)) in
-  let unbaited = List.filter l ~f:(fun x -> not (Set.mem bait_ids (get_id_frag x))) in
-  unbaited
+  List.filter l ~f:(fun x -> not (Set.mem bait_ids (get_id_frag x)))
 
 let remove_unannotated_baits contacts ~bait_annotation =
   List.filter contacts ~f:(fun c -> Map.mem bait_annotation (get_id_bait c))
