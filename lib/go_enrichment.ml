@@ -86,9 +86,10 @@ let foreground_vs_background_binom_test ~go_frequencies_foreground ~go_frequenci
 let write_detailed_association gomap path =
   Out_channel.with_file path ~append:false ~f:(fun output ->
       Map.iteri gomap  ~f:(fun ~key ~data ->
-          Printf.fprintf output "%s\t" key ;
-          List.iter data ~f:(fun g -> Printf.fprintf output "%s," g) ;
-          Printf.fprintf output "\n" ))
+          Stdlib.output_string output key ;
+          Stdlib.output_char output '\t' ;
+          Stdlib.output_string output (String.concat ~sep:"," data) ;
+          Stdlib.output_char output '\n' ))
 
 let write_output results go_names path =
   let ordered_results = List.sort results ~compare in
