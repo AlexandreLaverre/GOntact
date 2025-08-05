@@ -40,14 +40,18 @@ type t = {
   fragment_to_baits : string list String.Map.t ;
 }
 
-let aggregate_contact_graphs graphs { min_dist ; max_dist ; min_score ; min_samples } annotated_baits =
+let aggregate_contact_graphs ?bait_annotation bait_collection graphs { min_dist ; max_dist ; min_score ; min_samples } =
   let transform_contact_graph graph =
-    graph
-    |> Chromatin_contact_graph.remove_unannotated_baits ~bait_annotation:annotated_baits.annotation
+    (
+      match bait_annotation with
+      | None -> graph
+      | Some bait_annotation ->
+        Chromatin_contact_graph.remove_unannotated_baits ~bait_annotation graph
+    )
     |> Chromatin_contact_graph.select_cis
     |> Chromatin_contact_graph.select_distance ~min_dist ~max_dist
     |> Chromatin_contact_graph.select_min_score ~min_score
-    |> Chromatin_contact_graph.select_unbaited ~bait_collection:annotated_baits.baits
+    |> Chromatin_contact_graph.select_unbaited ~bait_collection
   in
   let select = match min_samples with
     | None -> List.hd

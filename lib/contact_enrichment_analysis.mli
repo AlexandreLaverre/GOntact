@@ -18,9 +18,10 @@ val annotate_baits :
   annotated_bait_collection
 
 val aggregate_contact_graphs :
+  ?bait_annotation:Ontology.PKey.t list Core.String.Map.t ->
+  Genomic_interval_collection.t ->
   Chromatin_contact_graph.t list ->
   param ->
-  annotated_bait_collection ->
   Chromatin_contact_graph.t
 
 type t = {

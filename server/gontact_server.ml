@@ -80,9 +80,10 @@ let load_contact_graph genome ~cea_param ~annotated_baits =
     |> List.map ~f:(Gontact.Chromatin_contact_graph.of_ibed_file ~strip_chr:true)
   in
   Contact_enrichment_analysis.aggregate_contact_graphs
+    ~bait_annotation:annotated_baits.Contact_enrichment_analysis.annotation
+    annotated_baits.baits
     contact_graphs
     cea_param
-    annotated_baits
 
 let load_chromosome_sizes genome =
   let path = match genome with
