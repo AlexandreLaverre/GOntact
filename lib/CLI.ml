@@ -320,6 +320,13 @@ module Enrich = struct
     in
     contact_graph, annotated_baits
 
+  let create_output_dir_or_die path =
+    if Stdlib.Sys.file_exists path then (
+      if Stdlib.Sys.is_directory path then ()
+      else dief "Path %s is not available for output directory: there is a file with this name" path
+    )
+    else Stdlib.Sys.mkdir path 0o700
+
   let main ({
       common = { mode ; gene_info ; chr_sizes ; _ } ;
       fg_path ; bg_path ;
@@ -425,6 +432,7 @@ module Enrich = struct
     let output_pars = Printf.sprintf "%s/%s_parameters.txt" output_dir output_prefix in
     Logs.set_reporter (Logs.format_reporter ());
     Logs.set_level verbosity ;
+    create_output_dir_or_die output_dir ;
     save_params pl output_pars ;
     main pl
 
