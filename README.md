@@ -81,7 +81,7 @@ was correctly configured when installing opam.
 <a name="usage"></a>
 
 For the following usage commands, the GOntact executable is named
-'gontact'. Please refer to the above instructions if you
+`gontact`. Please refer to the above instructions if you
 installed GOntact directly from source.
 
 To test GOntact, you can use this example dataset (make sure you don't
@@ -93,38 +93,57 @@ test ! -d data && tar -xzvf data.tar.gz
 ```
 
 These commands will create a directory named `data`, containing
-several data types
+several data types.
 
 ### Data types
 [Chromatin contact data](#contacts)
+
 [Gene annotations](#annot)
+
+[Gene Ontology annotations](#GO)
+
+[Enhanceer coordinates](#enhancers)
 
 #### Chromatin contact data
 <a name="contacts"></a>
-This dataset includes chromatin interactions detected with the
+This dataset includes chromatin contacts detected with the
 PCHi-C approach, for human and mouse. This data was described in
 Laverré et al., Genome Research, 2022. Chromatin interactions were
 scored for several cell types for each species and are provided in the
 [ibed format](https://www.bioconductor.org/packages/devel/bioc/vignettes/Chicago/inst/doc/Chicago.html),
-in the data/PCHi-C subfolder.
+in the `data/PCHi-C subfolder`. 
+
+Note that these chromatin contacts are provided with respect to the
+GRCh38 (hg38) genome assembly for human and to the GRCm38 (mm10)
+genome assembly for mouse. 
 
 #### Gene annotations
 <a name="annot"></a>
 GOntact also needs a set of gene annotations as an
 input. Annotations were downloaded from the Ensembl database (release
 102) and are
-provided in the subfolder data/ensembl_annotations. This subfolder
-also contains files with chromosome size information, which are needed
-to run GOntact in "GREAT" mode.
+provided in the subfolder `data/ensembl_annotations`. They correspond
+to the 
 
+<>This subfolder also contains files with chromosome size information,
+which are needed to run GOntact in "GREAT" mode.
+
+
+#### Gene Ontology annotation
+<a name="GO"></a>
 Gene Ontology annotations are provided for human and mouse in the
-data/GeneOntology subfolder (goa_human.gaf for human and mgi.gaf for
+`data/GeneOntology` subfolder (goa_human.gaf for human and mgi.gaf for
 mouse). These files were downloaded on 07/12/2021 from
-geneontology.org. The Gene Ontology hierarchy
+geneontology.org. 
 
+
+#### Enhancer coordinates
+<a name="enhancers"></a>
 Example enhancer datasets are also provided in the subfolder
-data/enhancers.
+`data/enhancers`.
 
+
+### Basic usage
 Here is an example of a command line that runs GOntact in "GREAT" mode,
 using Vista midbrain enhancers as a foreground set and the full set of
 ENCODE enhancers as a background set:
