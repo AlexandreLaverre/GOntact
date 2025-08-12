@@ -1,5 +1,7 @@
 # GOntact
+
 [Installation](#install)
+
 [Usage](#usage)
 
 ## Installation
@@ -52,14 +54,14 @@ dune build
 
 To use this version of GOntact, you can use the following commands
 (note the extra "--", which signifies that the command-line arguments
-that follow are for the gontact executable rather than for dune): 
+that follow are for the `gontact` executable rather than for `dune): 
 
 ```
 dune exec gontact -- --help
 ```
 
-All GOntact commands thereafter will start with 'dune exec gontact --
-' instead of 'gontact'. 
+All GOntact commands thereafter will start with `dune exec gontact --
+` instead of `gontact`. 
 
 ### Installing the GOntact package directly using opam 
 
@@ -71,8 +73,16 @@ the following command:
 opam pin add -y gontact https://gitlab.in2p3.fr/anamaria.necsulea/GOntact.git
 ```
 
+This will install an executable named `gontact` in your .opam directory. This executable
+should be accessible from any directory, if your PATH variable
+was correctly configured when installing opam.
+
 ## Usage
 <a name="usage"></a>
+
+For the following usage commands, the GOntact executable is named
+'gontact'. Please refer to the above instructions if you
+installed GOntact directly from source.
 
 To test GOntact, you can use this example dataset (make sure you don't
 have a `data` directory where you run this!):
@@ -82,6 +92,15 @@ wget http://pbil.univ-lyon1.fr/members/necsulea/GOntact/data.tar.gz
 test ! -d data && tar -xzvf data.tar.gz
 ```
 
+These commands will create a directory named `data`, containing
+several data types
+
+### Data types
+[Chromatin contact data](#contacts)
+[Gene annotations](#annot)
+
+#### Chromatin contact data
+<a name="contacts"></a>
 This dataset includes chromatin interactions detected with the
 PCHi-C approach, for human and mouse. This data was described in
 Laverré et al., Genome Research, 2022. Chromatin interactions were
@@ -89,6 +108,8 @@ scored for several cell types for each species and are provided in the
 [ibed format](https://www.bioconductor.org/packages/devel/bioc/vignettes/Chicago/inst/doc/Chicago.html),
 in the data/PCHi-C subfolder.
 
+#### Gene annotations
+<a name="annot"></a>
 GOntact also needs a set of gene annotations as an
 input. Annotations were downloaded from the Ensembl database (release
 102) and are
