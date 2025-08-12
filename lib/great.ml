@@ -31,7 +31,7 @@ let basal_domain_of_tss (tss:Genomic_interval.t) ~(genomic_annotation:Genomic_an
   | Genomic_interval.Unstranded -> invalid_arg "this gene is unstranded!"
 
 let extend_one_domain (d:Genomic_interval.t) ~(genomic_annotation:Genomic_annotation.t) ~left_boundary ~right_boundary ~extend ~upstream ~downstream ~chromosome_size  =
-  (*d is a TSS domain domain*)
+  (*d is a TSS interval*)
   let tss = Genomic_interval.start_pos d in
   let chr = Genomic_interval.chr d in
   let id = Genomic_interval.id d in

@@ -32,5 +32,3 @@ val symbol_elements :
   element_coordinates:Genomic_interval_collection.t ->
   regulatory_domains:Genomic_interval_collection.t ->
   (Genomic_interval.t * Genomic_interval.t list) list
-
-val test_regulatory_domains : unit -> (unit, string) result
