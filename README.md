@@ -1,8 +1,8 @@
 # GOntact
 
-[Installation](#install)
+[GOntact installation](#install)
 
-[Usage](#usage)
+[GOntact usage](#usage)
 
 ## Installation
 <a name="install"></a>
@@ -102,7 +102,7 @@ several data types.
 
 [Gene Ontology annotations](#GO)
 
-[Enhanceer coordinates](#enhancers)
+[Enhancer coordinates](#enhancers)
 
 #### Chromatin contact data
 <a name="contacts"></a>
@@ -122,10 +122,25 @@ genome assembly for mouse.
 GOntact also needs a set of gene annotations as an
 input. Annotations were downloaded from the Ensembl database (release
 102) and are
-provided in the subfolder `data/ensembl_annotations`. They correspond
-to the 
+provided in the subfolder `data/ensembl_annotations`. Ensembl
+annotations were retrieved using the [BioMart
+tool](https://www.ensembl.org/biomart/martview/) on the Ensembl
+website. For each species, the gene annotation file contains the
+following tab-separated columns:
 
-<>This subfolder also contains files with chromosome size information,
+- Gene stable id
+- Gene type
+- Gene name
+- Transcript stable ID
+- Transcript type
+- APPRIS annotation
+- Chromosome/scaffold name
+- Strand
+- Transcription start site (TSS)
+- Transcript length (including UTRs and CDS)
+
+
+This subfolder also contains files with chromosome size information,
 which are needed to run GOntact in "GREAT" mode.
 
 
