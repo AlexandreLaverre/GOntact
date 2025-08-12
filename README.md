@@ -2,6 +2,65 @@
 
 ## Installation
 
+### Installing GOntact from source
+
+To install GOntact from source, first clone the GitLab repository
+using the following command: 
+
+
+```
+git clone git@gitlab.in2p3.fr:anamaria.necsulea/GOntact.git
+```
+
+To compile GOntact, you will need the [opam](http://opam.ocaml.org/)
+package manager for OCaml. On Linux systems, you can install it and
+initialize it using the following
+commands: 
+
+```
+sudo apt install opam
+opam init
+```
+
+You will also need the [dune](https://github.com/ocaml/dune) build
+system for OCaml.
+
+```
+sudo apt install ocaml-dune
+```
+
+Once opam and dune are installed, in the GOntact directory created before, install the required
+dependencies using the following commands:
+
+```
+opam pin add -n gontact .
+opam install gontact --deps-only
+
+opam pin add -n gontact-server .
+opam install gontact-server --deps-only
+```
+
+You can now compile GOntact with the following command, run from the
+GOntact directory: 
+
+```
+dune build
+```
+
+To use this version of GOntact, you can use the following commands
+(note the extra "--", which signifies that the command-line arguments
+that follow are for the gontact executable rather than for dune): 
+
+```
+dune exec gontact -- --help
+```
+
+All GOntact commands thereafter will start with 'dune exec gontact --
+' instead of 'gontact'. 
+
+### Installing the GOntact package directly using opam 
+
+
 `GOntact` can be installed via [opam](http://opam.ocaml.org/), using
 the following command:
 
