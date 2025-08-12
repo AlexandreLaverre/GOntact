@@ -1,6 +1,9 @@
 # GOntact
+[Installation](#install)
+[Usage](#usage)
 
 ## Installation
+<a name="install"></a>
 
 ### Installing GOntact from source
 
@@ -13,7 +16,7 @@ git clone git@gitlab.in2p3.fr:anamaria.necsulea/GOntact.git
 ```
 
 To compile GOntact, you will need the [opam](http://opam.ocaml.org/)
-package manager for OCaml. On Linux systems, you can install it and
+package manager for OCaml. On Debian-based Linux distributions, you can install it and
 initialize it using the following
 commands: 
 
@@ -68,7 +71,8 @@ the following command:
 opam pin add -y gontact https://gitlab.in2p3.fr/anamaria.necsulea/GOntact.git
 ```
 
-## Basic usage
+## Usage
+<a name="usage"></a>
 
 To test GOntact, you can use this example dataset (make sure you don't
 have a `data` directory where you run this!):
