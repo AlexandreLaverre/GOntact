@@ -50,11 +50,11 @@ let ibed_files genome =
 
 let load_genome_annotation genome ~gene_symbols =
   let path = match genome with
-    | `human -> "data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt"
-    | `mouse -> "data/ensembl_annotations/mouse/GeneAnnotation_BioMart_Ensembl102_mm10.txt"
+    | `human -> "data/ensembl_annotations/human/Homo_sapiens.GRCh38.114.gtf"
+    | `mouse -> "data/ensembl_annotations/mouse/Mus_musculus.GRCm38.102.gtf"
   in
   let gene_annot =
-    Genomic_annotation.of_ensembl_biomart_file path
+    Genomic_annotation.of_gtf_file path
     |> Result.ok_or_failwith
   in
   let filtered_annot_bio_gene = Genomic_annotation.filter_gene_biotypes gene_annot "protein_coding" in

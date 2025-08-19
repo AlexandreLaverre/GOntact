@@ -51,7 +51,7 @@ let common_param_term =
     let doc = sprintf "Run mode. Can be '%s', '%s' or '%s'" contacts_label great_label hybrid_label in
     Arg.(value & opt (enum modes) Contacts & info ["mode"] ~doc ~docv:"STRING")
   and+ gene_info =
-    let doc = "Path to gene annotation file extracted from Ensembl BioMart." in
+    let doc = "Path to gene annotation file in GTF format." in
     Arg.(required & opt (some non_dir_file) None & info ["gene-annot"] ~doc ~docv:"PATH")
   and+ chr_sizes =
     let doc = "Path to chromosome size files (tab-separated, chr size)." in
@@ -337,7 +337,7 @@ module Enrich = struct
       let* obo = Obo.of_obo_file obo_path in
       let* ontology = Ontology.of_obo obo domain in
       let* gaf = Gaf.of_gaf_file functional_annot in
-      let+ gene_annot = Genomic_annotation.of_ensembl_biomart_file gene_info in
+      let+ gene_annot = Genomic_annotation.of_gtf_file gene_info in
       let gonames = Ontology.term_names ontology in
       let fa = Functional_annotation.of_gaf_and_ontology gaf ontology in
       let propagated_fa = Utils.chrono "propagate GO annotations" (Functional_annotation.propagate_annotations fa) ontology in
@@ -459,7 +459,7 @@ module Annotate = struct
       ({ mode ; upstream ; downstream ; extend ; chr_sizes ; gene_info ; _} as pl)
       ~output_path ~bed_path =
     let elts = Genomic_interval_collection.of_bed_file bed_path ~strip_chr:true ~format:Base0 in
-    let genome_annotation = ok_or_die @@ Genomic_annotation.of_ensembl_biomart_file gene_info in
+    let genome_annotation = ok_or_die @@ Genomic_annotation.of_gtf_file gene_info in
     let major_isoforms = Genomic_annotation.identify_major_isoforms_symbols genome_annotation in
     let dist_elements = match mode with
       | Hybrid ->

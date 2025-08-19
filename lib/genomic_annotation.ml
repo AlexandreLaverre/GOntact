@@ -1,38 +1,175 @@
 open Core
 
+(**************************************************************)
+
 type gene_annot = {
-  gene_symbol : string ;
-  gene_type : string ;
-  chr : string ;
-  strand : Genomic_interval.strand ;
-}
+    gene_symbol : string ;
+    gene_type : string ;
+    chr : string ;
+    strand : Genomic_interval.strand ;
+  }
+
+type exon_annot = {
+    transcript_id : string ;
+    length : int ;
+  }
 
 type transcript_annot = {
-  gene_id : string ;
-  transcript_type : string ;
-  appris_class : string ;
-  tss_pos : int ;
-  length : int ;
-}
+    gene_id : string ;
+    transcript_type : string ;
+    tss_pos : int ;
+  }
 
 type t = {
-  genes : gene_annot String.Map.t ;
-  transcripts : transcript_annot String.Map.t ;
-  isoforms : string list String.Map.t ;
-}
+    genes : gene_annot String.Map.t ;
+    transcripts : transcript_annot String.Map.t ;
+    isoforms : string list String.Map.t ;
+    transcript_length : int String.Map.t ;
+  }
 
-type biomart_header = {
-  gene_id_index : int ;
-  gene_type_index : int ;
-  gene_symbol_index : int ;
-  transcript_id_index : int ;
-  transcript_type_index : int ;
-  appris_index : int ;
-  chr_index : int ;
-  strand_index : int ;
-  tss_pos_index : int ;
-  transcript_length_index : int ;
-}
+(**************************************************************)
+
+(* get information from 9th column of GTF *)
+(* example: *)
+(* 	gene_id "ENSG00000142611"; gene_version "17"; transcript_id "ENST00000511072"; transcript_version "5"; exon_number "1"; gene_name "PRDM16"; gene_source "ensembl_havana"; gene_biotype "protein_coding"; transcript_name "PRDM16-206"; transcript_source "havana"; transcript_biotype "protein_coding"; tag "gencode_basic"; tag "gencode_primary"; transcript_support_level "5"; *)
+
+let info_of_tuple key (k, v) =
+  if String.equal k key then Some v else None 
+
+let tuple_of_info_string str =
+  let tr = String.strip str in (* remove trailing spaces *) 
+  let sl = String.split tr ~on:' ' in
+  match sl with
+  | [ key ; info ] -> (
+    let il = String.split info ~on:'"' in
+    match il with
+    | [ _ ; value ; _ ] -> (key, value)
+    | _ -> invalid_arg "info should be separated by double quotes (\")"
+  )
+  | _ -> invalid_arg "info string should have exactly two terms!"
+
+let tuple_list_of_info_string str =
+  let stripped = String.rstrip ~drop:(Char.equal ';') str in
+  let info_list = String.split stripped ~on:';' in
+  List.map info_list ~f:tuple_of_info_string
+
+(**************************************************************)
+
+(* get transcript annotation from GTF line *)
+let transcript_annot_of_gtf_split_line sl =
+  match sl with
+  | [ _ ; _ ; _ ; transcript_start ; transcript_end ; _ ; transcript_strand ; _ ; info_col ] -> (
+    let tss = (
+        match transcript_strand with
+        | "+" | "1" -> int_of_string transcript_start
+        | "-" | "-1" -> int_of_string transcript_end
+        | _ -> invalid_arg "wrong strand for gene"
+      ) in
+    let tuple_list = tuple_list_of_info_string info_col in
+    let transcript_id_list = List.filter_map tuple_list ~f:(info_of_tuple "transcript_id") in
+    let gene_id_list = List.filter_map tuple_list ~f:(info_of_tuple "gene_id") in
+    let transcript_biotype_list = List.filter_map tuple_list ~f:(info_of_tuple "transcript_biotype") in
+    match transcript_id_list, gene_id_list, transcript_biotype_list with
+    | [ transcript_id ], [ gene_id ], [ transcript_biotype ] ->  (transcript_id,
+                                                                  {gene_id = gene_id ; 
+                                                                   transcript_type = transcript_biotype ;
+                                                                   tss_pos = tss ;
+                                                                 })
+    | _ -> invalid_arg "couldn't find required info (transcript_id, gene_id, transcript_biotype) in the GTF line"
+  )
+  | _ -> invalid_arg "GTF line should have 9 tab-separated columns"
+
+
+(* get exon annotation *)
+let exon_annot_of_gtf_split_line sl = 
+  match sl with
+  | [ _ ; _ ; _ ; exon_start ; exon_end ; _ ; _ ; _ ; info_col ] -> (
+    let length = (int_of_string exon_end) - (int_of_string exon_start) +1 in  
+    let tuple_list =  tuple_list_of_info_string info_col in
+    let transcript_id_list = List.filter_map tuple_list ~f:(info_of_tuple "transcript_id") in
+    match transcript_id_list with
+    | [ transcript_id ]  -> 
+       {transcript_id = transcript_id ; 
+        length = length ; }
+    | _ -> invalid_arg "couldn't find required info (transcript_id) in the GTF line"
+  )
+  | _ -> invalid_arg "GTF line should have 9 tab-separated columns"
+
+let gene_annot_of_gtf_split_line sl = 
+  match sl with
+  | [ chr ; _ ; _ ; _ ; _ ; _ ; s ; _ ; info_col ] -> (
+    let strand = (
+        match s with
+        | "+" | "1" -> Genomic_interval.Forward
+        | "-" | "-1" -> Genomic_interval.Reverse
+        | _ -> invalid_arg "wrong strand for gene"
+      ) in
+    let tuple_list =  tuple_list_of_info_string info_col in
+    let gene_id_list = List.filter_map tuple_list ~f:(info_of_tuple "gene_id") in
+    let gene_symbol_list = List.filter_map tuple_list ~f:(info_of_tuple "gene_name") in
+    let gene_type_list = List.filter_map tuple_list ~f:(info_of_tuple "gene_biotype") in
+    match gene_id_list, gene_symbol_list, gene_type_list with
+    | [ gene_id ], [ gene_symbol ], [ gene_type ]  -> 
+       (gene_id, { gene_symbol = gene_symbol ;
+                   gene_type = gene_type ;
+                   chr = chr ;
+                   strand = strand ;})
+    | _ -> invalid_arg "couldn't find required info (gene_id, gene_symbol, gene_biotype) in the GTF line"
+  )
+  | _ -> invalid_arg "GTF line should have 9 tab-separated columns"
+
+(**************************************************************)
+               
+let get_exon_line line =
+  let sl = String.split line ~on:'\t' in
+  match sl with
+  | [ _ ; _ ; "exon" ; _ ; _ ; _ ; _  ; _ ; _ ] -> Some sl
+  | _ -> None
+
+
+let get_transcript_line line =
+  let sl = String.split line ~on:'\t' in
+  match sl with
+  | [ _ ; _ ; "transcript" ; _ ; _ ; _ ; _  ; _ ; _ ] -> Some sl
+  |  _ -> None
+
+
+let get_gene_line line =
+  let sl = String.split line ~on:'\t' in
+  match sl with
+  | [ _ ; _ ; "gene" ; _ ; _ ; _ ; _  ; _ ; _ ] -> Some sl
+  | _ ->  None
+
+
+let isoforms_of_transcripts tx =
+  Map.map tx ~f:(fun t -> t.gene_id) (*simplify dictionary - tx id - gene id *)
+  |> Map.to_alist (*transform to list of tuples*)
+  |> List.map ~f:(fun (x, y) -> (y, x)) (*reverse tuple ordre to create dictionary *)
+  |> String.Map.of_alist_multi  (*dictionary has gene ids as keys, values are list of transcript ids *)
+
+let of_gtf_file path =
+  let open Let_syntax.Result in
+  let* lines = Utils.read_lines path in
+  match lines with
+  | _ :: _ -> (
+    let exon_lines = List.filter_map lines ~f:get_exon_line in
+    let exon_list = List.map exon_lines ~f:exon_annot_of_gtf_split_line in
+    let exon_map =  List.fold exon_list ~init:String.Map.empty ~f:(fun acc r ->
+                        Map.add_multi acc ~key:r.transcript_id ~data:r
+                      ) in
+    let transcript_length =  Map.map exon_map ~f:(fun exonlist -> List.fold exonlist ~init:0 ~f:(fun x y -> x + y.length)) in 
+    let transcript_lines = List.filter_map lines ~f:get_transcript_line in
+    let transcript_list = List.map transcript_lines ~f:transcript_annot_of_gtf_split_line in
+    let transcripts = String.Map.of_alist_exn transcript_list in
+    let gene_lines = List.filter_map lines ~f:get_gene_line in
+    let gene_list = List.map gene_lines ~f:gene_annot_of_gtf_split_line in
+    let genes = String.Map.of_alist_exn gene_list in
+    let isoforms = isoforms_of_transcripts transcripts in
+    Ok {genes ; transcripts; isoforms ; transcript_length}
+  )
+  | [] -> Error "File is empty"
+
+(**************************************************************)
 
 let gene_symbol ga id =
   match Map.find ga.genes id with
@@ -43,84 +180,15 @@ let gene_symbol_exn ga id =
   let g = Option.value_exn (Map.find ga.genes id) in
   g.gene_symbol
 
-let extract_ensembl_biomart_header h =
-  let sh = String.split h ~on:'\t' in
-  let index str =
-    match List.findi sh ~f:(fun _ elt -> String.equal elt str) with
-    | Some (i, _) -> Ok i
-    | None -> Error (Printf.sprintf "Cannot find column %s." str)
-  in
-  let header_list = ["Gene stable ID" ; "Gene type" ; "Gene name" ; "Transcript stable ID" ; "Transcript type" ; "APPRIS annotation" ; "Chromosome/scaffold name" ; "Strand" ; "Transcription start site (TSS)" ; "Transcript length (including UTRs and CDS)" ] in
-  let index_res = List.map header_list ~f:(fun x -> index x) in
-  let indexes = Result.all index_res in
-  match indexes with
-  | Ok [ gene_id_index ; gene_type_index ; gene_symbol_index ; transcript_id_index ; transcript_type_index  ; appris_index ; chr_index ; strand_index ;  tss_pos_index ; transcript_length_index ] ->  Ok { gene_id_index ; gene_type_index ; gene_symbol_index ; transcript_id_index ; transcript_type_index  ; appris_index ; chr_index ; strand_index ;  tss_pos_index ; transcript_length_index }
-  | _ -> Error "Ensembl BioMart file does not have all necessary columns."
-
-let gene_annot_of_line line header =
-  let sl = String.split line ~on:'\t' in
-  let al = Array.of_list sl in
-  let s = al.(header.strand_index) in
-  let strand = (
-    match s with
-    | "+" | "1" -> Genomic_interval.Forward
-    | "-" | "-1" -> Genomic_interval.Reverse
-    | _ -> invalid_arg "wrong strand for gene"
-  ) in
-  let gene_id = al.(header.gene_id_index) in
-  (gene_id,
-  {gene_symbol = al.(header.gene_symbol_index) ;
-   gene_type = al.(header.gene_type_index) ;
-   chr = al.(header.chr_index) ;
-   strand})
-
-let transcript_annot_of_line line header =
-  let sl = String.split line ~on:'\t' in
-  let al = Array.of_list sl in
-  let transcript_id = al.(header.transcript_id_index) in
-  (transcript_id,
-   {gene_id = al.(header.gene_id_index) ;
-    transcript_type = al.(header.transcript_type_index) ;
-    appris_class = al.(header.appris_index) ;
-    tss_pos = int_of_string (al.(header.tss_pos_index)) ;
-    length = int_of_string (al.(header.transcript_length_index))})
-
-let isoforms_of_transcripts tx =
-  Map.map tx ~f:(fun t -> t.gene_id) (*simplify dictionary - tx id - gene id *)
-  |> Map.to_alist (*transform to list of tuples*)
-  |> List.map ~f:(fun (x, y) -> (y, x)) (*reverse tuple ordre to create dictionary *)
-  |> String.Map.of_alist_multi  (*dictionary has gene ids as keys, values are list of transcript ids *)
-
-let compare_gene_tuples g1 g2 =
-  let (g1id, _) = g1 in
-  let (g2id, _) = g2 in
-  String.compare g1id g2id
-
-let of_ensembl_biomart_file path =
-  let open Let_syntax.Result in
-  let* lines = Utils.read_lines path in
-  match lines with
-  | h :: t -> (
-      let open Let_syntax.Result in
-      let+ header = extract_ensembl_biomart_header h in
-      let gene_list = List.map t ~f:(fun line -> gene_annot_of_line line header) in
-      let dedup_gene_list = List.dedup_and_sort ~compare:compare_gene_tuples gene_list in
-      let transcript_list = List.map t ~f:(fun line -> transcript_annot_of_line line header) in
-      let genes = String.Map.of_alist_exn dedup_gene_list in
-      let transcripts = String.Map.of_alist_exn transcript_list in
-      let isoforms = isoforms_of_transcripts transcripts in
-      {genes ; transcripts; isoforms}
-    )
-  | [] -> Error "File is empty"
-
 let filter_transcript_biotypes ga biotype =
   let genes = ga.genes in
   let transcripts = ga.transcripts in
+  let transcript_length = ga.transcript_length in
   let filtered_transcripts = Map.filter transcripts ~f:(fun x -> String.equal x.transcript_type biotype) in (*select transcripts with the good biotype*)
   let filtered_gene_set = Map.fold filtered_transcripts ~init:String.Set.empty ~f:(fun ~key:_ ~data:tx acc -> Set.add acc tx.gene_id) in
   let filtered_genes = Map.filter_keys genes ~f:(Set.mem filtered_gene_set) in
   let filtered_isoforms = isoforms_of_transcripts filtered_transcripts in
-  {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
+  {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms ; transcript_length}
 
 let filter_gene_biotypes ga biotype =
   let genes = ga.genes in
@@ -129,7 +197,7 @@ let filter_gene_biotypes ga biotype =
   let filtered_gene_set = String.Set.of_list (Map.keys filtered_genes) in
   let filtered_transcripts = Map.filter transcripts ~f:(fun x -> Set.mem filtered_gene_set x.gene_id) in
   let filtered_isoforms = isoforms_of_transcripts filtered_transcripts in
-  {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
+  {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms ; transcript_length = ga.transcript_length}
 
 let filter_gene_symbols ga symbol_set =
   (*symbol set is a set of strings = gene symbols*)
@@ -137,14 +205,14 @@ let filter_gene_symbols ga symbol_set =
   let gene_set = String.Set.of_list (Map.keys filtered_genes) in
   let filtered_transcripts = Map.filter ga.transcripts ~f:(fun tx -> Set.mem gene_set tx.gene_id) in
   let filtered_isoforms = Map.filter_keys ga.isoforms ~f:(fun gid -> Set.mem gene_set gid) in
-  {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
+  {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms ; transcript_length = ga.transcript_length}
 
 let filter_chromosomes ga chr_set =
   let filtered_genes = Map.filter ga.genes ~f:(fun g -> Set.mem chr_set g.chr) in (*we keep genes that are on these chromosomes*)
   let gene_set = String.Set.of_list (Map.keys filtered_genes) in
   let filtered_transcripts = Map.filter ga.transcripts ~f:(fun tx -> Set.mem gene_set tx.gene_id) in
   let filtered_isoforms = Map.filter_keys ga.isoforms ~f:(fun gid -> Set.mem gene_set gid) in
-  {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
+  {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms  ; transcript_length = ga.transcript_length}
 
 let remove_duplicated_gene_symbols ga =
   let tuples = Map.fold ga.genes ~init:[]  ~f:(fun ~key:gene_id ~data:gene acc -> ((gene.gene_symbol, gene_id) :: acc)) in
@@ -160,44 +228,21 @@ let remove_duplicated_gene_symbols ga =
   let gene_set = String.Set.of_list (Map.keys filtered_genes) in
   let filtered_transcripts = Map.filter ga.transcripts ~f:(fun tx -> Set.mem gene_set tx.gene_id) in
   let filtered_isoforms = Map.filter_keys ga.isoforms ~f:(fun gid -> Set.mem gene_set gid) in
-  {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms}
+  {genes = filtered_genes ; transcripts = filtered_transcripts ; isoforms = filtered_isoforms ; transcript_length = ga.transcript_length}
 
 
-let compare_isoforms txinfo t1 t2 =
+let compare_isoforms txlength t1 t2 =
   (*two isoforms from the same gene *)
-  let info1 = Map.find_exn txinfo t1 in (*t1 and t2 are necessarily in the transcript dictionary*)
-  let info2 = Map.find_exn txinfo t2 in
-  let appris1 = info1.appris_class in
-  let appris2 = info2.appris_class in
-  if String.equal appris1 appris2 then (
-    let (len1, len2) = (info1.length, info2.length) in
-    compare len1 len2
-  )
-  else (
-    match (appris1, appris2) with
-    | ("principal1", _) -> 1
-    | (_, "principal1") -> -1
-    | ("principal2", _) -> 1
-    | (_, "principal2") -> -1
-    | ("principal3", _) -> 1
-    | (_, "principal3") -> -1
-    | ("principal4", _) -> 1
-    | (_, "principal4") -> -1
-    | ("principal5", _) -> 1
-    | (_, "principal5") -> -1
-    | ("alternative1", _) -> 1
-    | (_, "alternative1") -> -1
-    | ("alternative2", _) -> 1
-    | (_, "alternative2") -> -1
-    | _ -> 0
-  )
+  let len1 = Map.find_exn txlength t1 in (*t1 and t2 are necessarily in the transcript dictionary*)
+  let len2 = Map.find_exn txlength t2 in
+  compare len1 len2
 
 let identify_major_isoforms ga =
   let gene_list = Map.keys ga.genes in
   let isoforms = ga.isoforms in
-  let transcripts = ga.transcripts in
+  let transcript_length = ga.transcript_length in
   let find_major_isoform isolist =
-    Option.value_exn (List.max_elt isolist ~compare:(compare_isoforms transcripts))
+    Option.value_exn (List.max_elt isolist ~compare:(compare_isoforms transcript_length))
   in
   let major_list = List.map gene_list ~f:(fun g -> (g, find_major_isoform (Map.find_exn isoforms g))) in
   String.Map.of_alist_exn major_list
@@ -205,9 +250,9 @@ let identify_major_isoforms ga =
 let identify_major_isoforms_symbols ga =
   let gene_list = Map.keys ga.genes in
   let isoforms = ga.isoforms in
-  let transcripts = ga.transcripts in
+  let transcript_length = ga.transcript_length in
   let find_major_isoform isolist =
-    Option.value_exn (List.max_elt isolist ~compare:(compare_isoforms transcripts))
+    Option.value_exn (List.max_elt isolist ~compare:(compare_isoforms transcript_length))
   in
   let major_list = List.map gene_list ~f:(fun g -> ((gene_symbol_exn ga g), find_major_isoform (Map.find_exn isoforms g))) in
   String.Map.of_alist_exn major_list

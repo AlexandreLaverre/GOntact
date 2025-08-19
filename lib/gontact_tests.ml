@@ -48,7 +48,7 @@ let _test_merge_coordinates () =
 
 let _test_genomic_annot () =
   let open Let_syntax.Result in
-  let+ ga = Genomic_annotation.of_ensembl_biomart_file "data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt" in
+  let+ ga = Genomic_annotation.of_gtf_file "data/ensembl_annotations/human/Homo_sapiens.GRCh38.114.gtf" in
   let filtered1 = Genomic_annotation.filter_gene_biotypes ga "protein_coding" in
   let filtered2 = Genomic_annotation.filter_transcript_biotypes filtered1 "protein_coding" in
   let major_isoforms = Genomic_annotation.identify_major_isoforms filtered2 in

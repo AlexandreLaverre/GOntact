@@ -2,7 +2,7 @@ open Core
     
 type t
 
-val of_ensembl_biomart_file : string -> (t, string) result
+val of_gtf_file : string -> (t, string) result
 
 val filter_transcript_biotypes : t -> string -> t
 
