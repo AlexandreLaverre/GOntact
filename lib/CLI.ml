@@ -26,7 +26,14 @@ type common_params = {
   min_dist_contacts : int ;
   max_dist_contacts : int ;
   min_score : float ;
+  verbosity : verbosity option ;
 }
+and verbosity = Logs.level =
+  | App
+  | Error
+  | Warning
+  | Info
+  | Debug
 and mode = GREAT | Contacts | Hybrid
 [@@deriving sexp]
 
@@ -86,8 +93,11 @@ let common_param_term =
   and+ min_score =
     let doc = "Minimum score for contacts." in
     Arg.(value & opt float 5.0 & info ["min-score"] ~doc ~docv:"FLOAT")
+  and+ verbosity =
+    let doc = "Verbosity level (info, debug)" in
+    Arg.(value & opt (enum Logs.["quiet", None ; "info", Some Info ; "debug", Some Debug]) None & info ["verbosity"] ~doc)
   in
-  { mode ; gene_info ; chr_sizes ; upstream ; downstream ; extend ; bait_coords ; ibed_files ; max_dist_bait_TSS ; max_dist_element_fragment ; min_dist_contacts ; max_dist_contacts ; min_score }
+  { mode ; gene_info ; chr_sizes ; upstream ; downstream ; extend ; bait_coords ; ibed_files ; max_dist_bait_TSS ; max_dist_element_fragment ; min_dist_contacts ; max_dist_contacts ; min_score ; verbosity }
 
 let great_gene_distance_by_element elements ~domains ~filtered_annot ~major_isoforms =
   let element_map = Genomic_interval_collection.interval_map elements in
@@ -414,9 +424,6 @@ module Enrich = struct
     and+ output_prefix =
       let doc = "Prefix for output files." in
       Arg.(value & opt string "GOntact" & info ["output-prefix"] ~doc ~docv:"PATH")
-    and+ verbosity =
-      let doc = "Verbosity level (info, debug)" in
-      Arg.(value & opt (enum Logs.["info", Some Info ; "debug", Some Debug]) None & info ["verbosity"] ~doc)
     and+ write_elements_foreground =
       let doc = "Write output for gene-element association in foreground." in
       Arg.(value & flag  & info ["write-foreground"] ~doc)
@@ -431,7 +438,7 @@ module Enrich = struct
                write_elements_foreground ; write_elements_background} in
     let output_pars = Printf.sprintf "%s/%s_parameters.txt" output_dir output_prefix in
     Logs.set_reporter (Logs.format_reporter ());
-    Logs.set_level verbosity ;
+    Logs.set_level common.verbosity ;
     create_output_dir_or_die output_dir ;
     save_params pl output_pars ;
     main pl
@@ -499,6 +506,8 @@ module Annotate = struct
       let doc = "File containing the regions to be annotated, in BED format (0-based, open-ended intervals)." in
       Arg.(required & pos 0 (some non_dir_file) None & info [] ~doc ~docv:"ELEMENT_BED")
     in
+    Logs.set_reporter (Logs.format_reporter ());
+    Logs.set_level pl.verbosity ;
     main pl ~output_path ~bed_path
 
   let info = Cmd.info ~doc:"Associate non-coding elements with genes, based on chromatin contacts or on GREAT regulatory domains." "annotate"

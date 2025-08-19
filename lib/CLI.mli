@@ -12,7 +12,14 @@ type common_params = {
   min_dist_contacts : int ;
   max_dist_contacts : int ;
   min_score : float ;
+  verbosity : verbosity option ;
 }
+and verbosity = Logs.level =
+  | App
+  | Error
+  | Warning
+  | Info
+  | Debug
 and mode = GREAT | Contacts | Hybrid
 [@@deriving sexp]
 
