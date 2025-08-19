@@ -501,9 +501,9 @@ module Annotate = struct
     in
     main pl ~output_path ~bed_path
 
-  let info = Cmd.info ~doc:"Annotate elements with GO terms" "annotate"
+  let info = Cmd.info ~doc:"Associate non-coding elements with genes, based on chromatin contacts or on GREAT regulatory domains." "annotate"
   let command = Cmd.v info term
 end
 
-let info = Cmd.info ~doc:"GO enrichments based on chromatin contacts" "gontact"
+let info = Cmd.info ~doc:"GO enrichment analysis for non-coding elements based on chromatin contacts." "gontact"
 let command = Cmd.group info [ Enrich.command ; Annotate.command ]
