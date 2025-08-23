@@ -6,6 +6,8 @@ type gene_annot = {
     gene_symbol : string ;
     gene_type : string ;
     chr : string ;
+    gene_start : int ;
+    gene_end : int ;
     strand : Genomic_interval.strand ;
   }
 
@@ -37,21 +39,19 @@ let info_of_tuple key (k, v) =
   if String.equal k key then Some v else None 
 
 let tuple_of_info_string str =
-  let tr = String.strip str in (* remove trailing spaces *) 
-  let sl = String.split tr ~on:' ' in
-  match sl with
-  | [ key ; info ] -> (
-    let il = String.split info ~on:'"' in
-    match il with
-    | [ _ ; value ; _ ] -> (key, value)
-    | _ -> invalid_arg "info should be separated by double quotes (\")"
-  )
-  | _ -> invalid_arg "info string should have exactly two terms!"
+  let tr = String.strip str in (* remove trailing spaces *)
+  let il = String.split tr ~on:'"' in
+  match il with
+  | [ info_key ; value ; _ ] -> (String.strip info_key, value)
+  | _ -> invalid_arg "info should be separated by double quotes (\")"
 
 let tuple_list_of_info_string str =
   let stripped = String.rstrip ~drop:(Char.equal ';') str in
   let info_list = String.split stripped ~on:';' in
-  List.map info_list ~f:tuple_of_info_string
+  List.filter_map info_list ~f:(function
+      | "" -> None
+      | s -> Some (tuple_of_info_string s)
+    )
 
 (**************************************************************)
 
@@ -97,7 +97,7 @@ let exon_annot_of_gtf_split_line sl =
 
 let gene_annot_of_gtf_split_line sl = 
   match sl with
-  | [ chr ; _ ; _ ; _ ; _ ; _ ; s ; _ ; info_col ] -> (
+  | [ chr ; _ ; _ ; gene_start ; gene_end ; _ ; s ; _ ; info_col ] -> (
     let strand = (
         match s with
         | "+" | "1" -> Genomic_interval.Forward
@@ -113,8 +113,17 @@ let gene_annot_of_gtf_split_line sl =
        (gene_id, { gene_symbol = gene_symbol ;
                    gene_type = gene_type ;
                    chr = chr ;
+                   gene_start = int_of_string gene_start ;
+                   gene_end = int_of_string gene_end ;
                    strand = strand ;})
-    | _ -> invalid_arg "couldn't find required info (gene_id, gene_symbol, gene_biotype) in the GTF line"
+    | [ gene_id ], [ ], [ gene_type ]  -> 
+       (gene_id, { gene_symbol = "NA" ;
+                   gene_type = gene_type ;
+                   chr = chr ;
+                   gene_start = int_of_string gene_start ;
+                   gene_end = int_of_string gene_end ;
+                   strand = strand ;})
+    | _ ->  invalid_argf "couldn't find required info (gene_id, gene_symbol, gene_biotype) in the GTF line %S !" info_col ()
   )
   | _ -> invalid_arg "GTF line should have 9 tab-separated columns"
 
@@ -127,7 +136,7 @@ let get_exon_line line =
   | _ -> None
 
 
-let get_transcript_line line =
+ let get_transcript_line line =
   let sl = String.split line ~on:'\t' in
   match sl with
   | [ _ ; _ ; "transcript" ; _ ; _ ; _ ; _  ; _ ; _ ] -> Some sl
@@ -141,6 +150,7 @@ let get_gene_line line =
   | _ ->  None
 
 
+
 let isoforms_of_transcripts tx =
   Map.map tx ~f:(fun t -> t.gene_id) (*simplify dictionary - tx id - gene id *)
   |> Map.to_alist (*transform to list of tuples*)
@@ -150,21 +160,33 @@ let isoforms_of_transcripts tx =
 let of_gtf_file path =
   let open Let_syntax.Result in
   let* lines = Utils.read_lines path in
+  print_endline "piu0" ;
   match lines with
   | _ :: _ -> (
     let exon_lines = List.filter_map lines ~f:get_exon_line in
+    print_endline "piu1" ;
     let exon_list = List.map exon_lines ~f:exon_annot_of_gtf_split_line in
+    print_endline "piu2" ;
     let exon_map =  List.fold exon_list ~init:String.Map.empty ~f:(fun acc r ->
                         Map.add_multi acc ~key:r.transcript_id ~data:r
                       ) in
+    print_endline "piu3" ;
     let transcript_length =  Map.map exon_map ~f:(fun exonlist -> List.fold exonlist ~init:0 ~f:(fun x y -> x + y.length)) in 
+    print_endline "piu4" ;
     let transcript_lines = List.filter_map lines ~f:get_transcript_line in
+    print_endline "piu5" ;
     let transcript_list = List.map transcript_lines ~f:transcript_annot_of_gtf_split_line in
+    print_endline "piu6" ;
     let transcripts = String.Map.of_alist_exn transcript_list in
+    print_endline "piu7" ;
     let gene_lines = List.filter_map lines ~f:get_gene_line in
+    print_endline "piu8" ;
     let gene_list = List.map gene_lines ~f:gene_annot_of_gtf_split_line in
+    print_endline "piu9" ;
     let genes = String.Map.of_alist_exn gene_list in
+    print_endline "piu10" ;
     let isoforms = isoforms_of_transcripts transcripts in
+    print_endline "piu11" ;
     Ok {genes ; transcripts; isoforms ; transcript_length}
   )
   | [] -> Error "File is empty"
@@ -314,3 +336,12 @@ let write_distance_elements ~dist_elements path =
 
 let number_of_genes ga =
   Map.length ga.genes
+
+(**************************************************************)
+
+(* get chromosome size from gene coordinate list *)
+(*let chromosome_sizes_of_annot ga extend =
+  let gene_map = ga.genes in
+  let gene_ends_map =  Map.fold gene_map ~init:String.Map.empty ~f:(fun acc r ->
+                        Map.add_multi acc ~key:r.chr ~data:r.gene_end
+*)
