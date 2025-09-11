@@ -127,9 +127,8 @@ genome assembly for mouse.
 <a name="GO"></a>
 Gene Ontology annotations are provided for human and mouse in the
 `data/GeneOntology` subfolder (goa_human.gaf for human and mgi.gaf for
-mouse). These files were downloaded on 07/12/2021 from
+mouse). These files correspond to the 2025-07-22 release of the Gene Ontology database. They were downloaded from
 geneontology.org. 
-
 
 #### Enhancer coordinates
 <a name="enhancers"></a>
@@ -145,7 +144,7 @@ ENCODE enhancers as a background set:
 ```
 mkdir GREAT_results_bp
 
-dune exec gontact -- \
+gontact enrich \
 --mode=GREAT \
 --gene-annot=data/genomic_annotations/Homo_sapiens.GRCh38.115.gtf \
 --functional-annot=data/GeneOntology/goa_human.gaf \
@@ -157,7 +156,7 @@ dune exec gontact -- \
 --extend=1000000 \
 --output-dir=GREAT_results_bp \
 --output-prefix=VistaEnhancers_midbrain \
---domain=biological_process \
+--domain=biological_process 
 ```
 
 Here is an example of a command line that runs GOntact in "contacts" mode,
@@ -168,7 +167,7 @@ interactions that are shared in at least two samples.
 ```
 mkdir contacts_results_bp
 
-dune exec gontact -- \
+gontact enrich \
 --mode=contacts \
 --gene-annot=data/ensembl_annotations/Homo_sapiens.GRCh38.115.gtf \
 --functional-annot=data/GeneOntology/goa_human.gaf \
