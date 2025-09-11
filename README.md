@@ -31,7 +31,7 @@ You will also need the [dune](https://github.com/ocaml/dune) build
 system for OCaml.
 
 ```
-sudo apt install ocaml-dune
+opam install dune
 ```
 
 Once opam and dune are installed, in the GOntact directory created before, install the required
@@ -119,30 +119,9 @@ genome assembly for mouse.
 
 #### Gene annotations
 <a name="annot"></a>
-GOntact also needs a set of gene annotations as an
-input. Annotations were downloaded from the Ensembl database (release
-102) and are
-provided in the subfolder `data/ensembl_annotations`. Ensembl
-annotations were retrieved using the [BioMart
-tool](https://www.ensembl.org/biomart/martview/) on the Ensembl
-website. For each species, the gene annotation file contains the
-following tab-separated columns:
-
-- Gene stable id
-- Gene type
-- Gene name
-- Transcript stable ID
-- Transcript type
-- APPRIS annotation
-- Chromosome/scaffold name
-- Strand
-- Transcription start site (TSS)
-- Transcript length (including UTRs and CDS)
-
-
-This subfolder also contains files with chromosome size information,
-which are needed to run GOntact in "GREAT" mode.
-
+GOntact also needs a set of genomic annotations as an
+input. These should be provided in the [GTF format](https://www.ensembl.org/info/website/upload/gff.html).  Example files for human and mouse are provided in the subfolder `data/ensembl_annotations`. They were downloaded from the Ensembl database and correspond to the GRCh38 (hg38) genome assembly for human and to the GRCm38 (mm10)
+genome assembly for mouse. 
 
 #### Gene Ontology annotation
 <a name="GO"></a>
@@ -168,12 +147,11 @@ mkdir GREAT_results_bp
 
 dune exec gontact -- \
 --mode=GREAT \
---gene-annot=data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt \
+--gene-annot=data/genomic_annotations/Homo_sapiens.GRCh38.115.gtf \
 --functional-annot=data/GeneOntology/goa_human.gaf \
 --ontology=data/GeneOntology/go-basic.obo \
 --foreground=data/enhancers/human/VistaEnhancers_midbrain_hg38.bed \
 --background=data/enhancers/human/ENCODE.Laverre2022.bed \
---chr-sizes=data/ensembl_annotations/human/chr_sizes_hg38.txt \
 --upstream=5000 \
 --downstream=1000 \
 --extend=1000000 \
@@ -181,7 +159,6 @@ dune exec gontact -- \
 --output-prefix=VistaEnhancers_midbrain \
 --domain=biological_process \
 ```
-
 
 Here is an example of a command line that runs GOntact in "contacts" mode,
 using Vista midbrain enhancers as a foreground set, the full set of
@@ -193,12 +170,11 @@ mkdir contacts_results_bp
 
 dune exec gontact -- \
 --mode=contacts \
---gene-annot=data/ensembl_annotations/human/GeneAnnotation_BioMart_Ensembl102_hg38.txt \
+--gene-annot=data/ensembl_annotations/Homo_sapiens.GRCh38.115.gtf \
 --functional-annot=data/GeneOntology/goa_human.gaf \
 --ontology=data/GeneOntology/go-basic.obo \
 --foreground=data/enhancers/human/VistaEnhancers_midbrain_hg38.bed \
 --background=data/enhancers/human/ENCODE.Laverre2022.bed \
---chr-sizes=data/ensembl_annotations/human/chr_sizes_hg38.txt \
 --ibed-path=data/PCHi-C/human/ibed_files/shared_contacts_min2samples.ibed \
 --min-score=0 \
 --bait-coords=data/PCHi-C/human/hg38.baitmap \
