@@ -1,5 +1,7 @@
 # GOntact
 
+**GOntact** is a tool for functional enrichment analysis of cis-regulatory elements using chromatin contact data. Unlike traditional proximity-based approaches, GOntact leverages promoter-capture Hi-C (PCHi-C) data to infer gene-enhancer relationships and derive Gene Ontology enrichments. It implements the method described in [Laverré et al., 2022 (bioRxiv)](https://www.biorxiv.org/content/10.1101/2022.06.13.495495v1), and uses PCHi-C data from [Laverré et al., Genome Research, 2022](https://pmc.ncbi.nlm.nih.gov/articles/PMC8805723/) to provide biologically coherent functional annotations and novel insights into gene regulation across human and mouse genomes.
+
 [GOntact installation](#install)
 
 [GOntact usage](#usage)
@@ -108,7 +110,7 @@ several data types.
 <a name="contacts"></a>
 This dataset includes chromatin contacts detected with the
 PCHi-C approach, for human and mouse. This data was described in
-Laverr� et al., Genome Research, 2022. Chromatin interactions were
+[Laverré et al., Genome Research, 2022](https://pmc.ncbi.nlm.nih.gov/articles/PMC8805723/). Chromatin interactions were
 scored for several cell types for each species and are provided in the
 [ibed format](https://www.bioconductor.org/packages/devel/bioc/vignettes/Chicago/inst/doc/Chicago.html),
 in the `data/PCHi-C subfolder`. 
